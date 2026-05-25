@@ -1,0 +1,262 @@
+{
+  "meta": {
+    "live_deployments": 7,
+    "personas": 23,
+    "templates": 50
+  },
+  "cards": [
+    {
+      "id": "ararat",
+      "vertical": "Ювелирный retail",
+      "title": "Mary Jewelry — AI-консультант Мари",
+      "one_liner": "Telegram-бот консультант с каталогом, RAG и записью на приём",
+      "status": "live",
+      "platform": "Telegram",
+      "llm": "Gemini 2.5 Flash Lite",
+      "metric": "4 persona · 1 API",
+      "icon": "jewelry",
+      "cta_label": "Открыть виджет",
+      "cta_url": null,
+      "persona": {
+        "role": "Старший консультант ювелирного бутика Mary Jewelry",
+        "voice": "Уважительный, тёплый, экспертный. Имя: Мари. Эмодзи: 💎✨💍",
+        "snippets": [
+          {
+            "type": "greeting",
+            "text": "Доброго дня, уважаемый! Меня зовут Мари. 💎 Я старший консультант Mary Jewelry — помогу подобрать изделие со вкусом и смыслом. Подбираем для себя или в подарок?"
+          }
+        ]
+      }
+    },
+    {
+      "id": "pegasszn",
+      "vertical": "Travel / Tourism",
+      "title": "PEGAS Touristik — автоканал",
+      "one_liner": "AI ведёт Telegram-канал @pegasszm: посты, RAG по турам, комментинг",
+      "status": "live",
+      "platform": "Telegram",
+      "llm": "Gemini 2.5 Flash Lite",
+      "metric": "2 поста/день · 88 cron triggers",
+      "icon": "travel",
+      "cta_label": "Канал @pegasszm",
+      "cta_url": "https://t.me/pegasszm",
+      "persona": {
+        "role": "Опытный туристический гедонист и копирайтер для PEGAS Touristik",
+        "voice": "Расслабленный, вдохновляющий, немного дерзкий. Эмодзи: 🌴 🏖️ ✈️",
+        "snippets": [
+          {
+            "type": "post",
+            "text": "Представь: утро, кофе на балконе, и впереди — море без будильника. Турция, 7 ночей, всё включено. Кто со мной? 🌴"
+          }
+        ]
+      }
+    },
+    {
+      "id": "podolog",
+      "vertical": "Health content",
+      "title": "Центр ЗДОРОВОЙ СТОПЫ — VK-канал",
+      "one_liner": "AI-лонгриды о здоровье стоп в VK с persona и RAG",
+      "status": "live",
+      "platform": "VK",
+      "llm": "Gemini 2.5 Flash Lite",
+      "metric": "75 daily triggers · 600–1000 chars",
+      "icon": "health",
+      "cta_label": "Подробнее",
+      "cta_url": null,
+      "persona": {
+        "role": "Блогер-подолог, эксперт по здоровью стоп из Центра ЗДОРОВОЙ СТОПЫ",
+        "voice": "Увлекательный, глубокий, доверительный. Эмодзи: 🦶 🧠 🌿",
+        "snippets": [
+          {
+            "type": "post",
+            "text": "Плоскостопие — не приговор. Биомеханика стопы определяет нагрузку на колени и поясницу. Разберём, как понять свой тип стопы дома. 🦶"
+          }
+        ]
+      }
+    },
+    {
+      "id": "docbrain",
+      "vertical": "Legal SaaS US/EU",
+      "title": "DocBrain — legal micro-docs",
+      "one_liner": "Stripe SaaS: YAML-офферы → LLM draft → PDF/DOCX → email",
+      "status": "live",
+      "platform": "Web",
+      "llm": "Gemini + OpenRouter",
+      "metric": "30 offers · $4.99 · Stripe",
+      "icon": "legal",
+      "cta_label": "docbrain.online",
+      "cta_url": "https://docbrain.online",
+      "persona": {
+        "role": "Formal business correspondence tone",
+        "voice": "Профессиональный, юридически точный, без воды",
+        "snippets": [
+          {
+            "type": "offer",
+            "text": "Refund Demand Letter — $4.99. Structured demand with legal basis, deadline, and next steps. Delivered as PDF + DOCX."
+          }
+        ]
+      }
+    },
+    {
+      "id": "pretenzia",
+      "vertical": "Legal RU",
+      "title": "Pretenzia — претензии для РФ",
+      "one_liner": "8 типов документов: форма → оплата → PDF на email",
+      "status": "live",
+      "platform": "Web",
+      "llm": "Gemini",
+      "metric": "190 ₽ · Robokassa · 15 000+ docs",
+      "icon": "legal-ru",
+      "cta_label": "pretenziaonline.ru",
+      "cta_url": "https://pretenziaonline.ru",
+      "persona": {
+        "role": "Генератор претензий по ЗоЗПП РФ",
+        "voice": "Юридически грамотный, структурированный, с ссылками на статьи",
+        "snippets": [
+          {
+            "type": "claim",
+            "text": "Претензия продавцу: требование возврата денежных средств за некачественный товар с указанием статей 18–22 ЗоЗПП."
+          }
+        ]
+      }
+    },
+    {
+      "id": "kormoved",
+      "vertical": "Sales operator",
+      "title": "Kormoved — AI-продавец в чатах",
+      "one_liner": "Userbot-persona с anti-detect, funnel heuristic и good/bad training",
+      "status": "lab",
+      "platform": "Telegram / VK",
+      "llm": "Gemini Flash + Claude",
+      "metric": "35% leave-on-read · anti-spam",
+      "icon": "sales",
+      "cta_label": "Lab preview",
+      "cta_url": null,
+      "persona": {
+        "role": "Консультант по кормлению служебных собак",
+        "voice": "Живой эксперт в чате, не бот. Пишет с опечатками иногда, отвечает с задержкой",
+        "snippets": [
+          {
+            "type": "bad",
+            "text": "❌ «К сожалению, я не могу гарантировать, что вашей собаке понравится наш продукт.»"
+          },
+          {
+            "type": "good",
+            "text": "✅ «У меня самого овчарка привереда, первые три дня нюхала и уходила. На четвёртый сама пришла за добавкой. Дай время.»"
+          }
+        ]
+      }
+    },
+    {
+      "id": "my-agent",
+      "vertical": "Workflow OS",
+      "title": "My Agent — Competitor Intelligence",
+      "one_liner": "Visual DAG builder + marketplace + multi-agent research за 90 сек",
+      "status": "live",
+      "platform": "Web / Telegram / Slack",
+      "llm": "OpenRouter multi-model",
+      "metric": "90 сек · $0.42 · 18.4k tokens · 21 sources",
+      "icon": "workflow",
+      "cta_label": "Запустить demo",
+      "cta_url": "#playground",
+      "persona": {
+        "role": "Research agent pipeline",
+        "voice": "2 parallel agents → SWOT → DOCX brief",
+        "snippets": [
+          {
+            "type": "output",
+            "text": "SWOT: Notion ecosystem breadth vs Linear speed. Action: double down on sub-50ms interactions as core differentiator."
+          }
+        ]
+      }
+    }
+  ],
+  "featured_templates": [
+    {
+      "id": "tpl_competitor_intelligence",
+      "name": "Competitor Intelligence",
+      "category": "research",
+      "description": "2 research agents → SWOT → DOCX brief за 90 сек",
+      "nodes": 7
+    },
+    {
+      "id": "tpl_lead_telegram_sheets",
+      "name": "Новый лид → Telegram + Sheets",
+      "category": "sales",
+      "description": "Webhook лид → уведомление в Telegram + Google Sheets",
+      "nodes": 4
+    },
+    {
+      "id": "tpl_lead_qualify",
+      "name": "Lead Qualification",
+      "category": "sales",
+      "description": "AI квалифицирует лида и маршрутизирует в CRM",
+      "nodes": 5
+    },
+    {
+      "id": "tpl_weekly_report",
+      "name": "Weekly Report",
+      "category": "ops",
+      "description": "Еженедельный отчёт из Sheets → Slack + email",
+      "nodes": 4
+    },
+    {
+      "id": "tpl_content_repurpose",
+      "name": "Content Repurpose",
+      "category": "marketing",
+      "description": "1 статья → посты для Telegram, Twitter, LinkedIn",
+      "nodes": 6
+    },
+    {
+      "id": "tpl_sales_followup",
+      "name": "Sales Follow-up",
+      "category": "sales",
+      "description": "Авто-follow-up если клиент молчит 3 дня",
+      "nodes": 5
+    },
+    {
+      "id": "tpl_telegram_support",
+      "name": "Telegram Support Bot",
+      "category": "support",
+      "description": "AI support bot с эскалацией на человека",
+      "nodes": 4
+    },
+    {
+      "id": "tpl_marketing_campaign",
+      "name": "Marketing Campaign",
+      "category": "marketing",
+      "description": "Запуск кампании: контент + email + analytics",
+      "nodes": 6
+    },
+    {
+      "id": "tpl_research_digest",
+      "name": "Research Digest",
+      "category": "research",
+      "description": "Ежедневный digest новостей по темам в Slack",
+      "nodes": 4
+    }
+  ],
+  "playground_presets": [
+    {
+      "id": "competitor",
+      "label": "Competitor Intelligence",
+      "target": "Notion",
+      "our_company": "Linear",
+      "description": "2 research agents → SWOT → DOCX"
+    },
+    {
+      "id": "beauty",
+      "label": "Beauty Consultation",
+      "target": "HydraFacial",
+      "our_company": "BeautyMedics",
+      "description": "Консультация по процедурам клиники"
+    },
+    {
+      "id": "lead",
+      "label": "Lead Qualifier",
+      "target": "Acme Corp",
+      "our_company": "Our SaaS",
+      "description": "Квалификация B2B-лида из webhook"
+    }
+  ]
+}

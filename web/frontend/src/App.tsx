@@ -15,6 +15,7 @@ import PublicTemplatePage from './pages/PublicTemplatePage';
 import AgentsPage from './pages/AgentsPage';
 import KnowledgePage from './pages/KnowledgePage';
 import McpPage from './pages/McpPage';
+import ShowcasePage from './pages/ShowcasePage';
 
 export default function App() {
   return (
@@ -25,6 +26,7 @@ export default function App() {
           <Route path="workflows" element={<WorkflowList />} />
           <Route path="workflows/:workflowId" element={<WorkflowBuilder />} />
           <Route path="marketplace" element={<MarketplacePage />} />
+          <Route path="showcase" element={<ShowcasePage />} />
           <Route path="chat" element={<ChatPage />} />
           <Route path="builder" element={<AgentBuilderPage />} />
           <Route path="settings" element={<SettingsPage />} />

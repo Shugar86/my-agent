@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Demo — My Agent</title>
+    <meta name="description" content="Competitor Intelligence за 90 секунд — без регистрации.">
+    <meta property="og:title" content="Live Demo — My Agent">
+    <meta property="og:description" content="Competitor Intelligence за 90 секунд — без регистрации.">
+    <meta property="og:image" content="/welcome-assets/assets/og-image.png">
+    <meta property="og:type" content="website">
+    <meta name="twitter:card" content="summary_large_image">
+    <link rel="icon" href="/welcome-assets/favicon.svg" type="image/svg+xml">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/welcome-assets/style.css">
+    <link rel="stylesheet" href="/welcome-assets/marketing.css">
+</head>
+<body>
+
+    <nav class="nav scrolled" id="nav">
+        <div class="nav-inner">
+            <a href="/" class="nav-brand">
+                <svg class="brand-logo" viewBox="0 0 40 40" fill="none"><circle cx="20" cy="20" r="18" stroke="currentColor" stroke-width="3"/><circle cx="20" cy="20" r="7" fill="currentColor"/></svg>
+                <span class="brand-text">My Agent</span>
+            </a>
+            <div class="nav-links">
+                <a href="/#product" class="nav-link">Продукт</a>
+                <a href="/#pricing" class="nav-link">Тарифы</a>
+            </div>
+            <a href="/login?next=/app/onboarding" class="nav-cta">Войти</a>
+            <button class="nav-toggle" id="navToggle" aria-label="Меню"><span></span><span></span></button>
+        </div>
+    </nav>
+
+    <div class="mobile-menu" id="mobileMenu">
+        <a href="/" class="mobile-link">Главная</a>
+        <a href="/login" class="mobile-link">Войти</a>
+    </div>
+
+    <main class="demo-page">
+        <div class="demo-header">
+            <div class="hero-pretitle" style="justify-content:center;display:flex;margin-bottom:12px">
+                <span class="status-dot"></span>
+                <span>Live demo · без регистрации</span>
+            </div>
+            <h1>Competitor Intelligence за 90 секунд</h1>
+            <p>Два research-агента параллельно → SWOT → DOCX brief. Mock-режим работает без API keys.</p>
+        </div>
+
+        <div id="demoError" class="demo-error" role="alert"></div>
+
+        <div class="demo-card">
+            <div class="demo-presets" id="demoPresets">
+                <button type="button" class="preset-chip active" data-target="Notion" data-our="Linear">Notion vs Linear</button>
+                <button type="button" class="preset-chip" data-target="Slack" data-our="Teams">Slack vs Teams</button>
+                <button type="button" class="preset-chip" data-target="Figma" data-our="Sketch">Figma vs Sketch</button>
+            </div>
+
+            <form id="demoForm" class="demo-form">
+                <div>
+                    <label for="target">Целевая компания</label>
+                    <input type="text" id="target" name="target" value="Notion" placeholder="Notion">
+                </div>
+                <div>
+                    <label for="ourCompany">Ваша компания</label>
+                    <input type="text" id="ourCompany" name="ourCompany" value="Linear" placeholder="Linear">
+                </div>
+                <div class="demo-form-actions">
+                    <button type="submit" class="btn btn-primary" id="runBtn" style="width:100%">Запустить за 90 сек</button>
+                </div>
+            </form>
+
+            <div class="demo-skeleton" id="demoSkeleton">
+                <div class="skeleton-line"></div>
+                <div class="skeleton-line"></div>
+                <div class="skeleton-line"></div>
+            </div>
+
+            <div class="demo-timeline" id="timeline" hidden>
+                <h2>Выполнение workflow</h2>
+                <div class="demo-stepper" id="demoStepper"></div>
+            </div>
+        </div>
+
+        <div class="demo-metrics" id="metrics">
+            <div class="demo-metric">
+                <div class="demo-metric-value" id="metricCost">$0.42</div>
+                <div class="demo-metric-label">Стоимость run</div>
+            </div>
+            <div class="demo-metric">
+                <div class="demo-metric-value" id="metricTokens">18.4k</div>
+                <div class="demo-metric-label">Токены</div>
+            </div>
+            <div class="demo-metric">
+                <div class="demo-metric-value" id="metricSaved">~4ч</div>
+                <div class="demo-metric-label">Сэкономлено</div>
+            </div>
+        </div>
+
+        <div class="demo-actions-row" id="resultActions" hidden>
+            <a href="/api/demo/artifact/competitor_brief_notion_vs_linear.docx" class="btn btn-primary" id="downloadBtn" download>Скачать brief (DOCX)</a>
+            <a href="/login?next=/app/onboarding" class="btn btn-secondary">Сохранить в workspace</a>
+            <a href="/" class="btn btn-secondary">На главную</a>
+        </div>
+    </main>
+
+    <div class="demo-sticky-cta" id="stickyCta">
+        <a href="/login?next=/app/onboarding" class="btn btn-primary">Сохранить workflow в workspace →</a>
+    </div>
+
+    <script src="/welcome-assets/main.js"></script>
+    <script src="/welcome-assets/demo.js"></script>
+</body>
+</html>

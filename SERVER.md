@@ -62,7 +62,10 @@ docker compose exec agent python scripts/generate_demo_artifact.py
 |-----|------------|
 | `/login` | JWT login + Google |
 | `/welcome` | Маркетинговый лендинг |
+| `/showcase` | **Demo-MVP showcase** — 7 vertical cases + playground + CTA |
+| `/demo` | Public Competitor Intelligence demo (90 сек) |
 | `/app` | Панель (dashboard) |
+| `/app/showcase` | Authenticated mirror of `/showcase` |
 | `/app/chat` | Чат (markdown, SSE, `/run workflow`) |
 | `/app/workflows` | Workflow list + builder |
 | `/app/marketplace` | Templates |
@@ -82,9 +85,12 @@ Legacy paths (`/chat`, `/agents`, `/knowledge`, `/mcp`, `/onboarding`, …) → 
 
 | Method | Endpoint | Описание |
 |--------|----------|----------|
-| POST | `/api/demo/run` | Запуск Competitor Intelligence (mock fallback без ключей) |
+| POST | `/api/demo/run` | Запуск Competitor Intelligence (auth, mock fallback) |
+| POST | `/api/demo/public/run` | Public demo для `/showcase` и `/demo` (без auth) |
+| GET | `/api/demo/public/runs/{id}` | Polling статуса public demo run |
 | GET | `/api/demo/artifact/{filename}` | Скачать DOCX-артефакт |
 | GET | `/api/demo/sample` | Метрики demo run (ROI, tokens, duration) |
+| POST | `/api/leads/showcase` | Lead form → `data/showcase_leads.jsonl` |
 
 ---
 

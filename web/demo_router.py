@@ -58,6 +58,29 @@ def _load_sample() -> dict[str, Any]:
     return json.loads(DEMO_SAMPLE_FILE.read_text(encoding="utf-8"))
 
 
+NODE_LABELS: dict[str, str] = {
+    "trg": "Webhook-триггер",
+    "r1": "Research: продукт и pricing",
+    "r2": "Research: новости и funding",
+    "merge": "Объединение данных",
+    "an": "SWOT + 3 actions",
+    "doc": "Генерация DOCX",
+    "n8n": "Триггер n8n",
+}
+
+
+def _ensure_public_demo_workflow() -> dict[str, Any] | None:
+    """Return shared public demo workflow (no owner) for unauthenticated runs."""
+    for wf in workflow_store.list_workflows():
+        if wf.get("source_template_id") == DEMO_TEMPLATE_ID and wf.get("owner_id") is None:
+            return wf
+    template = workflow_store.get_template(DEMO_TEMPLATE_ID)
+    if not template:
+        logger.warning("Demo template %s not found — run seed_workflow_templates.py", DEMO_TEMPLATE_ID)
+        return None
+    return workflow_store.clone_template(DEMO_TEMPLATE_ID, owner_id=None, workspace_id=None)
+
+
 def _ensure_template_installed(
     user_id: str | None, workspace_id: str | None
 ) -> dict[str, Any] | None:
@@ -182,4 +205,59 @@ async def demo_sample() -> dict[str, Any]:
         "summary": sample.get("summary", {}),
         "node_order": sample.get("node_order", []),
         "default_payload": sample.get("default_payload", {}),
+    }
+
+
+def _run_response(sample: dict[str, Any], workflow: dict[str, Any], run: dict[str, Any]) -> dict[str, Any]:
+    """Build a consistent demo run start payload."""
+    node_order = sample.get("node_order", [])
+    return {
+        "mode": "mock",
+        "workflow_id": workflow["id"],
+        "run_id": run["id"],
+        "node_order": node_order,
+        "node_labels": {nid: NODE_LABELS.get(nid, nid) for nid in node_order},
+        "expected_duration_ms": sample.get("summary", {}).get("total_duration_ms", 30000),
+        "artifact_url": "/api/demo/artifact/competitor_brief_notion_vs_linear.docx",
+        "summary": sample.get("summary", {}),
+    }
+
+
+@router.post("/api/demo/public/run")
+async def start_public_demo_run(
+    body: DemoRunRequest,
+    background: BackgroundTasks,
+) -> dict[str, Any]:
+    """Start a demo run without authentication (showcase + /demo pages)."""
+    workflow = _ensure_public_demo_workflow()
+    if not workflow:
+        raise HTTPException(
+            status_code=503,
+            detail="Demo template not seeded. Run scripts/seed_workflow_templates.py.",
+        )
+
+    sample = _load_sample()
+    run = workflow_store.create_run(workflow["id"])
+    background.add_task(_stream_mock_logs, run["id"], sample, body.target)
+    return _run_response(sample, workflow, run)
+
+
+@router.get("/api/demo/public/runs/{run_id}")
+async def get_public_demo_run(run_id: str) -> dict[str, Any]:
+    """Poll public demo run status for showcase playground stepper."""
+    run = workflow_store.get_run(run_id)
+    if not run:
+        raise HTTPException(status_code=404, detail="Run not found")
+    sample = _load_sample()
+    node_order = sample.get("node_order", [])
+    summary = sample.get("summary", {})
+    if run["status"] in ("success", "failed"):
+        summary = {**summary, "hours_saved": summary.get("hours_saved", 4)}
+    return {
+        "run_id": run["id"],
+        "status": run["status"],
+        "logs": run.get("logs", []),
+        "node_order": node_order,
+        "node_labels": {nid: NODE_LABELS.get(nid, nid) for nid in node_order},
+        "summary": summary if run["status"] == "success" else {},
     }

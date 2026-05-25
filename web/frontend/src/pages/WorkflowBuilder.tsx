@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import {
   ReactFlow,
   Background,
@@ -79,7 +79,9 @@ function flowToDef(nodes: Node[], edges: Edge[]): WorkflowDefinition {
 export default function WorkflowBuilder() {
   const { workflowId: paramId } = useParams();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const workflowId = paramId === 'new' ? undefined : paramId;
+  const demoRunHandled = useRef<string | null>(null);
 
   const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
@@ -126,6 +128,20 @@ export default function WorkflowBuilder() {
       }).catch(() => setStatus('Failed to load workflow'));
     }
   }, [workflowId, setNodes, setEdges, loadRuns]);
+
+  useEffect(() => {
+    const runId = searchParams.get('run');
+    if (!runId || !currentId) return;
+    if (demoRunHandled.current === runId) return;
+    demoRunHandled.current = runId;
+
+    setShowRuns(true);
+    setIsRunning(true);
+    setErroredNodeIds(new Set());
+    pollRun(currentId, runId)
+      .then(() => loadRuns(currentId))
+      .finally(() => setIsRunning(false));
+  }, [currentId, searchParams, loadRuns]);
 
   useEffect(() => {
     setNodes((nds) =>

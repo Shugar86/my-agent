@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="600" viewBox="0 0 960 600">
+  <rect width="960" height="600" fill="#0d1117"/>
+  <rect x="0" y="0" width="200" height="600" fill="#161b22"/>
+  <rect x="16" y="20" width="168" height="32" rx="6" fill="#21262d"/>
+  <text x="24" y="40" fill="#58a6ff" font-family="system-ui,sans-serif" font-size="12" font-weight="600">My Agent</text>
+  <rect x="16" y="68" width="168" height="28" rx="4" fill="#21262d"/>
+  <rect x="16" y="104" width="168" height="28" rx="4" fill="#30363d"/>
+  <rect x="16" y="140" width="168" height="28" rx="4" fill="#21262d"/>
+  <rect x="220" y="24" width="720" height="120" rx="12" fill="#161b22" stroke="#30363d"/>
+  <text x="240" y="56" fill="#8b949e" font-family="system-ui,sans-serif" font-size="11">AUTONOMOUS WORKFLOW OS</text>
+  <text x="240" y="88" fill="#c9d1d9" font-family="system-ui,sans-serif" font-size="20" font-weight="700">B webhook 4> 1@8D0 70 90 A5:</text>
+  <rect x="240" y="100" width="120" height="32" rx="16" fill="#238636"/>
+  <text x="268" y="121" fill="#fff" font-family="system-ui,sans-serif" font-size="12">� 5<> 90 A5:</text>
+  <rect x="220" y="160" width="170" height="80" rx="8" fill="#161b22" stroke="#30363d"/>
+  <rect x="400" y="160" width="170" height="80" rx="8" fill="#161b22" stroke="#30363d"/>
+  <rect x="580" y="160" width="170" height="80" rx="8" fill="#161b22" stroke="#30363d"/>
+  <rect x="760" y="160" width="170" height="80" rx="8" fill="#161b22" stroke="#30363d"/>
+  <text x="240" y="200" fill="#58a6ff" font-family="system-ui,sans-serif" font-size="22" font-weight="600">12</text>
+  <text x="420" y="200" fill="#58a6ff" font-family="system-ui,sans-serif" font-size="22" font-weight="600">50+</text>
+  <text x="600" y="200" fill="#58a6ff" font-family="system-ui,sans-serif" font-size="22" font-weight="600">$0.42</text>
+  <text x="780" y="200" fill="#58a6ff" font-family="system-ui,sans-serif" font-size="22" font-weight="600">~4G</text>
+  <rect x="220" y="260" width="340" height="140" rx="8" fill="#161b22" stroke="#30363d"/>
+  <rect x="580" y="260" width="360" height="140" rx="8" fill="#161b22" stroke="#30363d"/>
+  <text x="240" y="290" fill="#8b949e" font-family="system-ui,sans-serif" font-size="11">COMPETITOR INTELLIGENCE</text>
+  <circle cx="260" cy="330" r="6" fill="#58a6ff"/>
+  <circle cx="320" cy="330" r="6" fill="#58a6ff"/>
+  <circle cx="380" cy="330" r="6" fill="#3fb950"/>
+  <circle cx="440" cy="330" r="6" fill="#8b949e"/>
+</svg>

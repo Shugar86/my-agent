@@ -38,6 +38,7 @@ from web.mcp_server import router as mcp_router
 from web.a2a_server import router as a2a_router
 from web.workflow_router import router as workflow_router
 from web.demo_router import router as demo_router
+from web.leads_router import router as leads_router
 from web.security import is_public_path, resolve_rate_limit
 from web.sessions_router import router as sessions_router
 from web.teams_router import router as teams_router
@@ -72,6 +73,7 @@ app.include_router(workflow_router)
 
 # Investor demo endpoints
 app.include_router(demo_router)
+app.include_router(leads_router)
 
 # Chat sessions API
 app.include_router(sessions_router)
@@ -525,6 +527,27 @@ async def welcome_page():
         with open(website_path, "r", encoding="utf-8") as f:
             return f.read()
     return RedirectResponse(url="/")
+
+
+def _serve_website_page(filename: str) -> HTMLResponse:
+    """Return a static marketing page from website/."""
+    website_path = os.path.join(os.path.dirname(__file__), "..", "website", filename)
+    if not os.path.exists(website_path):
+        raise HTTPException(status_code=404, detail="Page not found")
+    with open(website_path, "r", encoding="utf-8") as f:
+        return f.read()
+
+
+@app.get("/demo", response_class=HTMLResponse)
+async def demo_page():
+    """Public live demo (Competitor Intelligence)."""
+    return _serve_website_page("demo.html")
+
+
+@app.get("/showcase", response_class=HTMLResponse)
+async def showcase_page():
+    """Demo-MVP showcase — vertical cases + playground + CTA."""
+    return _serve_website_page("showcase.html")
 
 
 @app.get("/app", response_class=HTMLResponse)

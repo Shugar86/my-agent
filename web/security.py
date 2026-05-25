@@ -10,10 +10,14 @@ PUBLIC_EXACT_PATHS = {
     "/",
     "/login",
     "/welcome",
+    "/demo",
+    "/showcase",
     "/onboarding",
     "/api/login",
     "/api/register",
     "/api/health",
+    "/api/demo/public/run",
+    "/api/leads/showcase",
     "/metrics",
 }
 
@@ -34,6 +38,7 @@ PUBLIC_GET_PREFIXES = (
     "/api/public",
     "/api/demo/artifact",
     "/api/demo/sample",
+    "/api/demo/public/runs",
 )
 
 

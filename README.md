@@ -1,6 +1,6 @@
 # My Agent — Technical Documentation
 
-> Last updated: 2026-05-25
+> Last updated: 2026-05-26
 > Version: 3.2.0 (UI/UX Polish — React SPA RU + PWA)
 > Author: AI Assistant
 
@@ -20,6 +20,9 @@ docker compose exec agent python scripts/generate_demo_artifact.py
 
 Full script, talking points, and troubleshooting: **[DEMO.md](./DEMO.md)**.
 
+**Demo-MVP showcase (recommended):** `http://localhost:8020/showcase` — 7 vertical
+production cases, live playground, lead CTA. Quick ref: **[INVESTOR.md](./INVESTOR.md)**.
+
 Mock fallback works without API keys — safe for live investor presentations.
 
 ### Web UI (v3.2)
@@ -38,6 +41,9 @@ Mock fallback works without API keys — safe for live investor presentations.
 | `/app/mcp` | MCP-серверы |
 | `/app/settings` | Интеграции / модели / профиль |
 | `/app/onboarding` | 4-step wizard + 90s demo |
+| `/app/showcase` | Demo-MVP vertical cases (auth) |
+| `/showcase` | Demo-MVP showcase (public, no auth) |
+| `/demo` | Public Competitor Intelligence demo |
 | `/welcome` | Маркетинговый лендинг |
 
 Дизайн-система: [`web/frontend/DESIGN.md`](web/frontend/DESIGN.md). Сборка: `cd web/frontend && npm run build`.

@@ -35,7 +35,35 @@ keys are missing — the investor flow never breaks.
 
 ---
 
-## 3-minute investor script
+## Demo-MVP showcase (recommended for investor meetings)
+
+**URL:** `http://localhost:8020/showcase` — no login required.
+
+| Section | What investor sees |
+|---------|-------------------|
+| Hero | 7 live / 23 personas / 50 templates |
+| Vertical cards | 7 production cases with persona YAML accordion |
+| Playground | Live Competitor Intelligence run (mock fallback) |
+| Marketplace | 9 featured templates |
+| CTA | Lead form → Telegram deep-link `@my_agent_demo_bot` |
+
+**3-minute showcase script:**
+
+| Time | Action |
+|------|--------|
+| 0:00 | Open `/showcase` — hero metrics |
+| 0:30 | Expand 2–3 vertical cards (Mary Jewelry, DocBrain, kormoved R&D) |
+| 1:00 | Scroll to playground → «Запустить demo» → watch stepper |
+| 1:45 | Download DOCX brief |
+| 2:00 | Show marketplace grid → «50 шаблонов» |
+| 2:30 | Optional: login → `/app/showcase` for authenticated mirror |
+| 3:00 | CTA form or wrap with metrics: $0.42, 18 420 tokens, ~4h saved |
+
+Authenticated mirror: `/app/showcase` (same data from `website/data/showcase.json`).
+
+---
+
+## 3-minute investor script (in-app)
 
 | Time  | Action | What the investor sees |
 |-------|--------|------------------------|
@@ -103,8 +131,12 @@ any code.
   flow animation).
 - **Marketplace** ([web/frontend/src/pages/MarketplacePage.tsx](web/frontend/src/pages/MarketplacePage.tsx))
   — templates with ratings, install counts, featured section, share links.
-- **Demo router** ([web/demo_router.py](web/demo_router.py)) — endpoint
-  `POST /api/demo/run` with mock fallback so the demo never breaks.
+- **Demo router** ([web/demo_router.py](web/demo_router.py)) — `POST /api/demo/run`
+  (auth) and `POST /api/demo/public/run` (showcase, no auth) with mock fallback.
+- **Leads router** ([web/leads_router.py](web/leads_router.py)) — `POST /api/leads/showcase`
+  writes to `data/showcase_leads.jsonl`.
+- **Showcase page** ([website/showcase.html](website/showcase.html)) — static Demo-MVP
+  with [showcase.json](website/data/showcase.json) as source-of-truth.
 
 ---
 

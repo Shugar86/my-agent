@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Showcase — My Agent Demo MVP</title>
+    <meta name="description" content="7 production AI-операторов: Telegram, VK, Web. Live playground и 50+ workflow templates.">
+    <meta property="og:title" content="Showcase — My Agent Demo MVP">
+    <meta property="og:description" content="7 production AI-операторов с persona YAML. Попробуйте live demo.">
+    <meta property="og:image" content="/welcome-assets/assets/og-image.png">
+    <meta property="og:type" content="website">
+    <meta name="twitter:card" content="summary_large_image">
+    <link rel="icon" href="/welcome-assets/favicon.svg" type="image/svg+xml">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/welcome-assets/style.css">
+    <link rel="stylesheet" href="/welcome-assets/marketing.css">
+    <link rel="stylesheet" href="/welcome-assets/showcase.css">
+</head>
+<body class="showcase-page">
+
+    <nav class="nav scrolled" id="nav">
+        <div class="nav-inner">
+            <a href="/" class="nav-brand">
+                <svg class="brand-logo" viewBox="0 0 40 40" fill="none"><circle cx="20" cy="20" r="18" stroke="currentColor" stroke-width="3"/><circle cx="20" cy="20" r="7" fill="currentColor"/></svg>
+                <span class="brand-text">My Agent</span>
+            </a>
+            <div class="nav-links">
+                <a href="#showcase" class="nav-link">Кейсы</a>
+                <a href="#playground" class="nav-link">Playground</a>
+                <a href="#marketplace" class="nav-link">Templates</a>
+            </div>
+            <a href="/login?next=/app/showcase" class="nav-cta">Войти</a>
+            <button class="nav-toggle" id="navToggle" aria-label="Меню"><span></span><span></span></button>
+        </div>
+    </nav>
+
+    <div class="mobile-menu" id="mobileMenu">
+        <a href="/" class="mobile-link">Главная</a>
+        <a href="#showcase" class="mobile-link">Кейсы</a>
+        <a href="#playground" class="mobile-link">Playground</a>
+        <a href="/login" class="mobile-link">Войти</a>
+    </div>
+
+    <main>
+        <!-- Hero -->
+        <section class="showcase-hero">
+            <div class="hero-pretitle">
+                <span class="status-dot"></span>
+                <span>Demo MVP · 7 production deployments</span>
+            </div>
+            <h1>AI-операторы для бизнеса.<br><span class="accent">Telegram, VK, Email</span> — один YAML</h1>
+            <p class="showcase-hero-desc">
+                Не pitch-deck — живые инсталляции с persona, anti-detect и workflow engine.
+                Посмотрите vertical-кейсы, запустите playground, получите своего оператора за 2 минуты.
+            </p>
+            <div class="showcase-stats">
+                <div class="showcase-stat">
+                    <div class="showcase-stat-value" data-stat="live">7</div>
+                    <div class="showcase-stat-label">production deployments</div>
+                </div>
+                <div class="showcase-stat">
+                    <div class="showcase-stat-value" data-stat="personas">23</div>
+                    <div class="showcase-stat-label">persona YAML</div>
+                </div>
+                <div class="showcase-stat">
+                    <div class="showcase-stat-value" data-stat="templates">50</div>
+                    <div class="showcase-stat-label">workflow templates</div>
+                </div>
+            </div>
+            <div class="hero-actions">
+                <a href="#showcase" class="btn btn-primary">7 vertical cases</a>
+                <a href="#playground" class="btn btn-secondary">Live playground</a>
+            </div>
+        </section>
+
+        <!-- How it works -->
+        <section class="how-section">
+            <div class="how-inner">
+                <h2>Как это работает</h2>
+                <p class="section-sub">VibeCraft methodology: persona в YAML → deploy на любую платформу → anti-detect слой</p>
+                <div class="how-steps">
+                    <div class="how-step reveal">
+                        <div class="how-step-num">1</div>
+                        <h3>Опишите vibe</h3>
+                        <p>Role, voice, taboos, triggers — в одном YAML-файле. Без кода, без разработчика.</p>
+                    </div>
+                    <div class="how-step reveal">
+                        <div class="how-step-num">2</div>
+                        <h3>Deploy на платформу</h3>
+                        <p>Telegram bot, VK channel, Web SaaS или workflow DAG — один engine, любой канал.</p>
+                    </div>
+                    <div class="how-step reveal">
+                        <div class="how-step-num">3</div>
+                        <h3>Живёт и учится</h3>
+                        <p>Anti-spam, funnel heuristic, memory, cron — оператор работает 24/7 без вас.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Showcase cards -->
+        <section class="showcase-section" id="showcase">
+            <h2>Production vertical cases</h2>
+            <p class="section-sub">7 реальных инсталляций — от ювелирки до legal SaaS. Нажмите «Persona YAML preview» на карточке.</p>
+            <div class="showcase-grid" id="showcaseCards">
+                <p style="color:var(--text-secondary);grid-column:1/-1;text-align:center">Загрузка кейсов…</p>
+            </div>
+        </section>
+
+        <!-- Playground -->
+        <section class="playground-section" id="playground">
+            <div class="playground-inner">
+                <h2>Live playground</h2>
+                <p class="section-sub">Competitor Intelligence workflow — 2 research agents, SWOT, DOCX. Mock-режим работает без API keys.</p>
+
+                <div id="showcaseError" class="showcase-error" role="alert"></div>
+
+                <div class="playground-card">
+                    <div class="demo-presets playground-presets" id="playgroundPresets"></div>
+
+                    <form id="playgroundForm" class="playground-form">
+                        <div>
+                            <label for="playgroundTarget">Целевая компания</label>
+                            <input type="text" id="playgroundTarget" value="Notion" placeholder="Notion">
+                        </div>
+                        <div>
+                            <label for="playgroundOur">Ваша компания</label>
+                            <input type="text" id="playgroundOur" value="Linear" placeholder="Linear">
+                        </div>
+                        <div class="playground-form-actions">
+                            <button type="submit" class="btn btn-primary" id="playgroundRunBtn" style="width:100%">Запустить demo</button>
+                        </div>
+                    </form>
+
+                    <div class="demo-skeleton" id="playgroundSkeleton">
+                        <div class="skeleton-line"></div>
+                        <div class="skeleton-line"></div>
+                        <div class="skeleton-line"></div>
+                    </div>
+
+                    <div class="playground-stepper" id="playgroundTimeline" hidden>
+                        <h3 style="font-size:16px;margin-bottom:12px">Выполнение workflow</h3>
+                        <div id="playgroundStepper"></div>
+                    </div>
+
+                    <div class="playground-metrics demo-metrics" id="playgroundMetrics" hidden>
+                        <div class="demo-metric">
+                            <div class="demo-metric-value" id="pgMetricCost">$0.42</div>
+                            <div class="demo-metric-label">Стоимость run</div>
+                        </div>
+                        <div class="demo-metric">
+                            <div class="demo-metric-value" id="pgMetricTokens">18.4k</div>
+                            <div class="demo-metric-label">Токены</div>
+                        </div>
+                        <div class="demo-metric">
+                            <div class="demo-metric-value" id="pgMetricSaved">~4ч</div>
+                            <div class="demo-metric-label">Сэкономлено</div>
+                        </div>
+                    </div>
+
+                    <div class="playground-results" id="playgroundResults" hidden>
+                        <a href="/api/demo/artifact/competitor_brief_notion_vs_linear.docx" class="btn btn-primary" download>Скачать brief (DOCX)</a>
+                        <a href="/login?next=/app/showcase" class="btn btn-secondary">Открыть в workspace</a>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Marketplace mini -->
+        <section class="marketplace-mini" id="marketplace">
+            <h2>50+ workflow templates</h2>
+            <p class="section-sub">Featured templates из marketplace — install в один клик после регистрации</p>
+            <div class="marketplace-mini-grid" id="marketplaceGrid"></div>
+            <div class="marketplace-mini-cta">
+                <a href="/app/marketplace" class="btn btn-primary">Все 50 шаблонов →</a>
+            </div>
+        </section>
+
+        <!-- CTA Lead form -->
+        <section class="lead-section" id="cta">
+            <div class="lead-inner">
+                <h2>Запустить своего AI-оператора за 2 минуты</h2>
+                <p class="section-sub">Оставьте контакт — получите deep-link в Telegram demo-bot с preset persona под ваш vertical</p>
+
+                <form id="leadForm" class="lead-form">
+                    <label for="leadTelegram">Telegram username</label>
+                    <input type="text" id="leadTelegram" name="telegram" placeholder="@username" required>
+
+                    <label for="leadVertical">Vertical</label>
+                    <select id="leadVertical" name="vertical" required></select>
+
+                    <label for="leadEmail">Email</label>
+                    <input type="email" id="leadEmail" name="email" placeholder="you@company.com" required>
+
+                    <button type="submit" class="btn btn-primary">Получить AI-оператора</button>
+                </form>
+
+                <div id="leadThankyou" class="lead-thankyou" hidden>
+                    <h3>Готово!</h3>
+                    <p>Мы записали ваш запрос. Откройте Telegram demo-bot с preset persona для вашего vertical:</p>
+                    <a id="leadTelegramLink" href="https://t.me/my_agent_demo_bot" class="btn btn-primary" target="_blank" rel="noopener">Открыть @my_agent_demo_bot →</a>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <div class="footer-inner">
+            <div class="footer-brand">
+                <span class="brand-text">My Agent</span>
+                <p>Operator Stack для русского рынка</p>
+            </div>
+            <div class="footer-links">
+                <a href="/">Главная</a>
+                <a href="/demo">Demo 90 сек</a>
+                <a href="/login">Войти</a>
+            </div>
+        </div>
+        <div class="footer-copy">© 2026 My Agent</div>
+    </footer>
+
+    <script src="/welcome-assets/main.js"></script>
+    <script src="/welcome-assets/showcase.js"></script>
+</body>
+</html>

@@ -4,7 +4,32 @@
 
 **Ключевой дифференциатор:** "Мощь My Agent + простота ASCN + безопасность Docker sandbox"
 
-**Статус на 2026-05-25:** Phase 1 ✅ | Phase 2 ✅ | Phase 3 ✅ (B2B scope, без Stripe) | **Investor Demo ✅**
+**Статус на 2026-05-26:** Phase 1 ✅ | Phase 2 ✅ | Phase 3 ✅ (B2B scope, без Stripe) | **Investor Demo ✅** | **Demo-MVP Showcase ✅**
+
+---
+
+## Demo-MVP Showcase (May 2026) — ✅ COMPLETE
+
+**Цель:** Единая страница product proof для инвесторской встречи — не pitch-deck, а живой продукт.
+
+### Ключевые фичи
+
+| Компонент | Статус | Реализация |
+|-----------|--------|------------|
+| Showcase page | ✅ | `/showcase` — static HTML, 7 секций |
+| Vertical cards | ✅ | 7 cases из production (ai-tutor, DocBrain, Pretenzia, …) |
+| Persona accordion | ✅ | YAML preview + dialog snippets |
+| Live playground | ✅ | `POST /api/demo/public/run` + polling stepper |
+| Marketplace preview | ✅ | 9 featured templates из showcase.json |
+| CTA + leads | ✅ | `POST /api/leads/showcase` → jsonl |
+| React mirror | ✅ | `/app/showcase` (ShowcasePage.tsx) |
+| WorkflowBuilder fix | ✅ | Auto-open run from `?run=` query param |
+| E2E | ✅ | 4 теста в `investor-funnel.spec.ts` |
+
+### Data source
+
+- [website/data/showcase.json](website/data/showcase.json) — cards, templates, presets
+- [website/showcase.html](website/showcase.html) + showcase.css + showcase.js
 
 ---
 
@@ -135,4 +160,4 @@
 
 ---
 
-*Обновлено: 2026-05-25*
+*Обновлено: 2026-05-26*
