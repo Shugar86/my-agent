@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { getUsageSummary, type UsageSummary } from '../api/appClient';
+import { t } from '../i18n';
 
 function compactNumber(n: number): string {
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
@@ -24,10 +25,10 @@ export default function AnalyticsPage() {
     if (!summary) return [];
     const avgCost = summary.workflow_runs > 0 ? summary.total_cost_usd / summary.workflow_runs : 0;
     return [
-      { label: 'Tokens', value: compactNumber(summary.total_tokens) },
-      { label: 'Cost (USD)', value: `$${summary.total_cost_usd.toFixed(4)}` },
-      { label: 'Workflow runs', value: summary.workflow_runs },
-      { label: 'Avg cost / run', value: `$${avgCost.toFixed(4)}` },
+      { label: t('analytics.tokens'), value: compactNumber(summary.total_tokens) },
+      { label: t('analytics.cost'), value: `$${summary.total_cost_usd.toFixed(4)}` },
+      { label: t('analytics.runs'), value: summary.workflow_runs },
+      { label: t('analytics.avgCost'), value: `$${avgCost.toFixed(4)}` },
     ];
   }, [summary]);
 
@@ -48,12 +49,12 @@ export default function AnalyticsPage() {
     <div style={{ padding: 30 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24, flexWrap: 'wrap', gap: 12 }}>
         <div>
-          <h1>Analytics</h1>
-          <p style={{ color: 'var(--text-muted)', fontSize: 13 }}>Workspace usage, runs, and costs</p>
+          <h1>{t('analytics.title')}</h1>
+          <p style={{ color: 'var(--text-muted)', fontSize: 13 }}>{t('analytics.subtitle')}</p>
         </div>
         <select className="input" style={{ width: 120 }} value={period} onChange={(e) => setPeriod(e.target.value as '7d' | '30d')}>
-          <option value="7d">7 days</option>
-          <option value="30d">30 days</option>
+          <option value="7d">{t('analytics.period7')}</option>
+          <option value="30d">{t('analytics.period30')}</option>
         </select>
       </div>
 
@@ -68,25 +69,25 @@ export default function AnalyticsPage() {
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(380px, 1fr))', gap: 16, marginBottom: 24 }}>
         <section className="card">
-          <h2 style={{ fontSize: 14, marginBottom: 16 }}>Tokens per day</h2>
+          <h2 style={{ fontSize: 14, marginBottom: 16 }}>{t('analytics.tokensPerDay')}</h2>
           <DailyBarChart data={daily.map((d) => ({ label: d.day, value: d.tokens }))} max={maxTokens} accent="var(--accent)" />
         </section>
         <section className="card">
-          <h2 style={{ fontSize: 14, marginBottom: 16 }}>Events per day</h2>
+          <h2 style={{ fontSize: 14, marginBottom: 16 }}>{t('analytics.eventsPerDay')}</h2>
           <DailyBarChart data={daily.map((d) => ({ label: d.day, value: d.events }))} max={maxEvents} accent="var(--success)" />
         </section>
       </div>
 
       {summary?.top_workflows?.length ? (
         <section className="card">
-          <h2 style={{ fontSize: 14, marginBottom: 12 }}>Top workflows</h2>
+          <h2 style={{ fontSize: 14, marginBottom: 12 }}>{t('analytics.topWorkflows')}</h2>
           {summary.top_workflows.map((w) => {
             const ratio = (w.runs / Math.max(1, summary.top_workflows[0].runs)) * 100;
             return (
               <div key={w.workflow_id} style={{ marginBottom: 10 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, marginBottom: 4 }}>
                   <span style={{ fontFamily: 'monospace' }}>{w.workflow_id}</span>
-                  <span style={{ color: 'var(--text-muted)' }}>{w.runs} runs</span>
+                  <span style={{ color: 'var(--text-muted)' }}>{t('analytics.runsCount', { count: w.runs })}</span>
                 </div>
                 <div style={{ height: 6, background: 'var(--bg-tertiary)', borderRadius: 3, overflow: 'hidden' }}>
                   <div style={{ width: `${ratio}%`, height: '100%', background: 'var(--accent)', transition: 'width 0.3s' }} />
@@ -97,7 +98,7 @@ export default function AnalyticsPage() {
         </section>
       ) : (
         <div className="card" style={{ textAlign: 'center', padding: 32 }}>
-          <p style={{ color: 'var(--text-muted)' }}>No workflow runs in this period yet.</p>
+          <p style={{ color: 'var(--text-muted)' }}>{t('analytics.noRunsYet')}</p>
         </div>
       )}
     </div>
@@ -111,7 +112,7 @@ interface BarPoint {
 
 function DailyBarChart({ data, max, accent }: { data: BarPoint[]; max: number; accent: string }) {
   if (data.length === 0) {
-    return <p style={{ color: 'var(--text-muted)', fontSize: 13 }}>No data yet</p>;
+    return <p style={{ color: 'var(--text-muted)', fontSize: 13 }}>{t('analytics.noDataYet')}</p>;
   }
   return (
     <div style={{ display: 'flex', alignItems: 'flex-end', gap: 6, minHeight: 140 }}>

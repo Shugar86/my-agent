@@ -93,11 +93,22 @@ class DBManager:
             finally:
                 self._pool.putconn(conn)
 
+    def _adapt_sql(self, sql: str) -> str:
+        """Translate SQLite-style placeholders for PostgreSQL."""
+        if self.db_type == "postgres":
+            return sql.replace("?", "%s")
+        return sql
+
     @contextmanager
     def cursor(self):
         """Get a database cursor (context manager)."""
         with self.connection() as conn:
-            cur = conn.cursor()
+            if self.db_type == "postgres":
+                import psycopg2.extras
+
+                cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+            else:
+                cur = conn.cursor()
             try:
                 yield cur
             finally:
@@ -106,19 +117,19 @@ class DBManager:
     def execute(self, sql: str, params=None):
         """Execute a SQL statement."""
         with self.cursor() as cur:
-            cur.execute(sql, params or ())
+            cur.execute(self._adapt_sql(sql), params or ())
             return cur.rowcount
 
     def fetchone(self, sql: str, params=None):
         """Fetch one row."""
         with self.cursor() as cur:
-            cur.execute(sql, params or ())
+            cur.execute(self._adapt_sql(sql), params or ())
             return cur.fetchone()
 
     def fetchall(self, sql: str, params=None):
         """Fetch all rows."""
         with self.cursor() as cur:
-            cur.execute(sql, params or ())
+            cur.execute(self._adapt_sql(sql), params or ())
             return cur.fetchall()
 
     def table_exists(self, table_name: str) -> bool:

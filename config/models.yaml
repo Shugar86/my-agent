@@ -30,3 +30,11 @@ models:
     params:
       temperature: 0.7
       max_tokens: 8192
+
+  kimi:
+    model: openai/kimi-for-coding
+    api_key: "${KIMI_API_KEY}"
+    base_url: https://api.kimi.com/coding/v1
+    params:
+      temperature: 0.7
+      max_tokens: 8192

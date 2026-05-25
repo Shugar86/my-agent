@@ -26,6 +26,19 @@ import {
   getRun,
   type WorkflowRun,
 } from '../api/workflowClient';
+import { t, type I18nKey } from '../i18n';
+
+function builderNodeLabel(type: string): string {
+  const key = `builder.nodes.${type.replace(/\./g, '_')}` as I18nKey;
+  const label = t(key);
+  return label === key ? type : label;
+}
+
+function builderCategoryLabel(id: string): string {
+  const key = `builder.categories.${id}` as I18nKey;
+  const label = t(key);
+  return label === key ? id : label;
+}
 
 const nodeTypes = { workflowNode: WorkflowNodeComponent };
 
@@ -85,7 +98,7 @@ export default function WorkflowBuilder() {
 
   const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
-  const [name, setName] = useState('New Workflow');
+  const [name, setName] = useState(() => t('builder.newWorkflowName'));
   const [selectedNode, setSelectedNode] = useState<Node | null>(null);
   const [status, setStatus] = useState('');
   const [wfStatus, setWfStatus] = useState<'draft' | 'active'>('draft');
@@ -125,7 +138,7 @@ export default function WorkflowBuilder() {
         setNodes(n);
         setEdges(e);
         loadRuns(wf.id);
-      }).catch(() => setStatus('Failed to load workflow'));
+      }).catch(() => setStatus(t('builder.loadFailed')));
     }
   }, [workflowId, setNodes, setEdges, loadRuns]);
 
@@ -204,7 +217,7 @@ export default function WorkflowBuilder() {
       if (params.sourceHandle === 'error') {
         label = 'error';
       } else if (sourceNode && String(sourceNode.data.nodeType) === 'condition') {
-        label = window.prompt('Branch label (true/false):', 'true') || 'true';
+        label = window.prompt(t('builder.branchPrompt'), 'true') || 'true';
         if (label !== 'true' && label !== 'false') label = 'true';
       }
       setEdges((eds) =>
@@ -246,10 +259,10 @@ export default function WorkflowBuilder() {
         setWebhookToken(wf.webhook_token || '');
         navigate(`/workflows/${wf.id}`, { replace: true });
       }
-      setStatus('Saved!');
+      setStatus(t('builder.saved'));
       setTimeout(() => setStatus(''), 2000);
     } catch {
-      setStatus('Save failed');
+      setStatus(t('builder.saveFailed'));
     }
   };
   handleSaveRef.current = handleSave;
@@ -272,10 +285,10 @@ export default function WorkflowBuilder() {
       if (result.run_id) {
         await pollRun(id, result.run_id);
       }
-      setStatus(`Run ${result.success ? 'OK' : 'failed'}`);
+      setStatus(result.success ? t('builder.runOk') : t('builder.runFailed'));
       await loadRuns(id);
     } catch {
-      setStatus('Run failed');
+      setStatus(t('builder.runFailed'));
     } finally {
       setIsRunning(false);
       setActiveNodeId(null);
@@ -287,22 +300,22 @@ export default function WorkflowBuilder() {
     try {
       const result = await validateWorkflow(definition);
       setValidation(result);
-      setStatus(result.valid ? 'Valid' : 'Validation errors');
+      setStatus(result.valid ? t('builder.valid') : t('builder.validationErrors'));
     } catch {
-      setStatus('Validate failed');
+      setStatus(t('builder.validateFailed'));
     }
   };
 
   const handleWebhookTest = async () => {
     if (!currentId || !webhookToken) {
-      setStatus('Save workflow first to get webhook URL');
+      setStatus(t('builder.saveFirstWebhook'));
       return;
     }
     let body: unknown = {};
     try {
       body = JSON.parse(webhookPayload);
     } catch {
-      setStatus('Invalid JSON payload');
+      setStatus(t('builder.invalidJson'));
       return;
     }
     try {
@@ -312,13 +325,13 @@ export default function WorkflowBuilder() {
         body: JSON.stringify(body),
       });
       const data = await resp.json();
-      setStatus(data?.success ? 'Webhook fired' : 'Webhook returned error');
+      setStatus(data?.success ? t('builder.webhookFired') : t('builder.webhookError'));
       if (data?.run_id) {
         await pollRun(currentId, data.run_id);
         await loadRuns(currentId);
       }
     } catch {
-      setStatus('Webhook test failed');
+      setStatus(t('builder.webhookTestFailed'));
     }
   };
 
@@ -350,7 +363,9 @@ export default function WorkflowBuilder() {
       items: NODE_TYPES.filter(
         (nt) =>
           nt.category === cat.id &&
-          (!term || nt.label.toLowerCase().includes(term) || nt.type.toLowerCase().includes(term)),
+          (!term
+            || builderNodeLabel(nt.type).toLowerCase().includes(term)
+            || nt.type.toLowerCase().includes(term)),
       ),
     })).filter((cat) => cat.items.length > 0);
   }, [search]);
@@ -366,11 +381,11 @@ export default function WorkflowBuilder() {
     <div style={{ display: 'flex', height: '100vh', background: 'var(--bg)', color: 'var(--text)' }}>
       <div style={{ width: 220, borderRight: '1px solid var(--border)', padding: 12, overflowY: 'auto', background: 'var(--bg-secondary)' }}>
         <button className="btn" onClick={() => navigate('/workflows')} style={{ width: '100%', marginBottom: 12 }}>
-          ← Back
+          {t('builder.back')}
         </button>
         <input
           className="input"
-          placeholder="Search nodes..."
+          placeholder={t('builder.searchNodes')}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           style={{ marginBottom: 12 }}
@@ -378,7 +393,7 @@ export default function WorkflowBuilder() {
         {filteredCategories.map((cat) => (
           <div key={cat.id} style={{ marginBottom: 14 }}>
             <h4 style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.6, color: 'var(--text-muted)', marginBottom: 6, paddingLeft: 4 }}>
-              {cat.label}
+              {builderCategoryLabel(cat.id)}
             </h4>
             {cat.items.map((nt) => (
               <button
@@ -396,7 +411,7 @@ export default function WorkflowBuilder() {
                   background: nt.color, color: '#fff', borderRadius: 4,
                   textAlign: 'center', lineHeight: '22px', fontSize: 9, fontWeight: 700,
                 }}>{nt.icon}</span>
-                {nt.label}
+                {builderNodeLabel(nt.type)}
               </button>
             ))}
           </div>
@@ -407,16 +422,16 @@ export default function WorkflowBuilder() {
         <div style={{ padding: '10px 16px', borderBottom: '1px solid var(--border)', display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', background: 'var(--bg-secondary)' }}>
           <input className="input" value={name} onChange={(e) => setName(e.target.value)} style={{ width: 200 }} />
           <select className="input" style={{ width: 'auto' }} value={wfStatus} onChange={(e) => setWfStatus(e.target.value as 'draft' | 'active')}>
-            <option value="draft">Draft</option>
-            <option value="active">Active</option>
+            <option value="draft">{t('builder.statusDraft')}</option>
+            <option value="active">{t('builder.statusActive')}</option>
           </select>
-          <button className="btn btn-primary" onClick={handleSave}>Save</button>
+          <button className="btn btn-primary" onClick={handleSave}>{t('builder.save')}</button>
           <button className="btn" onClick={handleRun} disabled={isRunning}>
-            {isRunning ? 'Running...' : 'Run'}
+            {isRunning ? t('builder.running') : t('builder.run')}
           </button>
-          <button className="btn" onClick={handleValidate}>Validate</button>
-          <button className="btn" onClick={() => setShowWebhookTester(!showWebhookTester)}>Webhook</button>
-          <button className="btn" onClick={() => setShowRuns(!showRuns)}>Runs ({runs.length})</button>
+          <button className="btn" onClick={handleValidate}>{t('builder.validate')}</button>
+          <button className="btn" onClick={() => setShowWebhookTester(!showWebhookTester)}>{t('builder.webhook')}</button>
+          <button className="btn" onClick={() => setShowRuns(!showRuns)}>{t('builder.runs')} ({runs.length})</button>
           <span style={{ color: 'var(--text-muted)', fontSize: 13, marginLeft: 'auto' }}>{status}</span>
         </div>
 
@@ -428,18 +443,18 @@ export default function WorkflowBuilder() {
             borderBottom: '1px solid var(--border)',
           }}>
             {validation.valid && validation.errors.length === 0 && validation.warnings.length === 0
-              ? 'Workflow is valid'
+              ? t('builder.workflowValid')
               : null}
-            {validation.errors.map((e, i) => <div key={`e${i}`}>Error: {e}</div>)}
-            {validation.warnings.map((w, i) => <div key={`w${i}`}>Warning: {w}</div>)}
+            {validation.errors.map((e, i) => <div key={`e${i}`}>{t('builder.errorPrefix')} {e}</div>)}
+            {validation.warnings.map((w, i) => <div key={`w${i}`}>{t('builder.warningPrefix')} {w}</div>)}
           </div>
         )}
 
         {showWebhookTester && (
           <div style={{ padding: 12, borderBottom: '1px solid var(--border)', background: 'var(--bg-secondary)', fontSize: 12 }}>
-            <div style={{ marginBottom: 6, color: 'var(--text-muted)' }}>Webhook URL (POST JSON):</div>
+            <div style={{ marginBottom: 6, color: 'var(--text-muted)' }}>{t('builder.webhookUrl')}</div>
             <code style={{ display: 'block', padding: 8, background: 'var(--bg)', borderRadius: 4, wordBreak: 'break-all', marginBottom: 8 }}>
-              {webhookUrl || 'Save workflow to generate URL'}
+              {webhookUrl || t('builder.saveForUrl')}
             </code>
             <textarea
               className="input"
@@ -447,7 +462,7 @@ export default function WorkflowBuilder() {
               onChange={(e) => setWebhookPayload(e.target.value)}
               style={{ height: 100, fontFamily: 'monospace', fontSize: 12 }}
             />
-            <button className="btn btn-primary" onClick={handleWebhookTest} style={{ marginTop: 8 }}>Send test payload</button>
+            <button className="btn btn-primary" onClick={handleWebhookTest} style={{ marginTop: 8 }}>{t('builder.sendTestPayload')}</button>
           </div>
         )}
 
@@ -474,8 +489,8 @@ export default function WorkflowBuilder() {
 
           {showRuns && (
             <div style={{ width: 300, borderLeft: '1px solid var(--border)', padding: 12, overflowY: 'auto', background: 'var(--bg-secondary)' }}>
-              <h3 style={{ fontSize: 14, marginBottom: 12 }}>Run History</h3>
-              {runs.length === 0 && <p style={{ fontSize: 12, color: 'var(--text-muted)' }}>No runs yet.</p>}
+              <h3 style={{ fontSize: 14, marginBottom: 12 }}>{t('builder.runHistory')}</h3>
+              {runs.length === 0 && <p style={{ fontSize: 12, color: 'var(--text-muted)' }}>{t('builder.noRuns')}</p>}
               {runs.map((run) => (
                 <div
                   key={run.id}
@@ -493,7 +508,7 @@ export default function WorkflowBuilder() {
               ))}
               {selectedRun && (
                 <div style={{ marginTop: 16 }}>
-                  <h4 style={{ fontSize: 13, marginBottom: 8 }}>Timeline</h4>
+                  <h4 style={{ fontSize: 13, marginBottom: 8 }}>{t('builder.timeline')}</h4>
                   <ExecutionTimeline logs={selectedRun.logs || []} activeNodeId={activeNodeId || undefined} />
                 </div>
               )}
@@ -504,7 +519,7 @@ export default function WorkflowBuilder() {
 
       {selectedNode && (
         <div style={{ width: 300, borderLeft: '1px solid var(--border)', padding: 12, overflowY: 'auto', background: 'var(--bg-secondary)' }}>
-          <h3 style={{ fontSize: 14 }}>Config: {String(selectedNode.data.nodeId)}</h3>
+          <h3 style={{ fontSize: 14 }}>{t('builder.configTitle')}: {String(selectedNode.data.nodeId)}</h3>
           <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 8 }}>{String(selectedNode.data.nodeType)}</p>
 
           <NodeConfigEditor
@@ -515,16 +530,16 @@ export default function WorkflowBuilder() {
 
           <details style={{ marginTop: 14 }}>
             <summary style={{ cursor: 'pointer', fontSize: 12, color: 'var(--text-muted)', marginBottom: 6 }}>
-              Reliability (retry / error path)
+              {t('builder.reliability')}
             </summary>
-            <label style={labelStyle}>Max attempts</label>
+            <label style={labelStyle}>{t('builder.maxAttempts')}</label>
             <input
               type="number" min={1} max={10}
               className="input"
               value={Number(retry.max_attempts) || 1}
               onChange={(e) => updateRetry('max_attempts', Math.max(1, Math.min(10, Number(e.target.value) || 1)))}
             />
-            <label style={labelStyle}>Backoff seconds</label>
+            <label style={labelStyle}>{t('builder.backoffSeconds')}</label>
             <input
               type="number" min={0} step={0.5}
               className="input"
@@ -537,7 +552,7 @@ export default function WorkflowBuilder() {
                 checked={Boolean(selectedConfig.continue_on_error)}
                 onChange={(e) => updateNodeConfig('continue_on_error', e.target.checked)}
               />
-              Continue on error (route through error edge)
+              {t('builder.continueOnError')}
             </label>
           </details>
         </div>
@@ -554,18 +569,19 @@ interface NodeConfigProps {
 
 function NodeConfigEditor({ nodeType, config, onChange }: NodeConfigProps) {
   const get = (k: string) => String(config[k] ?? '');
+  const f = (key: I18nKey) => t(key);
 
   if (nodeType.startsWith('agent.')) {
     return (
       <>
-        <label style={labelStyle}>Prompt</label>
+        <label style={labelStyle}>{f('builder.fields.prompt')}</label>
         <textarea
           value={get('prompt')}
           onChange={(e) => onChange('prompt', e.target.value)}
           className="input"
           style={{ height: 80 }}
         />
-        <label style={labelStyle}>Agent ID</label>
+        <label style={labelStyle}>{f('builder.fields.agentId')}</label>
         <input
           value={String(config.agent_id || 'universal')}
           onChange={(e) => onChange('agent_id', e.target.value)}
@@ -578,18 +594,18 @@ function NodeConfigEditor({ nodeType, config, onChange }: NodeConfigProps) {
   if (nodeType === 'condition') {
     return (
       <>
-        <label style={labelStyle}>Source Node</label>
+        <label style={labelStyle}>{f('builder.fields.sourceNode')}</label>
         <input value={get('source_node')} onChange={(e) => onChange('source_node', e.target.value)} className="input" />
-        <label style={labelStyle}>Field</label>
+        <label style={labelStyle}>{f('builder.fields.field')}</label>
         <input value={String(config.field || 'output')} onChange={(e) => onChange('field', e.target.value)} className="input" />
-        <label style={labelStyle}>Operator</label>
+        <label style={labelStyle}>{f('builder.fields.operator')}</label>
         <select className="input" value={String(config.operator || 'contains')} onChange={(e) => onChange('operator', e.target.value)}>
-          <option value="contains">contains</option>
-          <option value="equals">equals</option>
-          <option value="not_empty">not_empty</option>
-          <option value="regex">regex</option>
+          <option value="contains">{f('builder.fields.contains')}</option>
+          <option value="equals">{f('builder.fields.equals')}</option>
+          <option value="not_empty">{f('builder.fields.not_empty')}</option>
+          <option value="regex">{f('builder.fields.regex')}</option>
         </select>
-        <label style={labelStyle}>Value</label>
+        <label style={labelStyle}>{f('builder.fields.value')}</label>
         <input value={get('value')} onChange={(e) => onChange('value', e.target.value)} className="input" />
       </>
     );
@@ -599,7 +615,7 @@ function NodeConfigEditor({ nodeType, config, onChange }: NodeConfigProps) {
     const valuesJson = JSON.stringify(config.values ?? {}, null, 2);
     return (
       <>
-        <label style={labelStyle}>Values (JSON, supports {'{{ ... }}'} expressions)</label>
+        <label style={labelStyle}>{f('builder.fields.valuesJson')}</label>
         <textarea
           className="input"
           style={{ height: 120, fontFamily: 'monospace', fontSize: 12 }}
@@ -612,7 +628,7 @@ function NodeConfigEditor({ nodeType, config, onChange }: NodeConfigProps) {
             }
           }}
         />
-        <label style={labelStyle}>Store under state key (optional)</label>
+        <label style={labelStyle}>{f('builder.fields.storeKey')}</label>
         <input className="input" value={get('store')} onChange={(e) => onChange('store', e.target.value)} />
       </>
     );
@@ -621,16 +637,16 @@ function NodeConfigEditor({ nodeType, config, onChange }: NodeConfigProps) {
   if (nodeType === 'util.merge') {
     return (
       <>
-        <label style={labelStyle}>Sources (comma-separated node ids; blank = all)</label>
+        <label style={labelStyle}>{f('builder.fields.sources')}</label>
         <input
           className="input"
           value={Array.isArray(config.sources) ? (config.sources as string[]).join(',') : ''}
           onChange={(e) => onChange('sources', e.target.value.split(',').map((s) => s.trim()).filter(Boolean))}
         />
-        <label style={labelStyle}>Strategy</label>
+        <label style={labelStyle}>{f('builder.fields.strategy')}</label>
         <select className="input" value={String(config.strategy || 'shallow')} onChange={(e) => onChange('strategy', e.target.value)}>
-          <option value="shallow">Shallow</option>
-          <option value="deep">Deep</option>
+          <option value="shallow">{f('builder.fields.shallow')}</option>
+          <option value="deep">{f('builder.fields.deep')}</option>
         </select>
       </>
     );
@@ -639,7 +655,7 @@ function NodeConfigEditor({ nodeType, config, onChange }: NodeConfigProps) {
   if (nodeType === 'util.wait') {
     return (
       <>
-        <label style={labelStyle}>Seconds (max 300)</label>
+        <label style={labelStyle}>{f('builder.fields.seconds')}</label>
         <input
           type="number" min={0} max={300}
           className="input"
@@ -653,7 +669,7 @@ function NodeConfigEditor({ nodeType, config, onChange }: NodeConfigProps) {
   if (nodeType === 'util.code') {
     return (
       <>
-        <label style={labelStyle}>Python script (locals: trigger, state, nodes; set output)</label>
+        <label style={labelStyle}>{f('builder.fields.codeScript')}</label>
         <textarea
           className="input"
           style={{ height: 180, fontFamily: 'monospace', fontSize: 12 }}
@@ -662,7 +678,7 @@ function NodeConfigEditor({ nodeType, config, onChange }: NodeConfigProps) {
           placeholder={'# Example\noutput = {"score": len(trigger.get("name", ""))}'}
         />
         <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>
-          Sandboxed: no imports, no I/O, 5s timeout.
+          {f('builder.fields.codeHint')}
         </p>
       </>
     );
@@ -671,13 +687,13 @@ function NodeConfigEditor({ nodeType, config, onChange }: NodeConfigProps) {
   if (nodeType === 'action.http') {
     return (
       <>
-        <label style={labelStyle}>URL</label>
+        <label style={labelStyle}>{f('builder.fields.url')}</label>
         <input value={get('url')} onChange={(e) => onChange('url', e.target.value)} className="input" />
-        <label style={labelStyle}>Method</label>
+        <label style={labelStyle}>{f('builder.fields.method')}</label>
         <select className="input" value={String(config.method || 'GET')} onChange={(e) => onChange('method', e.target.value)}>
           {['GET', 'POST', 'PUT', 'PATCH', 'DELETE'].map((m) => <option key={m} value={m}>{m}</option>)}
         </select>
-        <label style={labelStyle}>Headers (JSON)</label>
+        <label style={labelStyle}>{f('builder.fields.headers')}</label>
         <textarea
           className="input"
           style={{ height: 60, fontFamily: 'monospace', fontSize: 12 }}
@@ -686,7 +702,7 @@ function NodeConfigEditor({ nodeType, config, onChange }: NodeConfigProps) {
             try { onChange('headers', JSON.parse(e.target.value)); } catch { /* ignore */ }
           }}
         />
-        <label style={labelStyle}>JSON Body</label>
+        <label style={labelStyle}>{f('builder.fields.jsonBody')}</label>
         <textarea
           className="input"
           style={{ height: 80, fontFamily: 'monospace', fontSize: 12 }}
@@ -702,7 +718,7 @@ function NodeConfigEditor({ nodeType, config, onChange }: NodeConfigProps) {
   if (nodeType.startsWith('action.')) {
     return (
       <>
-        <label style={labelStyle}>Message / Body</label>
+        <label style={labelStyle}>{f('builder.fields.messageBody')}</label>
         <textarea
           value={String(config.message || config.body || '')}
           onChange={(e) => onChange(nodeType === 'action.gmail_send' ? 'body' : 'message', e.target.value)}
@@ -711,21 +727,21 @@ function NodeConfigEditor({ nodeType, config, onChange }: NodeConfigProps) {
         />
         {nodeType === 'action.gmail_send' && (
           <>
-            <label style={labelStyle}>To</label>
+            <label style={labelStyle}>{f('builder.fields.to')}</label>
             <input value={get('to')} onChange={(e) => onChange('to', e.target.value)} className="input" />
-            <label style={labelStyle}>Subject</label>
+            <label style={labelStyle}>{f('builder.fields.subject')}</label>
             <input value={get('subject')} onChange={(e) => onChange('subject', e.target.value)} className="input" />
           </>
         )}
         {nodeType === 'action.telegram' && (
           <>
-            <label style={labelStyle}>Chat ID</label>
+            <label style={labelStyle}>{f('builder.fields.chatId')}</label>
             <input value={get('chat_id')} onChange={(e) => onChange('chat_id', e.target.value)} className="input" />
           </>
         )}
         {nodeType === 'action.slack' && (
           <>
-            <label style={labelStyle}>Channel</label>
+            <label style={labelStyle}>{f('builder.fields.channel')}</label>
             <input value={get('channel')} onChange={(e) => onChange('channel', e.target.value)} className="input" />
           </>
         )}
@@ -736,14 +752,14 @@ function NodeConfigEditor({ nodeType, config, onChange }: NodeConfigProps) {
   if (nodeType === 'trigger.schedule') {
     return (
       <>
-        <label style={labelStyle}>Cron (5 fields)</label>
+        <label style={labelStyle}>{f('builder.fields.cron')}</label>
         <input value={String(config.cron || '0 9 * * *')} onChange={(e) => onChange('cron', e.target.value)} className="input" />
-        <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>min hour day month dow</p>
+        <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>{f('builder.fields.cronHint')}</p>
       </>
     );
   }
 
-  return <p style={{ fontSize: 12, color: 'var(--text-muted)' }}>No config required for this node.</p>;
+  return <p style={{ fontSize: 12, color: 'var(--text-muted)' }}>{t('builder.noConfig')}</p>;
 }
 
 const labelStyle: React.CSSProperties = {

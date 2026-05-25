@@ -1,7 +1,7 @@
 # My Agent — Technical Documentation
 
 > Last updated: 2026-05-26
-> Version: 3.2.0 (UI/UX Polish — React SPA RU + PWA)
+> Version: 3.3.0 (Architectural fix — iterations 1–2: Kimi, honest engine, RU builder)
 > Author: AI Assistant
 
 ---
@@ -12,10 +12,16 @@
 SWOT analysis → DOCX report → n8n hook. Replaces ~4 hours of analyst work.
 
 ```bash
-docker compose --profile demo up -d --build
+docker compose up -d --build
+# Entrypoint auto-runs seed + DOCX generation on first start
+# Open http://localhost:8020/app → "Try 90s demo"
+```
+
+Manual re-seed (optional):
+
+```bash
 docker compose exec agent python scripts/seed_workflow_templates.py
 docker compose exec agent python scripts/generate_demo_artifact.py
-# Open http://localhost:8020/app → "Try 90s demo"
 ```
 
 Full script, talking points, and troubleshooting: **[DEMO.md](./DEMO.md)**.
@@ -34,7 +40,7 @@ Mock fallback works without API keys — safe for live investor presentations.
 | `/login` | JWT + Google OAuth |
 | `/app/` | Панель (dashboard, demo hero) |
 | `/app/chat` | Чат (markdown, tool bubbles, feedback) |
-| `/app/workflows` | Workflow builder (React Flow) |
+| `/app/workflows` | Список workflows + builder (`/app/workflows/:id`) — **RU UI** |
 | `/app/marketplace` | Маркетплейс шаблонов |
 | `/app/agents` | CRUD агентов |
 | `/app/knowledge` | База знаний (RAG) |
@@ -46,7 +52,33 @@ Mock fallback works without API keys — safe for live investor presentations.
 | `/demo` | Public Competitor Intelligence demo |
 | `/welcome` | Маркетинговый лендинг |
 
-Дизайн-система: [`web/frontend/DESIGN.md`](web/frontend/DESIGN.md). Сборка: `cd web/frontend && npm run build`.
+Дизайн-система: [`web/frontend/DESIGN.md`](web/frontend/DESIGN.md). Сборка: `cd web/frontend && bun run build`.
+
+### Changelog 3.3.0 (2026-05-26) — Architectural fix
+
+**Iteration 1 — gap closure**
+- Kimi Code API (`KIMI_API_KEY`, `core/kimi_provider.py`) as primary LLM for all agents
+- Docker entrypoint: auto-seed 52 templates + 3 demo DOCX on startup
+- Demo presets: competitor / beauty / lead; onboarding template mapping fixed
+- A2A queue → Redis; WebSocket JWT auth; Dashboard 4 stat cards
+- Marketplace: real install counts; showcase featured from API
+
+**Iteration 2 — correctness + RU polish**
+- Removed ghost tools from `universal` registry (voice_io/video/web3 stubs not in tool list)
+- Added `SKILL.md` for `web3`, `voice_io`, `video_processing` (skills load when enabled)
+- Executor: `action.*` with `{success: false}` → run status **failed** (no soft-success)
+- `agent.skill` respects config field `"skill"` (singular)
+- `action.webhook` supports `method=GET`; `action.n8n_webhook` in NodeType enum
+- 3 misleading templates tagged `draft`; `tpl_lead_qualify` → `trigger.webhook`
+- WorkflowBuilder + Marketplace Publish modal fully RU; Dashboard integrations stat fix
+- PublicTemplate: toast on install error (401 only → login); orphan `AgentBuilderPage` removed
+
+**Verify after deploy**
+```bash
+docker compose up -d --build agent
+docker compose exec -T agent python -m pytest tests/test_marketplace.py tests/test_kimi_provider.py -q
+curl -s http://127.0.0.1:8020/api/health
+```
 
 ---
 
@@ -56,13 +88,12 @@ My Agent is a modular AI agent system with a visual workflow builder, marketplac
 multi-agent orchestration, and deep research capabilities.
 
 ### Key Features
-- **Universal Assistant** — one chat for everything, auto-selects skills based on task
+- **Universal Assistant** — one chat for everything, Kimi K2.6, ~61 real tools (no phantom stubs)
 - **7 Specialized Agents** — researcher, developer, marketer, data_analyst, slides, docs, universal
-- **11 Skills** — deep_research, research, parsing, template, code_analysis, code_execution, web_automation, api_integration, data_analyst, slides, docs
-- **14 Tools** — search, scrape, file I/O, code execution, API calls, charts, presentations, documents
-- **Workflow Engine** — visual DAG builder (React Flow), 21 node types, retry/condition routing
-- **Marketplace** — 50+ templates, featured section, ratings, one-click install
-- **Investor Demo** — `POST /api/demo/run` with prerecorded fallback + DOCX artifact
+- **30+ Skills** — deep_research, research, parsing, RAG, browser, web3, voice_io, …
+- **Workflow Engine** — visual DAG builder (React Flow), 21+ node types, **honest run status**
+- **Marketplace** — 52 templates, featured section, draft templates hidden from popular
+- **Investor Demo** — `POST /api/demo/run` with 3 presets + prerecorded fallback + DOCX
 - **n8n Integration** — `action.n8n_webhook` node (optional `--profile demo` stack)
 - **Auto-Agent Factory** — LLM analyzes tasks and spawns sub-agents dynamically
 - **Graphify Integration** — codebase knowledge graph with community detection
@@ -71,7 +102,7 @@ multi-agent orchestration, and deep research capabilities.
 | Layer | Technology |
 |-------|------------|
 | Backend | Python 3.11, FastAPI, Uvicorn |
-| AI Gateway | LiteLLM (OpenRouter) |
+| AI Gateway | Kimi Code API (primary) + LiteLLM/OpenRouter fallback |
 | Frontend | React 18 + TypeScript + Vite + React Flow (`/app/*`), RU i18n, PWA |
 | Data | PostgreSQL / SQLite, Redis |
 | Container | Docker + Docker Compose (+ optional n8n profile) |
@@ -318,7 +349,9 @@ All agents defined in `agents/registry.json`:
 ### 7.2 Environment Variables
 | Variable | Required | Description |
 |----------|----------|-------------|
-| `OPENROUTER_API_KEY` | Yes | OpenRouter API key |
+| `OPENROUTER_API_KEY` | Fallback | OpenRouter API key (optional if Kimi set) |
+| `KIMI_API_KEY` | Primary | Kimi Code API key (`sk-kimi-...`) |
+| `KIMI_BASE_URL` | No | Override base URL (default: `https://api.kimi.com/coding/v1`) |
 | `PYTHONIOENCODING` | No | Set to `utf-8` for Windows |
 
 ### 7.3 Agent Config Fields
@@ -435,27 +468,17 @@ Current test coverage: **20 tests** passing
 
 ## 10. Known Issues & Limitations
 
-### Critical (needs fixing)
-1. **Blocking I/O in async endpoints** — `orchestrator.run()` blocks event loop
-2. **No skill loader caching** — reloads all skills on every request
-3. **Memory stored in JSON** — no TTL, grows indefinitely
-4. **No rate limiting** — API vulnerable to spam
-5. **Hardcoded paths** — depends on CWD
+### Resolved in 3.3.0
+- Ghost tools in chat (speak_text, web3, video_*) — removed from universal tool list
+- Workflow runs marked success when Telegram/Slack failed — executor now fails honestly
+- WorkflowBuilder / Publish modal EN strings — RU i18n complete
+- Dashboard integrations stat always 0 — fixed (`configured` field)
 
-### Medium
-6. No retry logic with exponential backoff
-7. No circuit breaker for LLM failures
-8. No streaming response for chat
-9. No Redis/caching layer
-10. Windows encoding issues with emojis
-
-### Future Improvements
-- Vector DB (ChromaDB/FAISS) for RAG
-- Redis for distributed memory
-- Prometheus metrics
-- Nginx reverse proxy
-- OAuth authentication
-- WebSocket support
+### Remaining
+1. **Blocking I/O in async endpoints** — some sync paths in orchestrator
+2. **E2E templates** — most templates need integration credentials for full delivery
+3. **Draft templates** — 3 templates tagged `draft` until gmail/notion nodes added
+4. Windows encoding issues with emojis in CLI
 
 ---
 
@@ -484,7 +507,7 @@ Current test coverage: **20 tests** passing
 
 ## 12. Deployment Checklist
 
-- [ ] Set `OPENROUTER_API_KEY` environment variable
+- [ ] Set `KIMI_API_KEY` (or `OPENROUTER_API_KEY` as fallback)
 - [ ] Configure `config/agent.json` with model settings
 - [ ] Install dependencies: `pip install -r requirements.txt`
 - [ ] Run tests: `pytest tests/ -v`

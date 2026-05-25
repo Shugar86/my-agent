@@ -1,48 +1,82 @@
-"""A2A (Agent-to-Agent) Protocol endpoints.
+"""A2A (Agent-to-Agent) Protocol endpoints backed by Redis queue."""
 
-Implements basic A2A messaging for agent-to-agent communication.
-Endpoints:
-  POST /api/a2a/send     — Send message to another agent
-  POST /api/a2a/receive  — Receive messages for this agent
-  GET  /api/a2a/agents   — List discoverable agents
-"""
+from __future__ import annotations
+
 import json
+import logging
 import uuid
 from datetime import datetime
-from typing import Any, Dict, List, Optional
-from fastapi import APIRouter, Request, HTTPException
-from fastapi.responses import JSONResponse
+from typing import Any
+
+from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel
 
+from core.config import resolve_agent_model_config
+from core.redis_client import redis_client
+
+logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/a2a", tags=["a2a"])
 
-# In-memory message queue (production: use Redis or DB)
-_message_queue: List[Dict] = []
+# Fallback when Redis is unavailable (dev/test)
+_memory_queue: list[dict[str, Any]] = []
+
+A2A_QUEUE_PREFIX = "a2a:queue:"
+A2A_BROADCAST_KEY = "a2a:broadcast"
 
 
 class A2AMessage(BaseModel):
     sender: str
     recipient: str
-    type: str = "request"  # request, response, broadcast
+    type: str = "request"
     content: str
-    task_id: Optional[str] = None
-    skills: Optional[List[str]] = None
-    tools: Optional[List[str]] = None
-    ttl: int = 3600  # seconds
+    task_id: str | None = None
+    skills: list[str] | None = None
+    tools: list[str] | None = None
+    ttl: int = 3600
 
 
-class A2ASendResponse(BaseModel):
-    message_id: str
-    status: str
-    timestamp: str
+def _queue_key(recipient: str) -> str:
+    return f"{A2A_QUEUE_PREFIX}{recipient}"
+
+
+async def _enqueue(message: dict[str, Any]) -> None:
+    payload = json.dumps(message, ensure_ascii=False)
+    if message.get("type") == "broadcast" or message.get("recipient") == "*":
+        pushed = await redis_client.queue_push(A2A_BROADCAST_KEY, payload)
+        if not pushed:
+            _memory_queue.append(message)
+        return
+    recipient = message.get("recipient", "")
+    pushed = await redis_client.queue_push(_queue_key(recipient), payload)
+    if not pushed:
+        _memory_queue.append(message)
+
+
+async def _dequeue_for_recipient(recipient: str) -> list[dict[str, Any]]:
+    keys = [_queue_key(recipient), A2A_BROADCAST_KEY]
+    messages: list[dict[str, Any]] = []
+
+    if await redis_client.ping():
+        for key in keys:
+            raw_items = await redis_client.queue_range(key, 0, 199)
+            for raw in raw_items:
+                try:
+                    messages.append(json.loads(raw))
+                except json.JSONDecodeError:
+                    continue
+        return messages
+
+    for msg in _memory_queue:
+        if msg.get("recipient") in (recipient, "*") or msg.get("type") == "broadcast":
+            messages.append(msg)
+    return messages
 
 
 @router.post("/send")
-async def a2a_send(request: Request, msg: A2AMessage):
+async def a2a_send(request: Request, msg: A2AMessage) -> dict[str, str]:
     """Send a message to another agent."""
     message_id = f"a2a-{uuid.uuid4().hex[:12]}"
-    
-    message = {
+    message: dict[str, Any] = {
         "id": message_id,
         "sender": msg.sender,
         "recipient": msg.recipient,
@@ -55,34 +89,30 @@ async def a2a_send(request: Request, msg: A2AMessage):
         "timestamp": datetime.utcnow().isoformat(),
         "status": "pending",
     }
-    
-    _message_queue.append(message)
-    
-    # If recipient is local agent, try to process immediately
+
+    await _enqueue(message)
+
     if msg.type == "request":
         from core.agent_store import AgentStore
+
         store = AgentStore()
         recipient_agent = store.get_agent(msg.recipient)
-        
         if recipient_agent:
-            # Auto-process with recipient agent
             try:
                 from core.builder import AgentBuilder
-                from core.config import resolve_env_vars
-                
-                model_config = resolve_env_vars(recipient_agent.get("model", {}))
-                builder = (AgentBuilder()
+
+                model_config = resolve_agent_model_config(recipient_agent)
+                builder = (
+                    AgentBuilder()
                     .set_model(model_config)
                     .set_role(recipient_agent.get("role", ""))
                     .set_skills(recipient_agent.get("skills", []))
                     .set_tools(recipient_agent.get("tools", []))
-                    .set_memory({"enabled": False}))
+                    .set_memory({"enabled": False})
+                )
                 agent = builder.build()
-                
-                import asyncio
                 result = await agent.run(msg.content)
-                
-                # Send response back
+
                 response_msg = {
                     "id": f"a2a-{uuid.uuid4().hex[:12]}",
                     "sender": msg.recipient,
@@ -93,13 +123,12 @@ async def a2a_send(request: Request, msg: A2AMessage):
                     "timestamp": datetime.utcnow().isoformat(),
                     "status": "completed",
                 }
-                _message_queue.append(response_msg)
+                await _enqueue(response_msg)
                 message["status"] = "completed"
-                
-            except Exception as e:
+            except (RuntimeError, ValueError, OSError) as exc:
                 message["status"] = "failed"
-                message["error"] = str(e)
-    
+                message["error"] = str(exc)
+
     return {
         "message_id": message_id,
         "status": message["status"],
@@ -108,69 +137,60 @@ async def a2a_send(request: Request, msg: A2AMessage):
 
 
 @router.post("/receive")
-async def a2a_receive(request: Request, body: Dict[str, Any]):
+async def a2a_receive(request: Request, body: dict[str, Any]) -> dict[str, Any]:
     """Receive messages for an agent."""
     recipient = body.get("recipient")
-    msg_type = body.get("type")  # filter by type
+    msg_type = body.get("type")
     since = body.get("since")
-    
+
     if not recipient:
         raise HTTPException(status_code=400, detail="recipient required")
-    
-    messages = []
-    for msg in _message_queue:
-        # Skip expired messages
+
+    all_messages = await _dequeue_for_recipient(recipient)
+    messages: list[dict[str, Any]] = []
+    for msg in all_messages:
         if msg.get("ttl", 3600) <= 0:
             continue
-        
-        # Filter by recipient
-        if msg.get("recipient") != recipient and msg.get("type") != "broadcast":
+        if msg.get("recipient") not in (recipient, "*") and msg.get("type") != "broadcast":
             continue
-        
-        # Filter by type
         if msg_type and msg.get("type") != msg_type:
             continue
-        
-        # Filter by timestamp
         if since and msg.get("timestamp", "") < since:
             continue
-        
         messages.append(msg)
-    
-    # Mark as delivered
+
     for msg in messages:
         if msg.get("status") == "pending":
             msg["status"] = "delivered"
-    
+
     return {"messages": messages, "count": len(messages)}
 
 
 @router.get("/agents")
-async def a2a_list_agents(request: Request):
+async def a2a_list_agents(request: Request) -> dict[str, Any]:
     """List discoverable agents."""
     from core.agent_store import AgentStore
+
     store = AgentStore()
     agents = store.list_agents()
-    
-    result = []
-    for agent in agents:
-        result.append({
+    result = [
+        {
             "id": agent["id"],
             "name": agent.get("name", agent["id"]),
             "description": agent.get("description", ""),
             "skills": agent.get("skills", []),
             "tools": agent.get("tools", []),
             "capabilities": ["text", "tools", "skills"],
-        })
-    
+        }
+        for agent in agents
+    ]
     return {"agents": result, "count": len(result)}
 
 
 @router.post("/broadcast")
-async def a2a_broadcast(request: Request, msg: A2AMessage):
+async def a2a_broadcast(request: Request, msg: A2AMessage) -> dict[str, str]:
     """Broadcast a message to all agents."""
     message_id = f"a2a-broadcast-{uuid.uuid4().hex[:12]}"
-    
     message = {
         "id": message_id,
         "sender": msg.sender,
@@ -183,9 +203,7 @@ async def a2a_broadcast(request: Request, msg: A2AMessage):
         "timestamp": datetime.utcnow().isoformat(),
         "status": "pending",
     }
-    
-    _message_queue.append(message)
-    
+    await _enqueue(message)
     return {
         "message_id": message_id,
         "status": "broadcast",

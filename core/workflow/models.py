@@ -26,6 +26,7 @@ class NodeType(str, Enum):
     ACTION_NOTION_PAGE = "action.notion_page"
     ACTION_NOTION_DB = "action.notion_db_update"
     ACTION_WEBHOOK = "action.webhook"
+    ACTION_N8N_WEBHOOK = "action.n8n_webhook"
     ACTION_HTTP = "action.http"
     UTIL_SET = "util.set"
     UTIL_MERGE = "util.merge"

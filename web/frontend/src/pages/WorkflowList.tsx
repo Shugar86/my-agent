@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { listWorkflows } from '../api/workflowClient';
 import type { Workflow } from '../types/workflow';
+import { t } from '../i18n';
 
 export default function WorkflowList() {
   const navigate = useNavigate();
@@ -19,10 +20,10 @@ export default function WorkflowList() {
     <div style={{ padding: 30 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
         <div>
-          <h1 style={{ fontSize: 24, marginBottom: 4 }}>Workflows</h1>
-          <p style={{ color: 'var(--text-muted)' }}>Drag-and-drop automation builder</p>
+          <h1 style={{ fontSize: 24, marginBottom: 4 }}>{t('workflows.title')}</h1>
+          <p style={{ color: 'var(--text-muted)' }}>{t('workflows.subtitle')}</p>
         </div>
-        <button className="btn btn-primary" onClick={() => navigate('/workflows/new')}>+ New Workflow</button>
+        <button className="btn btn-primary" onClick={() => navigate('/workflows/new')}>{t('workflows.new')}</button>
       </div>
 
       {loading && (
@@ -41,7 +42,7 @@ export default function WorkflowList() {
           >
             <h3 style={{ marginBottom: 8 }}>{wf.name}</h3>
             <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>
-              {wf.definition.nodes.length} nodes · <span style={{ color: wf.status === 'active' ? 'var(--success)' : 'var(--text-muted)' }}>{wf.status}</span>
+              {wf.definition.nodes.length} {t('workflows.nodes')} · <span style={{ color: wf.status === 'active' ? 'var(--success)' : 'var(--text-muted)' }}>{wf.status}</span>
             </p>
           </div>
         ))}
@@ -49,9 +50,9 @@ export default function WorkflowList() {
 
       {!loading && workflows.length === 0 && (
         <div style={{ textAlign: 'center', padding: 60, color: 'var(--text-muted)' }}>
-          <p>No workflows yet.</p>
+          <p>{t('workflows.empty')}</p>
           <button className="btn btn-primary" style={{ marginTop: 16 }} onClick={() => navigate('/workflows/new')}>
-            Create your first workflow
+            {t('workflows.emptyCta')}
           </button>
         </div>
       )}

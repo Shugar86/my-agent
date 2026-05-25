@@ -243,6 +243,30 @@ async def get_template_endpoint(request: Request, template_id: str):
     return tpl
 
 
+@router.get("/api/public/templates")
+async def list_public_templates(featured: bool = False, limit: int = 12):
+    """Anonymous list of published templates (optionally featured only)."""
+    templates = workflow_store.list_templates(sort="popular")
+    if featured:
+        templates = [
+            tpl for tpl in templates
+            if "featured" in (tpl.get("tags") or [])
+        ]
+    sanitized = [
+        {
+            "id": tpl["id"],
+            "name": tpl["name"],
+            "description": tpl["description"],
+            "category": tpl["category"],
+            "tags": tpl.get("tags") or [],
+            "installs": tpl.get("installs", 0),
+            "nodes": len((tpl.get("definition") or {}).get("nodes") or []),
+        }
+        for tpl in templates[: max(1, min(limit, 50))]
+    ]
+    return {"templates": sanitized, "total": len(sanitized)}
+
+
 @router.get("/api/public/templates/{template_id}")
 async def public_template(template_id: str):
     """Anonymous read-only template view. Used for shareable links.

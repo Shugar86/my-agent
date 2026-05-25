@@ -52,22 +52,24 @@ class UserManager:
 
     async def _init_pg(self):
         async with self._pool.acquire() as conn:
-            await conn.execute("""
-                CREATE TABLE IF NOT EXISTS users (
-                    id          TEXT PRIMARY KEY,
-                    username    TEXT UNIQUE NOT NULL,
-                    password    TEXT NOT NULL,
-                    role        TEXT NOT NULL DEFAULT 'user',
-                    api_keys    TEXT DEFAULT '{}',
-                    created_at  DOUBLE PRECISION NOT NULL
-                );
-            """)
             await conn.execute(
-                "ALTER TABLE users ADD COLUMN IF NOT EXISTS email TEXT"
+                "ALTER TABLE users ADD COLUMN IF NOT EXISTS api_keys TEXT DEFAULT '{}'"
             )
             await conn.execute(
                 "ALTER TABLE users ADD COLUMN IF NOT EXISTS auth_provider TEXT DEFAULT 'local'"
             )
+
+    def _password_field(self) -> str:
+        return "password_hash" if self._use_pg else "password"
+
+    @staticmethod
+    def _normalize_user(row: dict | None) -> dict | None:
+        if not row:
+            return None
+        user = dict(row)
+        if "password_hash" in user and "password" not in user:
+            user["password"] = user["password_hash"]
+        return user
 
     def _init_sqlite(self):
         self._sqlite_conn.execute("""
@@ -101,8 +103,9 @@ class UserManager:
         if self._pool:
             async with self._pool.acquire() as conn:
                 await conn.execute(
-                    "INSERT INTO users (id, username, password, role, api_keys, created_at) VALUES ($1,$2,$3,$4,$5,$6)",
-                    user_id, username, pwd_hash, role, "{}", now,
+                    f"INSERT INTO users (id, username, {self._password_field()}, role, api_keys, created_at) "
+                    "VALUES ($1,$2,$3,$4,$5,NOW())",
+                    user_id, username, pwd_hash, role, "{}",
                 )
         else:
             self._sqlite_conn.execute(
@@ -125,7 +128,7 @@ class UserManager:
         if self._pool:
             async with self._pool.acquire() as conn:
                 row = await conn.fetchrow("SELECT * FROM users WHERE username = $1", username)
-                return dict(row) if row else None
+                return self._normalize_user(dict(row) if row else None)
         if self._sqlite_conn:
             cur = self._sqlite_conn.execute("SELECT * FROM users WHERE username = ?", (username,))
             row = cur.fetchone()
@@ -136,7 +139,7 @@ class UserManager:
         if self._pool:
             async with self._pool.acquire() as conn:
                 row = await conn.fetchrow("SELECT * FROM users WHERE id = $1", user_id)
-                return dict(row) if row else None
+                return self._normalize_user(dict(row) if row else None)
         if self._sqlite_conn:
             cur = self._sqlite_conn.execute("SELECT * FROM users WHERE id = ?", (user_id,))
             row = cur.fetchone()
@@ -172,7 +175,7 @@ class UserManager:
         if self._pool:
             async with self._pool.acquire() as conn:
                 row = await conn.fetchrow("SELECT * FROM users WHERE email = $1", email.lower())
-                return dict(row) if row else None
+                return self._normalize_user(dict(row) if row else None)
         if self._sqlite_conn:
             cur = self._sqlite_conn.execute("SELECT * FROM users WHERE email = ?", (email.lower(),))
             row = cur.fetchone()
@@ -201,10 +204,10 @@ class UserManager:
         if self._pool:
             async with self._pool.acquire() as conn:
                 await conn.execute(
-                    """INSERT INTO users
-                       (id, username, password, role, api_keys, created_at, email, auth_provider)
-                       VALUES ($1,$2,$3,$4,$5,$6,$7,$8)""",
-                    user_id, username, pwd_hash, "user", "{}", now, email.lower(), "google",
+                    f"""INSERT INTO users
+                       (id, username, {self._password_field()}, role, api_keys, created_at, email, auth_provider)
+                       VALUES ($1,$2,$3,$4,$5,NOW(),$6,$7)""",
+                    user_id, username, pwd_hash, "user", "{}", email.lower(), "google",
                 )
         else:
             self._sqlite_conn.execute(

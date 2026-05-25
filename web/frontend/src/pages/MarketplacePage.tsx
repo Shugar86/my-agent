@@ -13,9 +13,15 @@ import WorkflowThumbnail from '../components/WorkflowThumbnail';
 import PageHeader from '../components/ui/PageHeader';
 import EmptyState from '../components/ui/EmptyState';
 import { useToast } from '../components/ui/Toast';
-import { t } from '../i18n';
+import { t, type I18nKey } from '../i18n';
 
 const CATEGORIES = ['all', 'sales', 'support', 'marketing', 'ops', 'productivity', 'finance', 'hr'];
+
+function categoryLabel(category: string): string {
+  const key = `marketplace.categories.${category}` as I18nKey;
+  const label = t(key);
+  return label === key ? category : label;
+}
 
 function Stars({ rating, onRate }: { rating: number; onRate?: (n: number) => void }) {
   return (
@@ -159,8 +165,8 @@ export default function MarketplacePage() {
             style={{ flex: 1, minWidth: 200, maxWidth: 360 }}
           />
           <select className="input" style={{ width: 'auto' }} value={sort} onChange={(e) => setSort(e.target.value)}>
-            <option value="popular">Popular</option>
-            <option value="recent">Recent</option>
+            <option value="popular">{t('marketplace.sortPopular')}</option>
+            <option value="recent">{t('marketplace.sortRecent')}</option>
           </select>
         </div>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
@@ -171,7 +177,7 @@ export default function MarketplacePage() {
               className={`btn ${category === c ? 'btn-primary' : ''}`}
               onClick={() => setCategory(c)}
             >
-              {c}
+              {categoryLabel(c)}
             </button>
           ))}
         </div>
@@ -211,7 +217,7 @@ export default function MarketplacePage() {
                       <button type="button" className="btn btn-primary" onClick={() => handleInstall(tpl.id)} style={{ flex: 1 }}>
                         {t('marketplace.cloneEdit')}
                       </button>
-                      <button type="button" className="btn" onClick={() => handlePreview(tpl.id)}>Preview</button>
+                      <button type="button" className="btn" onClick={() => handlePreview(tpl.id)}>{t('marketplace.preview')}</button>
                     </div>
                   </div>
                 ))}
@@ -228,7 +234,7 @@ export default function MarketplacePage() {
                 <WorkflowThumbnail definition={tpl.definition} height={90} />
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginTop: 12, marginBottom: 8, gap: 8 }}>
                   <h3 style={{ fontSize: 15, color: 'var(--accent)' }}>{tpl.name}</h3>
-                  <span className="badge">{tpl.category}</span>
+                  <span className="badge">{categoryLabel(tpl.category)}</span>
                 </div>
                 <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 12, minHeight: 40, flex: 1 }}>{tpl.description}</p>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12, fontSize: 13 }}>
@@ -240,7 +246,7 @@ export default function MarketplacePage() {
                   <button type="button" className="btn btn-primary" onClick={() => handleInstall(tpl.id)} style={{ flex: 1 }}>
                     {t('marketplace.cloneEdit')}
                   </button>
-                  <button type="button" className="btn" onClick={() => handlePreview(tpl.id)}>Preview</button>
+                  <button type="button" className="btn" onClick={() => handlePreview(tpl.id)}>{t('marketplace.preview')}</button>
                 </div>
               </div>
             ))}
@@ -266,22 +272,21 @@ export default function MarketplacePage() {
                 <h2 style={{ marginBottom: 4 }}>{previewTemplate.name}</h2>
                 <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{previewTemplate.category}</span>
               </div>
-              <button className="btn" onClick={() => setPreviewTemplate(null)}>Close</button>
+              <button className="btn" onClick={() => setPreviewTemplate(null)}>{t('marketplace.close')}</button>
             </div>
             <p style={{ marginBottom: 12 }}>{previewTemplate.description}</p>
             <WorkflowThumbnail definition={previewTemplate.definition} height={180} />
-            <div style={{ marginTop: 12, fontSize: 12, color: 'var(--text-muted)' }}>
-              {previewTemplate.definition?.nodes?.length || 0} nodes · {previewTemplate.definition?.edges?.length || 0} edges
-            </div>
-            <details style={{ marginTop: 12 }}>
-              <summary style={{ cursor: 'pointer', fontSize: 12, color: 'var(--text-muted)' }}>View JSON definition</summary>
-              <pre style={{ marginTop: 8, padding: 12, background: 'var(--bg)', borderRadius: 6, fontSize: 11, overflowX: 'auto' }}>
-                {JSON.stringify(previewTemplate.definition, null, 2)}
-              </pre>
-            </details>
+            {isAdmin && (
+              <details style={{ marginTop: 12 }}>
+                <summary style={{ cursor: 'pointer', fontSize: 12, color: 'var(--text-muted)' }}>View JSON definition</summary>
+                <pre style={{ marginTop: 8, padding: 12, background: 'var(--bg)', borderRadius: 6, fontSize: 11, overflowX: 'auto' }}>
+                  {JSON.stringify(previewTemplate.definition, null, 2)}
+                </pre>
+              </details>
+            )}
             <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
               <button className="btn btn-primary" onClick={() => handleInstall(previewTemplate.id)} style={{ flex: 1 }}>
-                Clone & edit
+                {t('marketplace.cloneEdit')}
               </button>
               <button
                 className="btn"
@@ -293,7 +298,7 @@ export default function MarketplacePage() {
                   );
                 }}
               >
-                Copy share link
+                {t('marketplace.copyShareLink')}
               </button>
             </div>
           </div>
@@ -306,22 +311,22 @@ export default function MarketplacePage() {
           alignItems: 'center', justifyContent: 'center', zIndex: 1000,
         }}>
           <div className="card" style={{ width: 480, maxHeight: '90vh', overflowY: 'auto' }}>
-            <h2 style={{ marginBottom: 16 }}>Publish Template</h2>
-            <label style={{ fontSize: 12, color: 'var(--text-muted)' }}>Name</label>
+            <h2 style={{ marginBottom: 16 }}>{t('marketplace.publish.title')}</h2>
+            <label style={{ fontSize: 12, color: 'var(--text-muted)' }}>{t('marketplace.publish.name')}</label>
             <input className="input" value={pubName} onChange={(e) => setPubName(e.target.value)} style={{ marginBottom: 12 }} />
-            <label style={{ fontSize: 12, color: 'var(--text-muted)' }}>Description</label>
+            <label style={{ fontSize: 12, color: 'var(--text-muted)' }}>{t('marketplace.publish.description')}</label>
             <textarea className="input" value={pubDesc} onChange={(e) => setPubDesc(e.target.value)} rows={3} style={{ marginBottom: 12 }} />
-            <label style={{ fontSize: 12, color: 'var(--text-muted)' }}>Category</label>
+            <label style={{ fontSize: 12, color: 'var(--text-muted)' }}>{t('marketplace.publish.category')}</label>
             <select className="input" value={pubCategory} onChange={(e) => setPubCategory(e.target.value)} style={{ marginBottom: 12 }}>
-              {CATEGORIES.filter((c) => c !== 'all').map((c) => <option key={c} value={c}>{c}</option>)}
+              {CATEGORIES.filter((c) => c !== 'all').map((c) => <option key={c} value={c}>{categoryLabel(c)}</option>)}
             </select>
-            <label style={{ fontSize: 12, color: 'var(--text-muted)' }}>Tags (comma-separated)</label>
+            <label style={{ fontSize: 12, color: 'var(--text-muted)' }}>{t('marketplace.publish.tags')}</label>
             <input className="input" value={pubTags} onChange={(e) => setPubTags(e.target.value)} style={{ marginBottom: 12 }} />
-            <label style={{ fontSize: 12, color: 'var(--text-muted)' }}>Definition JSON</label>
+            <label style={{ fontSize: 12, color: 'var(--text-muted)' }}>{t('marketplace.publish.definition')}</label>
             <textarea className="input" value={pubDefinition} onChange={(e) => setPubDefinition(e.target.value)} rows={8} style={{ marginBottom: 16, fontFamily: 'monospace', fontSize: 12 }} />
             <div style={{ display: 'flex', gap: 8 }}>
-              <button className="btn btn-primary" onClick={handlePublish}>Publish</button>
-              <button className="btn" onClick={() => setShowPublish(false)}>Cancel</button>
+              <button className="btn btn-primary" onClick={handlePublish}>{t('marketplace.publish.submit')}</button>
+              <button className="btn" onClick={() => setShowPublish(false)}>{t('common.cancel')}</button>
             </div>
           </div>
         </div>

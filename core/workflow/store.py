@@ -160,7 +160,13 @@ class WorkflowStore:
             f"SELECT * FROM workflow_templates {where} ORDER BY {order}",
             tuple(params),
         )
-        return [self._row_to_template(r) for r in rows]
+        templates = [self._row_to_template(r) for r in rows]
+        if sort == "popular":
+            templates = [
+                tpl for tpl in templates
+                if "draft" not in (tpl.get("tags") or [])
+            ]
+        return templates
 
     def rate_template(self, template_id: str, user_id: str, score: int) -> dict[str, Any] | None:
         """Rate a template 1-5 stars."""

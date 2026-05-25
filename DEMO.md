@@ -23,15 +23,16 @@ docker compose --profile demo up -d --build
 Default login: `admin` / `admin` (set in `.env`, change before any external
 showcase).
 
-After login, run the seed script once to populate marketplace templates:
+After login, templates and demo DOCX are seeded automatically on container
+start (`scripts/entrypoint.sh`). Manual re-seed if needed:
 
 ```bash
 docker compose exec agent python scripts/seed_workflow_templates.py
 docker compose exec agent python scripts/generate_demo_artifact.py
 ```
 
-The demo gracefully falls back to a prerecorded run if the OpenRouter / Tavily
-keys are missing — the investor flow never breaks.
+The demo gracefully falls back to a prerecorded run if Kimi / OpenRouter /
+Tavily keys are missing — the investor flow never breaks.
 
 ---
 

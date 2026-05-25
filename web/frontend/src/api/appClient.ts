@@ -1,8 +1,17 @@
 const API = '';
 
+export class ApiError extends Error {
+  readonly status: number;
+
+  constructor(status: number, url: string) {
+    super(`Request failed: ${url}`);
+    this.status = status;
+  }
+}
+
 export async function fetchJson<T>(url: string, options?: RequestInit): Promise<T> {
   const res = await fetch(`${API}${url}`, options);
-  if (!res.ok) throw new Error(`Request failed: ${url}`);
+  if (!res.ok) throw new ApiError(res.status, url);
   const text = await res.text();
   if (!text) return {} as T;
   return JSON.parse(text) as T;
@@ -403,11 +412,16 @@ export interface DemoRunResult {
   summary?: { total_duration_ms?: number; total_duration_human?: string; tokens_used?: number; estimated_cost_usd?: number };
 }
 
-export async function startDemoRun(target = 'Notion', ourCompany = 'Linear', real = false): Promise<DemoRunResult> {
+export async function startDemoRun(
+  target = 'Notion',
+  ourCompany = 'Linear',
+  real = false,
+  preset: 'competitor' | 'beauty' | 'lead' = 'competitor',
+): Promise<DemoRunResult> {
   const res = await fetch('/api/demo/run', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ target, our_company: ourCompany, real }),
+    body: JSON.stringify({ target, our_company: ourCompany, real, preset }),
   });
   if (!res.ok) throw new Error('Demo run failed');
   return res.json();

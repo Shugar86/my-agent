@@ -174,6 +174,38 @@ class RedisClient:
             logger.warning("Redis rate limit check failed: %s", e)
             return True, limit
 
+    async def queue_push(self, queue_key: str, message: str) -> bool:
+        """Push a JSON message onto a Redis list queue."""
+        if not self._available or not self._client:
+            return False
+        try:
+            await self._client.lpush(queue_key, message)
+            return True
+        except Exception as e:
+            logger.warning("Redis queue_push failed: %s", e)
+            return False
+
+    async def queue_range(self, queue_key: str, start: int = 0, end: int = -1) -> list[str]:
+        """Read messages from a Redis list without removing them."""
+        if not self._available or not self._client:
+            return []
+        try:
+            return await self._client.lrange(queue_key, start, end)
+        except Exception as e:
+            logger.warning("Redis queue_range failed: %s", e)
+            return []
+
+    async def queue_trim(self, queue_key: str, start: int, end: int) -> bool:
+        """Trim a Redis list queue."""
+        if not self._available or not self._client:
+            return False
+        try:
+            await self._client.ltrim(queue_key, start, end)
+            return True
+        except Exception as e:
+            logger.warning("Redis queue_trim failed: %s", e)
+            return False
+
 
 # Singleton
 redis_client = RedisClient()

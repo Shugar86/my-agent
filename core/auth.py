@@ -97,7 +97,12 @@ def decode_access_token(token: str) -> dict | None:
 
 def set_auth_cookie(response, token: str) -> None:
     """Attach JWT to httpOnly cookie on a Starlette response."""
-    secure = os.environ.get("ENV", "").lower() in ("production", "prod", "staging")
+    # Secure only when explicitly enabled (TLS). Local Docker uses http://127.0.0.1.
+    secure = os.environ.get("AGENT_COOKIE_SECURE", "false").lower() in (
+        "1",
+        "true",
+        "yes",
+    )
     response.set_cookie(
         key="access_token",
         value=token,

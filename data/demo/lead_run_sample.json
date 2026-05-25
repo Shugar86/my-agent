@@ -1,0 +1,79 @@
+{
+  "template_id": "tpl_lead_qualifier",
+  "demo_mode": true,
+  "default_payload": {
+    "name": "Alex Petrov",
+    "company": "FinTech Startup",
+    "budget": "$50k",
+    "timeline": "Q2 2026"
+  },
+  "node_order": ["trg", "a1", "c1", "x1", "x2"],
+  "events": [
+    {
+      "delay_ms": 200,
+      "node_id": "trg",
+      "event": "started",
+      "detail": {"message": "Webhook received: new lead from landing form"}
+    },
+    {
+      "delay_ms": 300,
+      "node_id": "trg",
+      "event": "completed",
+      "detail": {
+        "output": {"name": "Alex Petrov", "company": "FinTech Startup", "budget": "$50k"},
+        "duration_ms": 150
+      }
+    },
+    {
+      "delay_ms": 200,
+      "node_id": "a1",
+      "event": "started",
+      "detail": {"message": "Marketer agent: BANT scoring"}
+    },
+    {
+      "delay_ms": 4100,
+      "node_id": "a1",
+      "event": "completed",
+      "detail": {
+        "output": {
+          "score": 9,
+          "recommendation": "Hot lead — schedule demo within 24h",
+          "summary": "Budget confirmed ($50k), decision timeline Q2, authority: Head of Product, need: workflow automation for sales team."
+        },
+        "duration_ms": 4100
+      }
+    },
+    {
+      "delay_ms": 200,
+      "node_id": "c1",
+      "event": "completed",
+      "detail": {"output": {"matched": true, "threshold": 8}, "duration_ms": 80}
+    },
+    {
+      "delay_ms": 200,
+      "node_id": "x1",
+      "event": "completed",
+      "detail": {
+        "output": {"status": "sent", "channel": "sales_telegram"},
+        "duration_ms": 350
+      }
+    },
+    {
+      "delay_ms": 200,
+      "node_id": "x2",
+      "event": "completed",
+      "detail": {
+        "output": {"sheet": "Leads!A1", "rows_written": 1},
+        "duration_ms": 420
+      }
+    }
+  ],
+  "summary": {
+    "total_duration_ms": 6000,
+    "total_duration_human": "~6s real / ~45 min SDR work saved",
+    "hours_saved": 0.75,
+    "tokens_used": 980,
+    "estimated_cost_usd": 0.03,
+    "artifact": "/api/demo/artifact/lead_qualifier_brief.docx"
+  }
+}

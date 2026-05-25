@@ -1,5 +1,6 @@
 import { memo } from 'react';
 import { NODE_TYPES } from '../types/workflow';
+import { t } from '../i18n';
 
 interface NodeLite {
   id: string;
@@ -34,7 +35,7 @@ function WorkflowThumbnail({ definition, width = 260, height = 100 }: Props) {
           color: 'var(--text-muted)', fontSize: 12,
         }}
       >
-        empty workflow
+        {t('workflows.emptyWorkflow')}
       </div>
     );
   }

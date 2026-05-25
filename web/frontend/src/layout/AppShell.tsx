@@ -5,18 +5,37 @@ import { getMe, type MeUser } from '../api/appClient';
 import { t } from '../i18n';
 import './theme.css';
 
-const NAV = [
+const NAV_MAIN = [
   { to: '/', labelKey: 'nav.dashboard' as const },
+  { to: '/showcase', labelKey: 'nav.showcase' as const },
   { to: '/chat', labelKey: 'nav.chat' as const },
   { to: '/workflows', labelKey: 'nav.workflows' as const },
   { to: '/marketplace', labelKey: 'nav.marketplace' as const },
   { to: '/analytics', labelKey: 'nav.analytics' as const },
-  { to: '/builder', labelKey: 'nav.builder' as const },
+];
+
+const NAV_POWER = [
   { to: '/agents', labelKey: 'nav.agents' as const },
   { to: '/knowledge', labelKey: 'nav.knowledge' as const },
   { to: '/mcp', labelKey: 'nav.mcp' as const },
   { to: '/settings', labelKey: 'nav.settings' as const },
 ];
+
+function navLinkStyle(isActive: boolean) {
+  return {
+    display: 'flex' as const,
+    alignItems: 'center' as const,
+    gap: 10,
+    padding: '10px 18px',
+    color: isActive ? 'var(--text)' : 'var(--text-muted)',
+    background: isActive ? 'var(--bg-tertiary)' : 'transparent',
+    borderLeft: isActive ? '2px solid var(--accent)' : '2px solid transparent',
+    textDecoration: 'none' as const,
+    fontSize: 13,
+    fontWeight: isActive ? 500 : 400,
+    transition: 'all 0.15s',
+  };
+}
 
 const THEME_STORAGE_KEY = 'my-agent.theme';
 
@@ -79,23 +98,24 @@ export default function AppShell() {
         </div>
         <TeamSwitcher />
         <nav style={{ flex: 1, overflowY: 'auto' }}>
-          {NAV.map((item) => (
+          {NAV_MAIN.map((item) => (
             <NavLink
               key={item.to}
               to={item.to}
               end={item.to === '/'}
               onClick={() => setSidebarOpen(false)}
-              style={({ isActive }) => ({
-                display: 'flex', alignItems: 'center', gap: 10,
-                padding: '10px 18px',
-                color: isActive ? 'var(--text)' : 'var(--text-muted)',
-                background: isActive ? 'var(--bg-tertiary)' : 'transparent',
-                borderLeft: isActive ? '2px solid var(--accent)' : '2px solid transparent',
-                textDecoration: 'none',
-                fontSize: 13,
-                fontWeight: isActive ? 500 : 400,
-                transition: 'all 0.15s',
-              })}
+              style={({ isActive }) => navLinkStyle(isActive)}
+            >
+              {t(item.labelKey)}
+            </NavLink>
+          ))}
+          <div style={{ margin: '8px 18px', borderTop: '1px solid var(--border)' }} />
+          {NAV_POWER.map((item) => (
+            <NavLink
+              key={item.to}
+              to={item.to}
+              onClick={() => setSidebarOpen(false)}
+              style={({ isActive }) => navLinkStyle(isActive)}
             >
               {t(item.labelKey)}
             </NavLink>
@@ -104,15 +124,7 @@ export default function AppShell() {
             <NavLink
               to="/admin"
               onClick={() => setSidebarOpen(false)}
-              style={({ isActive }) => ({
-                display: 'flex', alignItems: 'center', gap: 10,
-                padding: '10px 18px',
-                color: isActive ? 'var(--text)' : 'var(--text-muted)',
-                background: isActive ? 'var(--bg-tertiary)' : 'transparent',
-                borderLeft: isActive ? '2px solid var(--accent)' : '2px solid transparent',
-                textDecoration: 'none',
-                fontSize: 13,
-              })}
+              style={({ isActive }) => navLinkStyle(isActive)}
             >
               {t('nav.admin')}
             </NavLink>

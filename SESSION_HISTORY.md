@@ -1,4 +1,33 @@
-# Session History — 2026-05-25
+# Session History — My Agent
+
+---
+
+## 2026-05-26 — Architectural fix (iterations 1–2)
+
+> **Focus:** Close demo/marketplace gaps + engine correctness + RU UX polish  
+> **Result:** v3.3.0 — Kimi live, honest workflow runs, RU builder, 52 templates seeded
+
+### Iteration 1
+- Kimi Code API integration (`api.kimi.com/coding/v1`, model `kimi-for-coding`)
+- Entrypoint auto-seed + DOCX generation on container start
+- Demo router: 3 presets; onboarding template IDs fixed
+- A2A → Redis, WS JWT auth, Dashboard stats, showcase from API
+- Marketplace install counts from DB; agents dedup; `/builder` → `/agents`
+
+### Iteration 2
+- P0: ghost tools removed; SKILL.md for web3/voice_io/video_processing
+- P0: executor fail on action `{success:false}`; agent.skill `"skill"` key; webhook GET
+- P0: draft tags on 3 misleading templates; n8n enum; lead qualify → webhook
+- P1: WorkflowBuilder + Publish RU; integrations stat; PublicTemplate errors
+- P1: EN string cleanup; onboarding 404 fallback; AgentBuilderPage removed
+
+**Verify:** `docker compose up -d --build agent` → pytest 25 passed
+
+Full changelog: **[CHANGELOG.md](./CHANGELOG.md)**
+
+---
+
+## 2026-05-25 — CLI TUI + Audit
 
 > **Model:** kimi-k2.6 (opencode-go)
 > **Start:** ~03:00 MSK

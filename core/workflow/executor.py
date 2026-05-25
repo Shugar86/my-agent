@@ -121,6 +121,42 @@ class WorkflowExecutor:
                         "logs": ctx.logs,
                     }
 
+                if (
+                    isinstance(output, dict)
+                    and output.get("success") is False
+                    and node.type.startswith("action.")
+                    and not node.continue_on_error
+                ):
+                    error_msg = str(
+                        output.get("error")
+                        or (
+                            output.get("output", {}).get("error")
+                            if isinstance(output.get("output"), dict)
+                            else None
+                        )
+                        or "Action returned success=false"
+                    )
+                    error_edges = [
+                        e for e in definition.edges
+                        if e.from_node == node_id and (e.label or "").lower() == "error"
+                    ]
+                    if error_edges:
+                        ctx.node_outputs[node_id] = output
+                        self._log(run["id"], ctx, node_id, "error", error_msg)
+                        executed.add(node_id)
+                        for edge in error_edges:
+                            if edge.to_node not in executed:
+                                queue.append(edge.to_node)
+                        continue
+                    self._log(run["id"], ctx, node_id, "error", error_msg)
+                    self.store.finish_run(run["id"], "failed", ctx.logs)
+                    return {
+                        "success": False,
+                        "run_id": run["id"],
+                        "error": error_msg,
+                        "logs": ctx.logs,
+                    }
+
                 ctx.node_outputs[node_id] = output
                 last_output = output
                 self._log(run["id"], ctx, node_id, "completed", output)

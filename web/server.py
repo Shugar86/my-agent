@@ -19,7 +19,7 @@ from slowapi.errors import RateLimitExceeded
 from core.agent_store import AgentStore
 from core.orchestrator import Orchestrator
 from core.auto_agent_factory import AutoAgentFactory
-from core.config import load_config, DEFAULT_CONFIG, resolve_env_vars
+from core.config import load_config, DEFAULT_CONFIG, resolve_env_vars, resolve_agent_model_config
 from core.logging_setup import setup_logging, set_session_context
 from core.llm_gateway import LLMGateway
 from core.builder import AgentBuilder
@@ -236,17 +236,28 @@ async def startup():
     await user_manager.connect()
     await user_manager.create_default_admin()
     db.create_tables()
-    # Ensure scheduled_jobs_log table exists
-    db.execute("""
-        CREATE TABLE IF NOT EXISTS scheduled_jobs_log (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            job_id TEXT NOT NULL,
-            description TEXT,
-            result TEXT,
-            status TEXT,
-            executed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-    """)
+    if db.db_type == "postgres":
+        db.execute("""
+            CREATE TABLE IF NOT EXISTS scheduled_jobs_log (
+                id SERIAL PRIMARY KEY,
+                job_id VARCHAR NOT NULL,
+                description TEXT,
+                result TEXT,
+                status VARCHAR,
+                executed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+    else:
+        db.execute("""
+            CREATE TABLE IF NOT EXISTS scheduled_jobs_log (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                job_id TEXT NOT NULL,
+                description TEXT,
+                result TEXT,
+                status TEXT,
+                executed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
     from core.workflow.executor import rehydrate_all_triggers
     await rehydrate_all_triggers()
 
@@ -414,7 +425,7 @@ async def login(request: Request, body: LoginRequest):
     token = create_access_token({"sub": user["username"], "user_id": user["id"], "role": user["role"]})
     from core.teams.store import team_store
     team_store.ensure_personal_team(user["id"], user["username"])
-    resp = JSONResponse({"success": True, "redirect": "/"})
+    resp = JSONResponse({"success": True, "redirect": "/app"})
     set_auth_cookie(resp, token)
     return resp
 
@@ -677,7 +688,7 @@ async def duplicate_agent(request: Request, agent_id: str):
 class AskRequest(BaseModel):
     question: str
     agent_id: str = "universal"
-    model: str = "fast"
+    model: str = "kimi"
 
 
 @app.post("/api/ask")
@@ -794,7 +805,7 @@ async def chat_stream(request: Request, body: ChatRequest):
                 yield f"data: {json.dumps({'type': 'error', 'content': f'Agent {body.agent_id} not found'})}\n\n"
                 return
 
-            model_config = resolve_env_vars(agent_config.get("model", {}))
+            model_config = resolve_agent_model_config(agent_config)
             llm = LLMGateway(model_config)
 
             builder = (AgentBuilder()
@@ -943,30 +954,65 @@ async def knowledge_delete(request: Request, doc_id: str):
 # Marketplace API
 # ---------------------------------------------------------------------------
 
+BUILTIN_SKILL_CATALOG: dict[str, dict[str, object]] = {
+    "sql_db": {
+        "description": "SQLite query execution and table listing",
+        "tags": ["database", "sql"],
+    },
+    "ocr": {
+        "description": "Tesseract OCR for images and PDFs",
+        "tags": ["image", "pdf", "text"],
+    },
+    "email": {
+        "description": "SMTP email sending with attachments",
+        "tags": ["email", "communication"],
+    },
+}
+
+
 @app.get("/api/marketplace")
 async def marketplace_list(request: Request):
-    """Return workflow templates and legacy skills from marketplace."""
+    """Return workflow templates and installed skills from DB (no fake install counts)."""
     from core.workflow.store import workflow_store
+
     templates = workflow_store.list_templates()
+    installed_rows = db.fetchall("SELECT name, version, source FROM installed_skills LIMIT 100") or []
     skills = [
-        {"name": "sql_db", "version": "1.0", "description": "SQLite query execution and table listing", "tags": ["database", "sql"], "installs": 42, "type": "skill"},
-        {"name": "ocr", "version": "1.0", "description": "Tesseract OCR for images and PDFs", "tags": ["image", "pdf", "text"], "installs": 128, "type": "skill"},
-        {"name": "email", "version": "1.0", "description": "SMTP email sending with attachments", "tags": ["email", "communication"], "installs": 34, "type": "skill"},
+        {
+            "name": row["name"],
+            "version": row["version"],
+            "description": BUILTIN_SKILL_CATALOG.get(row["name"], {}).get(
+                "description", f"Installed skill: {row['name']}"
+            ),
+            "tags": BUILTIN_SKILL_CATALOG.get(row["name"], {}).get("tags", []),
+            "installs": 1,
+            "type": "skill",
+            "source": row.get("source"),
+        }
+        for row in installed_rows
     ]
     workflow_items = [
         {
-            "name": t["id"],
+            "name": tpl["id"],
             "version": "1.0",
-            "description": t["description"],
-            "tags": t.get("tags", []),
-            "installs": t.get("installs", 0),
+            "description": tpl["description"],
+            "tags": tpl.get("tags", []),
+            "installs": tpl.get("installs", 0),
             "type": "workflow",
-            "category": t.get("category", "general"),
+            "category": tpl.get("category", "general"),
         }
-        for t in templates
+        for tpl in templates
     ]
     all_items = workflow_items + skills
     return {"skills": all_items, "templates": templates, "total": len(all_items)}
+
+
+@app.get("/api/models")
+async def list_model_profiles(request: Request):
+    """List available LLM model profiles for Settings UI."""
+    from core.configurator import list_profiles
+
+    return {"profiles": list_profiles()}
 
 
 @app.post("/api/marketplace/install/{item_name}")
@@ -1287,6 +1333,23 @@ async def feedback_stats_endpoint(request: Request):
 # WebSocket Chat (real-time alternative to SSE)
 # ---------------------------------------------------------------------------
 
+async def _authenticate_websocket(websocket: WebSocket) -> dict | None:
+    """Validate JWT from cookie or query param before accepting WebSocket."""
+    token = websocket.cookies.get("access_token") or websocket.query_params.get("token")
+    if not token:
+        await websocket.close(code=4401, reason="Authentication required")
+        return None
+    payload = decode_access_token(token)
+    if not payload:
+        await websocket.close(code=4401, reason="Invalid token")
+        return None
+    jti = payload.get("jti")
+    if jti and await redis_client.is_token_revoked(jti):
+        await websocket.close(code=4401, reason="Token revoked")
+        return None
+    return payload
+
+
 @app.websocket("/ws/chat")
 async def websocket_chat(websocket: WebSocket):
     """Real-time bidirectional chat via WebSocket.
@@ -1298,6 +1361,9 @@ async def websocket_chat(websocket: WebSocket):
       Server -> Client: {"type": "error", "message": "..."}
       Client -> Server: {"type": "cancel"}
     """
+    auth = await _authenticate_websocket(websocket)
+    if not auth:
+        return
     await websocket.accept()
     current_task = None
 
@@ -1323,7 +1389,7 @@ async def websocket_chat(websocket: WebSocket):
 
             message = data.get("message", "")
             agent_id = data.get("agent_id", "universal")
-            model_name = data.get("model", "fast")
+            model_name = data.get("model", "kimi")
 
             if not message:
                 await websocket.send_json({"type": "error", "message": "Empty message"})
@@ -1402,6 +1468,9 @@ async def websocket_collaboration(websocket: WebSocket, room_id: str):
       chat  -> {"type": "chat", "message": "Hello", "agent_id": "universal"}
       agent -> {"type": "agent_response", "text": "...", "model": "..."}
     """
+    auth = await _authenticate_websocket(websocket)
+    if not auth:
+        return
     await websocket.accept()
 
     if room_id not in _collab_rooms:
@@ -1446,7 +1515,7 @@ async def websocket_collaboration(websocket: WebSocket, room_id: str):
                     agent_config = store.get_agent(agent_id)
                     if agent_config:
                         from core.configurator import resolve_profile
-                        model_config = resolve_profile(data.get("model", "fast"))
+                        model_config = resolve_profile(data.get("model", "kimi"))
                         builder = (AgentBuilder()
                             .set_model(model_config or {})
                             .set_role(agent_config.get("role", ""))

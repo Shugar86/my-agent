@@ -111,7 +111,7 @@ export default function ChatPage() {
       const result = await runWorkflowById(wf.id, { chat_trigger: true }) as { success: boolean; run_id?: string; error?: string };
       return result.success
         ? t('chat.workflowDone', { name: wf.name, runId: result.run_id || '—' })
-        : `${t('chat.workflowFailed')} ${result.error || 'unknown'}`;
+        : `${t('chat.workflowFailed')} ${result.error || t('chat.unknownError')}`;
     } catch {
       return `${t('chat.runFailed')} "${query}"`;
     }

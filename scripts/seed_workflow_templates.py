@@ -34,7 +34,7 @@ TEMPLATES = [
         "name": "Gmail digest → Slack",
         "description": "Ежедневная сводка непрочитанных писем в Slack",
         "category": "ops",
-        "tags": ["gmail", "slack", "digest"],
+        "tags": ["gmail", "slack", "digest", "draft"],
         "definition": {
             "nodes": [
                 {"id": "t1", "type": "trigger.schedule", "config": {"cron": "0 9 * * *"}},
@@ -97,7 +97,7 @@ TEMPLATES = [
         "tags": ["sales", "ai", "sheets"],
         "definition": {
             "nodes": [
-                {"id": "t1", "type": "trigger.new_lead", "config": {}},
+                {"id": "t1", "type": "trigger.webhook", "config": {}},
                 {"id": "a1", "type": "agent.skill", "config": {"agent_id": "marketer", "prompt": "Score this lead 1-10: {{trigger.payload}}"}},
                 {"id": "c1", "type": "condition", "config": {"source_node": "a1", "field": "output", "operator": "contains", "value": "8"}},
                 {"id": "x1", "type": "action.telegram", "config": {"chat_id": "{{config.sales_chat}}", "message": "Hot lead! {{a1.output}}"}},
@@ -125,7 +125,7 @@ TEMPLATES = [
         "name": "Notion Daily Sync",
         "description": "Синхронизирует задачи Notion в Google Sheets",
         "category": "productivity",
-        "tags": ["notion", "sheets", "sync"],
+        "tags": ["notion", "sheets", "sync", "draft"],
         "definition": {
             "nodes": [
                 {"id": "t1", "type": "trigger.schedule", "config": {"cron": "0 8 * * *"}},
@@ -495,7 +495,7 @@ TEMPLATES = [
         "name": "Finance: Invoice Auto Follow-up",
         "description": "Schedule overdue invoice email reminders",
         "category": "finance",
-        "tags": ["finance", "email", "reminder"],
+        "tags": ["finance", "email", "reminder", "draft"],
         "definition": {
             "nodes": [
                 {"id": "t1", "type": "trigger.schedule", "config": {"cron": "0 10 * * 1"}},
@@ -812,6 +812,95 @@ TEMPLATES = [
         },
     },
     {
+        "id": "tpl_beauty_consultant",
+        "name": "Beauty Salon AI Consultant",
+        "description": (
+            "Telegram-консультант для бьюти-салона: отвечает на вопросы клиентов "
+            "о процедурах, ценах и записи через Kimi-агента."
+        ),
+        "category": "support",
+        "tags": ["featured", "telegram", "beauty", "demo"],
+        "definition": {
+            "nodes": [
+                {"id": "trg", "type": "trigger.telegram", "config": {}, "position": {"x": 80, "y": 60}},
+                {
+                    "id": "a1",
+                    "type": "agent.skill",
+                    "config": {
+                        "agent_id": "universal",
+                        "prompt": (
+                            "Ты — консультант бьюти-салона {{ trigger.payload.salon_name | default('Glow Studio') }}. "
+                            "Ответь клиенту кратко и дружелюбно на русском: {{ trigger.text }}"
+                        ),
+                    },
+                    "position": {"x": 360, "y": 60},
+                },
+                {
+                    "id": "x1",
+                    "type": "action.telegram",
+                    "config": {"chat_id": "{{ trigger.chat_id }}", "message": "{{ a1.output }}"},
+                    "position": {"x": 640, "y": 60},
+                },
+            ],
+            "edges": [{"from": "trg", "to": "a1"}, {"from": "a1", "to": "x1"}],
+        },
+    },
+    {
+        "id": "tpl_lead_qualifier",
+        "name": "Lead Qualifier (BANT)",
+        "description": (
+            "Webhook с новым лидом → AI оценивает BANT score → hot leads уходят в Telegram "
+            "и записываются в Google Sheets."
+        ),
+        "category": "sales",
+        "tags": ["featured", "sales", "lead", "demo"],
+        "definition": {
+            "nodes": [
+                {"id": "trg", "type": "trigger.webhook", "config": {}, "position": {"x": 80, "y": 60}},
+                {
+                    "id": "a1",
+                    "type": "agent.skill",
+                    "config": {
+                        "agent_id": "marketer",
+                        "prompt": (
+                            "Score this lead 1-10 using BANT criteria. "
+                            "Return JSON with score and recommendation: {{ trigger.payload }}"
+                        ),
+                    },
+                    "position": {"x": 360, "y": 60},
+                },
+                {
+                    "id": "c1",
+                    "type": "condition",
+                    "config": {"source_node": "a1", "field": "output", "operator": "contains", "value": "8"},
+                    "position": {"x": 620, "y": 60},
+                },
+                {
+                    "id": "x1",
+                    "type": "action.telegram",
+                    "config": {"chat_id": "{{ config.sales_chat }}", "message": "Hot lead: {{ a1.output }}"},
+                    "position": {"x": 880, "y": 0},
+                },
+                {
+                    "id": "x2",
+                    "type": "action.sheets_write",
+                    "config": {
+                        "spreadsheet_id": "{{ config.sheet_id }}",
+                        "range": "Leads!A1",
+                        "values": ["{{ trigger.payload.name }}", "{{ a1.output }}"],
+                    },
+                    "position": {"x": 880, "y": 120},
+                },
+            ],
+            "edges": [
+                {"from": "trg", "to": "a1"},
+                {"from": "a1", "to": "c1"},
+                {"from": "c1", "to": "x1", "label": "true"},
+                {"from": "a1", "to": "x2"},
+            ],
+        },
+    },
+    {
         "id": "tpl_competitor_intelligence",
         "name": "Competitor Intelligence (Featured)",
         "description": (
@@ -938,14 +1027,40 @@ TEMPLATES = [
 ]
 
 
+# Templates whose tags/definition should be refreshed on seed (idempotent upsert).
+UPSERT_TEMPLATE_IDS = frozenset({
+    "tpl_gmail_digest_slack",
+    "tpl_notion_daily_sync",
+    "tpl_finance_invoice_followup",
+    "tpl_lead_qualify",
+})
+
+
 def seed() -> int:
     """Insert workflow templates if not present."""
     run_migrations()
     db.create_tables()
     count = 0
+    updated = 0
     for tpl in TEMPLATES:
         existing = db.fetchone("SELECT id FROM workflow_templates WHERE id = ?", (tpl["id"],))
         if existing:
+            if tpl["id"] in UPSERT_TEMPLATE_IDS:
+                db.execute(
+                    """UPDATE workflow_templates
+                       SET name = ?, description = ?, category = ?,
+                           definition_json = ?, tags_json = ?
+                       WHERE id = ?""",
+                    (
+                        tpl["name"],
+                        tpl["description"],
+                        tpl["category"],
+                        json.dumps(tpl["definition"]),
+                        json.dumps(tpl["tags"]),
+                        tpl["id"],
+                    ),
+                )
+                updated += 1
             continue
         db.execute(
             """INSERT INTO workflow_templates
@@ -962,9 +1077,18 @@ def seed() -> int:
             ),
         )
         count += 1
-    print(f"Seeded {count} new templates ({len(TEMPLATES)} total defined)")
+    print(f"Seeded {count} new templates, updated {updated} ({len(TEMPLATES)} total defined)")
     return count
 
 
 if __name__ == "__main__":
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Seed workflow marketplace templates")
+    parser.add_argument(
+        "--idempotent",
+        action="store_true",
+        help="Skip templates that already exist (default behaviour)",
+    )
+    args = parser.parse_args()
     seed()

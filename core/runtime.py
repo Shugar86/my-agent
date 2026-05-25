@@ -9,6 +9,7 @@ from rich.panel import Panel
 from rich.markdown import Markdown
 
 from core.iteration_budget import IterationBudget, BudgetExhaustedError
+from core.kimi_provider import extract_message_content
 from core.skill_cache import filter_skills_by_query
 
 os.environ.setdefault("PYTHONIOENCODING", "utf-8")
@@ -306,7 +307,7 @@ class AgentRuntime:
                     })
                 continue
 
-            final_response = response.content or ""
+            final_response = extract_message_content(response)
             session.add_assistant_message(final_response)
 
             if self.events:

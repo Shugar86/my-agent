@@ -81,3 +81,40 @@ def resolve_env_vars(config):
         else:
             resolved[key] = value
     return resolved
+
+
+def resolve_agent_model_config(
+    agent_config: dict,
+    *,
+    default_path: str = "config/agent.json",
+) -> dict:
+    """Resolve LLM model config from an agent registry entry.
+
+    Supports:
+    - full model dict (``config/agent.json`` style)
+    - profile name (``kimi``, ``fast``, …)
+    - legacy model id string + agent-level api_key/base_url
+    - fallback to ``config/agent.json`` then DEFAULT_CONFIG
+    """
+    from core.configurator import MODEL_PROFILES, resolve_profile
+
+    raw_model = agent_config.get("model")
+
+    if isinstance(raw_model, dict) and raw_model:
+        return resolve_env_vars(raw_model)
+
+    if isinstance(raw_model, str) and raw_model in MODEL_PROFILES:
+        profile = resolve_profile(raw_model)
+        if profile:
+            return profile
+
+    if isinstance(raw_model, str) and raw_model:
+        return resolve_env_vars({
+            "primary": raw_model,
+            "api_key": agent_config.get("api_key", ""),
+            "base_url": agent_config.get("base_url", ""),
+        })
+
+    defaults = load_agent_config(default_path)
+    fallback = defaults.get("model") or DEFAULT_CONFIG.get("model", {})
+    return resolve_env_vars(fallback)

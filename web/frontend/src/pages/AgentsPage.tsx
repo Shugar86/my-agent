@@ -70,11 +70,7 @@ export default function AgentsPage() {
         icon: form.icon || '🤖',
         description: form.description,
         role: form.role,
-        model: {
-          primary: 'openrouter/deepseek/deepseek-v4-flash:free',
-          fallback: 'openrouter/deepseek/deepseek-chat',
-          params: { temperature: 0.5, max_tokens: 4096 },
-        },
+        model: 'kimi',
         skills: form.skills.split(',').map((s) => s.trim()).filter(Boolean),
         tools: form.tools.split(',').map((s) => s.trim()).filter(Boolean),
         sub_agents: [],

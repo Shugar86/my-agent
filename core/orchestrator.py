@@ -1,7 +1,7 @@
 """Async-native Orchestrator with no run_in_executor wrappers."""
 from core.builder import AgentBuilder
 from core.sub_agents import run_parallel_agents, run_parallel_agents_async
-from core.config import resolve_env_vars
+from core.config import resolve_agent_model_config, resolve_env_vars
 
 
 class Orchestrator:
@@ -26,12 +26,7 @@ class Orchestrator:
         return await factory.spawn_for_task(user_input, agent_id)
 
     async def _handoff(self, user_input, agent_config, session_id=None):
-        raw_model = agent_config.get("model", {})
-        if isinstance(raw_model, str):
-            # Model is specified as a string ID, load default config
-            from core.config import DEFAULT_CONFIG
-            raw_model = DEFAULT_CONFIG.get("model", {})
-        model_config = resolve_env_vars(raw_model)
+        model_config = resolve_agent_model_config(agent_config)
         builder = (AgentBuilder()
             .set_model(model_config)
             .set_role(agent_config.get("role", ""))

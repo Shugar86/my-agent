@@ -109,13 +109,27 @@ async def handle_action_notion_db(ctx: RunContext, config: dict[str, Any]) -> di
 
 
 async def handle_action_webhook(ctx: RunContext, config: dict[str, Any]) -> dict[str, Any]:
-    """POST to external webhook URL."""
+    """HTTP request to external webhook URL (GET or POST by default)."""
     resolved = ctx.resolve_config(config)
-    url = resolved.get("url", "")
+    url = str(resolved.get("url", "")).strip()
+    if not url:
+        return {"output": {"error": "url is required"}, "success": False}
+
+    method = str(resolved.get("method", "POST")).upper()
     payload = resolved.get("payload", {})
+    headers = resolved.get("headers") or {}
     try:
-        async with httpx.AsyncClient(timeout=30) as client:
-            resp = await client.post(url, json=payload)
+        timeout = float(resolved.get("timeout", 30))
+    except (TypeError, ValueError):
+        timeout = 30.0
+    try:
+        async with httpx.AsyncClient(timeout=timeout) as client:
+            if method == "GET":
+                resp = await client.get(url, headers=headers, params=payload or None)
+            elif method == "POST":
+                resp = await client.post(url, json=payload, headers=headers)
+            else:
+                resp = await client.request(method, url, json=payload, headers=headers)
             return {
                 "output": {"status_code": resp.status_code, "body": resp.text[:2000]},
                 "success": resp.is_success,

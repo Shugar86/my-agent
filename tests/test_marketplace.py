@@ -38,6 +38,13 @@ async def auth_client(client):
 class TestMarketplaceAPI:
     @pytest.mark.asyncio
     async def test_marketplace_returns_skills(self, client):
+        import core.db_manager as dm
+        dm.db.execute(
+            """INSERT OR IGNORE INTO workflow_templates
+               (id, name, description, category, definition_json, tags_json, installs_count)
+               VALUES (?, ?, ?, ?, ?, ?, ?)""",
+            ("tpl_seed_test", "Seed WF", "Desc", "sales", "{}", "[]", 0),
+        )
         response = await client.get("/api/marketplace")
         assert response.status_code == 200
         data = response.json()

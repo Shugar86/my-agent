@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { getMe, listTeams, setActiveTeam, type Team, type MeUser } from '../api/appClient';
+import { t } from '../i18n';
 
 export default function TeamSwitcher() {
   const [me, setMe] = useState<MeUser | null>(null);
@@ -31,7 +32,7 @@ export default function TeamSwitcher() {
 
   return (
     <div style={{ padding: '8px 20px', borderBottom: '1px solid var(--border)' }}>
-      <label style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Workspace</label>
+      <label style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>{t('app.workspace')}</label>
       <select
         className="input"
         value={activeId || ''}

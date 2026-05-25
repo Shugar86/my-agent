@@ -14,7 +14,8 @@
     n8n: 'Триггер n8n',
   };
 
-  const STATUS_LABELS = { live: 'Production', lab: 'R&D Lab' };
+  const STATUS_LABELS = { live: 'В production', lab: 'Лаборатория' };
+  const PERSONA_SUMMARY = 'Пример диалога';
 
   let showcaseData = null;
   let pollTimer = null;
@@ -39,6 +40,17 @@
     if (!errorEl) return;
     errorEl.textContent = msg;
     errorEl.classList.add('visible');
+  }
+
+  function showLoadFailure(message) {
+    showError(message);
+    if (cardsEl) {
+      const safe = String(message).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      cardsEl.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:32px">
+        <p style="color:var(--text-secondary);margin-bottom:16px">${safe}</p>
+        <a href="/demo" class="btn btn-primary">Попробовать демо за 90 сек</a>
+      </div>`;
+    }
   }
 
   function hideError() {
@@ -128,15 +140,15 @@
       <div class="showcase-badges">
         <span class="showcase-badge ${statusClass}">${statusLabel}</span>
         <span class="showcase-badge">${escapeHtml(card.platform)}</span>
-        <span class="showcase-badge">${escapeHtml(card.llm)}</span>
       </div>
       <p class="showcase-card-desc">${escapeHtml(card.one_liner)}</p>
       <p class="showcase-card-metric">${escapeHtml(card.metric)}</p>
       <details class="persona-accordion">
-        <summary>Persona YAML preview</summary>
+        <summary>${PERSONA_SUMMARY}</summary>
         <div class="persona-accordion-body">
           <div class="persona-role">${escapeHtml(card.persona.role)}</div>
           <div class="persona-voice">${escapeHtml(card.persona.voice)}</div>
+          ${card.llm ? `<div class="persona-llm" style="font-size:11px;color:var(--text-muted);margin-bottom:8px">Модель: ${escapeHtml(card.llm)}</div>` : ''}
           ${snippets}
         </div>
       </details>
@@ -149,7 +161,7 @@
       <div class="category">${escapeHtml(tpl.category)}</div>
       <h3>${escapeHtml(tpl.name)}</h3>
       <p>${escapeHtml(tpl.description)}</p>
-      <div class="nodes">${tpl.nodes} nodes</div>
+      <div class="marketplace-outcome">Готовое решение</div>
     </div>`;
   }
 
@@ -364,6 +376,6 @@
   }
 
   loadShowcaseData().catch((err) => {
-    showError(err.message || 'Ошибка загрузки страницы');
+    showLoadFailure(err.message || 'Не удалось загрузить кейсы');
   });
 })();

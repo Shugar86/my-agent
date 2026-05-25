@@ -64,6 +64,8 @@ COPY --from=frontend-builder /app/web/static/app ./web/static/app
 # Create data directory with proper permissions
 RUN mkdir -p data && chown -R appuser:appuser data
 
+RUN chmod +x scripts/entrypoint.sh
+
 USER appuser
 
 EXPOSE 8020
@@ -72,4 +74,5 @@ ENV PYTHONUNBUFFERED=1
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONIOENCODING=utf-8
 
+ENTRYPOINT ["scripts/entrypoint.sh"]
 CMD ["python", "-m", "uvicorn", "web.server:app", "--host", "0.0.0.0", "--port", "8020"]

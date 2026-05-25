@@ -13,52 +13,15 @@ os.environ.setdefault('PYTHONIOENCODING', 'utf-8')
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from core.config import load_config, resolve_env_vars
+from core.configurator import MODEL_PROFILES
 from core.builder import AgentBuilder
 from core.agent_store import AgentStore
 from core.orchestrator import Orchestrator
 
 import pathlib
 
-# Model profiles (expected by tests)
-MODEL_PROFILES = {
-    "fast": {
-        "primary": "openai/gpt-5.4-nano",
-        "api_key": "${NEUROAPI_API_KEY}",
-        "base_url": "https://neuroapi.host/v1",
-        "fallback": "openrouter/owl-alpha",
-        "fallback_api_key": "${NEUROAPI_API_KEY}",
-        "fallback_base_url": "https://neuroapi.host/v1",
-        "params": {"temperature": 0.7, "max_tokens": 4096},
-        "max_retries": 2, "retry_base_delay": 1.5, "retry_max_delay": 30.0,
-    },
-    "balanced": {
-        "primary": "openrouter/owl-alpha",
-        "api_key": "${OPENROUTER_API_KEY}",
-        "base_url": "https://openrouter.ai/api/v1",
-        "fallback": "openai/gpt-5.4-nano",
-        "fallback_api_key": "${NEUROAPI_API_KEY}",
-        "fallback_base_url": "https://neuroapi.host/v1",
-        "params": {"temperature": 0.7, "max_tokens": 8192},
-        "max_retries": 2, "retry_base_delay": 1.5, "retry_max_delay": 30.0,
-    },
-    "smart": {
-        "primary": "anthropic/claude-sonnet-4",
-        "api_key": "${OPENROUTER_API_KEY}",
-        "base_url": "https://openrouter.ai/api/v1",
-        "fallback": "openrouter/owl-alpha",
-        "fallback_api_key": "${OPENROUTER_API_KEY}",
-        "fallback_base_url": "https://openrouter.ai/api/v1",
-        "params": {"temperature": 0.3, "max_tokens": 16000},
-        "max_retries": 2, "retry_base_delay": 1.5, "retry_max_delay": 30.0,
-    },
-    "local": {
-        "primary": "ollama/llama3",
-        "api_key": "",
-        "base_url": "http://localhost:11434",
-        "params": {"temperature": 0.7, "max_tokens": 4096},
-        "max_retries": 1, "retry_base_delay": 2.0, "retry_max_delay": 10.0,
-    },
-}
+# Model profiles — shared with web UI (core/configurator.py)
+# Re-exported here for CLI backward compatibility and tests.
 
 # CLI user file (expected by tests)
 CLI_USER_FILE = pathlib.Path("data/cli_user.json")

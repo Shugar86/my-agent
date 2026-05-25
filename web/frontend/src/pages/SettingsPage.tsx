@@ -21,12 +21,7 @@ interface ConnectionDraft {
   [field: string]: string;
 }
 
-const MODEL_OPTIONS = [
-  { value: 'openrouter/deepseek/deepseek-v4-flash:free', label: 'DeepSeek V4 Flash (Free)' },
-  { value: 'openrouter/deepseek/deepseek-chat', label: 'DeepSeek Chat' },
-  { value: 'openrouter/anthropic/claude-3.5-sonnet', label: 'Claude 3.5 Sonnet' },
-  { value: 'openrouter/openai/gpt-4o', label: 'GPT-4o' },
-];
+const DEFAULT_MODEL_PROFILE = 'kimi';
 
 /** Settings with tabs: integrations, models/API keys, workspace profile. */
 export default function SettingsPage() {
@@ -37,7 +32,10 @@ export default function SettingsPage() {
   const [drafts, setDrafts] = useState<Record<string, ConnectionDraft>>({});
   const [busy, setBusy] = useState<string | null>(null);
   const [apiKey, setApiKey] = useState('');
-  const [primaryModel, setPrimaryModel] = useState(MODEL_OPTIONS[0].value);
+  const [primaryModel, setPrimaryModel] = useState(DEFAULT_MODEL_PROFILE);
+  const [modelOptions, setModelOptions] = useState<Array<{ value: string; label: string }>>([
+    { value: 'kimi', label: 'Kimi K2.6 Code' },
+  ]);
   const [me, setMe] = useState<MeUser | null>(null);
 
   const refresh = () => {
@@ -48,9 +46,20 @@ export default function SettingsPage() {
     fetch('/api/health').then((r) => r.json()).then(setHealth).catch(() => setHealth(null));
     refresh();
     getAppConfig().then((cfg) => {
-      setPrimaryModel(cfg.model?.primary || MODEL_OPTIONS[0].value);
+      setPrimaryModel(cfg.model?.primary || DEFAULT_MODEL_PROFILE);
       setApiKey(cfg.model?.api_key || '');
     }).catch(() => {});
+    fetch('/api/models')
+      .then((r) => (r.ok ? r.json() : { profiles: {} }))
+      .then((data) => {
+        const profiles = data.profiles || {};
+        const options = Object.entries(profiles).map(([key, label]) => ({
+          value: key,
+          label: String(label),
+        }));
+        if (options.length > 0) setModelOptions(options);
+      })
+      .catch(() => {});
     getMe().then(setMe).catch(() => {});
   }, []);
 
@@ -209,7 +218,7 @@ export default function SettingsPage() {
           <div className="form-group">
             <label>{t('settings.primaryModel')}</label>
             <select className="input" value={primaryModel} onChange={(e) => setPrimaryModel(e.target.value)}>
-              {MODEL_OPTIONS.map((m) => (
+              {modelOptions.map((m) => (
                 <option key={m.value} value={m.value}>{m.label}</option>
               ))}
             </select>
@@ -235,7 +244,7 @@ export default function SettingsPage() {
             <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>{me?.username} · {me?.email || '—'}</p>
             <p style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 8 }}>{t('settings.version')}: 3.1.0</p>
             <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>{t('settings.framework')}: FastAPI</p>
-            <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>{t('settings.defaultModel')}: DeepSeek V4 Flash</p>
+            <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>{t('settings.defaultModel')}: {primaryModel}</p>
           </div>
         </>
       )}

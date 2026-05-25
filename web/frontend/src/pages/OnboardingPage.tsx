@@ -4,8 +4,8 @@ import {
   listTeams,
   createTeam,
   acceptInvite,
-  listTemplates,
   installTemplate,
+  ApiError,
   completeOnboarding,
   listIntegrations,
   saveIntegrationCredentials,
@@ -14,16 +14,35 @@ import {
   startDemoRun,
   logUxEvent,
   type Integration,
-  type Template,
 } from '../api/appClient';
 import { getRun } from '../api/workflowClient';
 import ExecutionTimeline from '../components/ExecutionTimeline';
 import { t } from '../i18n';
 
-const STEP_KEYS = ['workspace', 'integrations', 'workflow', 'testRun'] as const;
+const STEP_KEYS = ['demo', 'usecase', 'workspace', 'integrations'] as const;
 const TOTAL_STEPS = STEP_KEYS.length;
 
-/** Four-step onboarding wizard with progress bar and 90s demo. */
+const USECASE_IDS = ['ararat', 'pegasszn', 'pretenzia', 'my-agent'] as const;
+
+const USECASE_TEMPLATES: Record<(typeof USECASE_IDS)[number], string> = {
+  ararat: 'tpl_beauty_consultant',
+  pegasszn: 'tpl_content_repurpose',
+  pretenzia: 'tpl_lead_qualifier',
+  'my-agent': 'tpl_competitor_intelligence',
+};
+
+interface ShowcaseCard {
+  id: string;
+  vertical: string;
+  title: string;
+  one_liner: string;
+  metric: string;
+  persona: {
+    snippets: Array<{ text: string }>;
+  };
+}
+
+/** Four-step onboarding: demo first, then use case, workspace, optional integrations. */
 export default function OnboardingPage() {
   const navigate = useNavigate();
   const [params] = useSearchParams();
@@ -31,13 +50,12 @@ export default function OnboardingPage() {
   const [teamName, setTeamName] = useState('');
   const [teams, setTeams] = useState<Array<{ id: string; name: string }>>([]);
   const [integrations, setIntegrations] = useState<Integration[]>([]);
-  const [templates, setTemplates] = useState<Template[]>([]);
+  const [usecaseCards, setUsecaseCards] = useState<ShowcaseCard[]>([]);
   const [status, setStatus] = useState('');
   const [installing, setInstalling] = useState(false);
   const [installedWfId, setInstalledWfId] = useState<string | null>(null);
   const [drafts, setDrafts] = useState<Record<string, Record<string, string>>>({});
   const [testing, setTesting] = useState<string | null>(null);
-  const [testResults, setTestResults] = useState<Record<string, boolean>>({});
   const [demoRun, setDemoRun] = useState<{
     workflow_id: string;
     run_id: string;
@@ -58,13 +76,19 @@ export default function OnboardingPage() {
     }
     listTeams().then((d) => setTeams(d.teams)).catch(() => {});
     listIntegrations().then(setIntegrations).catch(() => {});
-    listTemplates(undefined, 'popular').then((tpl) => setTemplates(tpl.slice(0, 6))).catch(() => {});
+    fetch('/welcome-assets/data/showcase.json')
+      .then((r) => (r.ok ? r.json() : { cards: [] }))
+      .then((data) => {
+        const cards = (data.cards || []) as ShowcaseCard[];
+        setUsecaseCards(cards.filter((c) => USECASE_IDS.includes(c.id as (typeof USECASE_IDS)[number])));
+      })
+      .catch(() => {});
   }, [params]);
 
   const handleCreateTeam = async () => {
     if (!teamName.trim()) return;
     await createTeam(teamName.trim());
-    setStep(2);
+    setStep(4);
   };
 
   const handleConnectOAuth = async (provider: string) => {
@@ -93,7 +117,6 @@ export default function OnboardingPage() {
     setTesting(provider);
     try {
       const result = await testIntegration(provider);
-      setTestResults((prev) => ({ ...prev, [provider]: !!result.success }));
       setStatus(result.success ? t('onboarding.connectionOk') : t('onboarding.connectionFailed'));
     } catch {
       setStatus(t('onboarding.connectionFailed'));
@@ -102,12 +125,23 @@ export default function OnboardingPage() {
     }
   };
 
-  const handleInstall = async (id: string) => {
+  const handleUsecaseSelect = async (cardId: string) => {
+    const templateId = USECASE_TEMPLATES[cardId as (typeof USECASE_IDS)[number]];
     setInstalling(true);
+    setStatus('');
     try {
-      const result = await installTemplate(id);
-      setInstalledWfId(result.workflow.id);
-      setStep(4);
+      if (templateId) {
+        const result = await installTemplate(templateId);
+        setInstalledWfId(result.workflow.id);
+      }
+      setStep(3);
+    } catch (e) {
+      if (e instanceof ApiError && e.status === 404) {
+        setStatus(t('onboarding.templateNotSeeded'));
+        setStep(3);
+      } else {
+        setStatus(t('dashboard.installFailed'));
+      }
     } finally {
       setInstalling(false);
     }
@@ -144,7 +178,6 @@ export default function OnboardingPage() {
         );
         if (run.status !== 'running') {
           clearInterval(interval);
-          completeOnboarding().catch(() => {});
           logUxEvent('onboarding_demo_completed', { status: run.status });
         }
       } catch {
@@ -195,13 +228,97 @@ export default function OnboardingPage() {
 
       {step === 1 && (
         <div className="card">
+          <h2 style={{ fontSize: 16, marginBottom: 8 }}>{t('onboarding.demoTitle')}</h2>
+          <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 16 }}>{t('onboarding.demoDesc')}</p>
+          {!demoRun ? (
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              <button type="button" className="btn btn-primary" onClick={handleTestRun} disabled={demoStarting}>
+                {demoStarting ? t('common.loading') : t('onboarding.runDemo')}
+              </button>
+              <button type="button" className="btn" onClick={() => setStep(2)}>{t('common.skip')}</button>
+            </div>
+          ) : (
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12, padding: '8px 12px', background: 'var(--bg-tertiary)', borderRadius: 6, fontSize: 12 }}>
+                <span>
+                  {demoRun.status === 'success' ? '✓' : demoRun.status === 'failed' ? '✗' : '…'}{' '}
+                  <strong style={{ color: demoRun.status === 'success' ? 'var(--success)' : demoRun.status === 'failed' ? 'var(--danger)' : 'var(--accent)' }}>
+                    {demoRun.status}
+                  </strong>
+                </span>
+                <span style={{ color: 'var(--text-muted)' }}>{demoRun.logs.length} events</span>
+              </div>
+              <div style={{ maxHeight: 400, overflowY: 'auto', border: '1px solid var(--border)', borderRadius: 6, padding: 12 }}>
+                <ExecutionTimeline logs={demoRun.logs} />
+              </div>
+              <div style={{ display: 'flex', gap: 8, marginTop: 16, flexWrap: 'wrap' }}>
+                {demoRun.status !== 'running' && demoRun.artifact_url && (
+                  <a href={demoRun.artifact_url} className="btn btn-primary" download target="_blank" rel="noreferrer">
+                    {t('onboarding.downloadDocx')}
+                  </a>
+                )}
+                {demoRun.status !== 'running' && (
+                  <button type="button" className="btn btn-primary" onClick={() => setStep(2)}>
+                    {t('common.continue')}
+                  </button>
+                )}
+                <button type="button" className="btn" onClick={() => navigate(`/workflows/${demoRun.workflow_id}?run=${demoRun.run_id}`)}>
+                  {t('onboarding.openInBuilder')}
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {step === 2 && (
+        <div className="card">
+          <h2 style={{ fontSize: 16, marginBottom: 12 }}>{t('onboarding.usecaseTitle')}</h2>
+          <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 16 }}>{t('onboarding.usecaseDesc')}</p>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 12 }}>
+            {usecaseCards.map((card) => (
+              <button
+                key={card.id}
+                type="button"
+                className="btn"
+                style={{ textAlign: 'left', display: 'block', height: 'auto', padding: 14 }}
+                onClick={() => handleUsecaseSelect(card.id)}
+                disabled={installing}
+              >
+                <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4 }}>{card.vertical}</div>
+                <strong style={{ display: 'block', marginBottom: 6 }}>{card.title}</strong>
+                <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 8 }}>{card.one_liner}</div>
+                <div style={{ fontSize: 11, color: 'var(--accent)' }}>{card.metric}</div>
+                {card.persona?.snippets?.[0] && (
+                  <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 8, fontStyle: 'italic', lineHeight: 1.4 }}>
+                    «{card.persona.snippets[0].text.slice(0, 100)}…»
+                  </div>
+                )}
+              </button>
+            ))}
+          </div>
+          <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
+            <button type="button" className="btn" onClick={() => setStep(3)} disabled={installing}>
+              {t('onboarding.skipUsecase')}
+            </button>
+            {installedWfId && (
+              <button type="button" className="btn" onClick={() => navigate(`/workflows/${installedWfId}`)}>
+                {t('onboarding.openInstalled')}
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
+      {step === 3 && (
+        <div className="card">
           <h2 style={{ fontSize: 16, marginBottom: 12 }}>{t('onboarding.workspaceTitle')}</h2>
           {teams.length > 0 ? (
             <>
               <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 12 }}>
                 {t('onboarding.workspaceIn')} <strong>{teams[0].name}</strong>
               </p>
-              <button type="button" className="btn btn-primary" onClick={() => setStep(2)}>{t('common.continue')}</button>
+              <button type="button" className="btn btn-primary" onClick={() => setStep(4)}>{t('common.continue')}</button>
             </>
           ) : (
             <>
@@ -212,7 +329,7 @@ export default function OnboardingPage() {
         </div>
       )}
 
-      {step === 2 && (
+      {step === 4 && (
         <div className="card">
           <h2 style={{ fontSize: 16, marginBottom: 12 }}>{t('onboarding.integrationsTitle')}</h2>
           <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 16 }}>{t('onboarding.integrationsDesc')}</p>
@@ -265,78 +382,9 @@ export default function OnboardingPage() {
             })}
           </div>
           <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
-            <button type="button" className="btn btn-primary" onClick={() => setStep(3)}>{t('common.continue')}</button>
-            <button type="button" className="btn" onClick={() => setStep(3)}>{t('onboarding.skipIntegrations')}</button>
+            <button type="button" className="btn btn-primary" onClick={finish}>{t('onboarding.goToDashboard')}</button>
+            <button type="button" className="btn" onClick={finish}>{t('onboarding.skipIntegrations')}</button>
           </div>
-        </div>
-      )}
-
-      {step === 3 && (
-        <div className="card">
-          <h2 style={{ fontSize: 16, marginBottom: 12 }}>{t('onboarding.workflowTitle')}</h2>
-          <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 16 }}>{t('onboarding.workflowDesc')}</p>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 8 }}>
-            {templates.map((tpl) => (
-              <button
-                key={tpl.id}
-                type="button"
-                className="btn"
-                style={{ textAlign: 'left', display: 'block', height: 'auto', padding: 12 }}
-                onClick={() => handleInstall(tpl.id)}
-                disabled={installing}
-              >
-                <strong>{tpl.name}</strong>
-                <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>{tpl.description.slice(0, 80)}</div>
-              </button>
-            ))}
-          </div>
-          <button type="button" className="btn btn-primary" style={{ marginTop: 16 }} onClick={finish}>{t('onboarding.finishWithout')}</button>
-        </div>
-      )}
-
-      {step === 4 && (
-        <div className="card">
-          <h2 style={{ fontSize: 16, marginBottom: 8 }}>{t('onboarding.demoTitle')}</h2>
-          <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 16 }}>{t('onboarding.demoDesc')}</p>
-          {!demoRun ? (
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              <button type="button" className="btn btn-primary" onClick={handleTestRun} disabled={demoStarting}>
-                {demoStarting ? t('common.loading') : t('onboarding.runDemo')}
-              </button>
-              {installedWfId && (
-                <button type="button" className="btn" onClick={() => navigate(`/workflows/${installedWfId}`)}>
-                  {t('onboarding.openInstalled')}
-                </button>
-              )}
-              <button type="button" className="btn" onClick={finish}>{t('onboarding.skipToDashboard')}</button>
-            </div>
-          ) : (
-            <div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12, padding: '8px 12px', background: 'var(--bg-tertiary)', borderRadius: 6, fontSize: 12 }}>
-                <span>
-                  {demoRun.status === 'success' ? '✓' : demoRun.status === 'failed' ? '✗' : '…'}{' '}
-                  <strong style={{ color: demoRun.status === 'success' ? 'var(--success)' : demoRun.status === 'failed' ? 'var(--danger)' : 'var(--accent)' }}>
-                    {demoRun.status}
-                  </strong>
-                </span>
-                <span style={{ color: 'var(--text-muted)' }}>{demoRun.logs.length} events</span>
-              </div>
-              <div style={{ maxHeight: 400, overflowY: 'auto', border: '1px solid var(--border)', borderRadius: 6, padding: 12 }}>
-                <ExecutionTimeline logs={demoRun.logs} />
-              </div>
-              <div style={{ display: 'flex', gap: 8, marginTop: 16, flexWrap: 'wrap' }}>
-                {demoRun.status !== 'running' && demoRun.artifact_url && (
-                  <a href={demoRun.artifact_url} className="btn btn-primary" download target="_blank" rel="noreferrer">
-                    {t('onboarding.downloadDocx')}
-                  </a>
-                )}
-                <button type="button" className="btn" onClick={() => navigate(`/workflows/${demoRun.workflow_id}?run=${demoRun.run_id}`)}>
-                  {t('onboarding.openInBuilder')}
-                </button>
-                <button type="button" className="btn btn-primary" onClick={finish}>{t('onboarding.goToDashboard')}</button>
-              </div>
-            </div>
-          )}
         </div>
       )}
     </div>

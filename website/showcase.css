@@ -465,7 +465,8 @@
   margin-bottom: 8px;
 }
 
-.marketplace-mini-card .nodes {
+.marketplace-mini-card .nodes,
+.marketplace-mini-card .marketplace-outcome {
   font-size: 11px;
   color: var(--text-secondary);
 }

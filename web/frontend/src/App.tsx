@@ -4,7 +4,6 @@ import AppShell from './layout/AppShell';
 import Dashboard from './pages/Dashboard';
 import MarketplacePage from './pages/MarketplacePage';
 import ChatPage from './pages/ChatPage';
-import AgentBuilderPage from './pages/AgentBuilderPage';
 import SettingsPage from './pages/SettingsPage';
 import WorkflowList from './pages/WorkflowList';
 import WorkflowBuilder from './pages/WorkflowBuilder';
@@ -28,7 +27,7 @@ export default function App() {
           <Route path="marketplace" element={<MarketplacePage />} />
           <Route path="showcase" element={<ShowcasePage />} />
           <Route path="chat" element={<ChatPage />} />
-          <Route path="builder" element={<AgentBuilderPage />} />
+          <Route path="builder" element={<Navigate to="/agents" replace />} />
           <Route path="settings" element={<SettingsPage />} />
           <Route path="analytics" element={<AnalyticsPage />} />
           <Route path="admin" element={<AdminPage />} />

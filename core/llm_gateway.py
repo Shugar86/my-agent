@@ -3,6 +3,7 @@ import asyncio
 import logging
 import litellm
 
+from core.kimi_provider import apply_kimi_headers, extract_message_content, resolve_kimi_base_url
 from core.retry_utils import async_jittered_backoff
 
 logger = logging.getLogger(__name__)
@@ -89,10 +90,14 @@ class LLMGateway:
             kwargs["model"] = self.fallback
             if self.fallback_api_key:
                 kwargs["api_key"] = self.fallback_api_key
-            if self.fallback_base_url:
+            fb_base = resolve_kimi_base_url(self.fallback_api_key, self.fallback_base_url)
+            if fb_base:
+                kwargs["api_base"] = fb_base
+            elif self.fallback_base_url:
                 kwargs["api_base"] = self.fallback_base_url
+            apply_kimi_headers(kwargs)
             response = await litellm.acompletion(**kwargs)
-            return response.choices[0].message
+            return self._normalize_message(response.choices[0].message)
         except Exception as fallback_error:
             logger.error("Fallback model also failed: %s", fallback_error)
             return None
@@ -114,7 +119,7 @@ class LLMGateway:
             try:
                 logger.debug("LLM call attempt %d/%d (model=%s)", attempt, self.max_retries, self.primary)
                 response = await litellm.acompletion(**kwargs)
-                return response.choices[0].message
+                return self._normalize_message(response.choices[0].message)
             except Exception as e:
                 category, should_retry = APIErrorClassifier.classify_error(e)
                 last_error = e
@@ -143,10 +148,14 @@ class LLMGateway:
                     kwargs["model"] = self.fallback
                     if self.fallback_api_key:
                         kwargs["api_key"] = self.fallback_api_key
-                    if self.fallback_base_url:
+                    fb_base = resolve_kimi_base_url(self.fallback_api_key, self.fallback_base_url)
+                    if fb_base:
+                        kwargs["api_base"] = fb_base
+                    elif self.fallback_base_url:
                         kwargs["api_base"] = self.fallback_base_url
+                    apply_kimi_headers(kwargs)
                     response = await litellm.acompletion(**kwargs)
-                    return response.choices[0].message
+                    return self._normalize_message(response.choices[0].message)
                 except Exception as e:
                     category, should_retry = APIErrorClassifier.classify_error(e)
                     logger.warning("Fallback attempt %d failed (category=%s): %s", attempt, category, e)
@@ -177,13 +186,19 @@ class LLMGateway:
                 kwargs["stream"] = True
                 if self.fallback_api_key:
                     kwargs["api_key"] = self.fallback_api_key
-                if self.fallback_base_url:
+                fb_base = resolve_kimi_base_url(self.fallback_api_key, self.fallback_base_url)
+                if fb_base:
+                    kwargs["api_base"] = fb_base
+                elif self.fallback_base_url:
                     kwargs["api_base"] = self.fallback_base_url
+                apply_kimi_headers(kwargs)
                 response = await litellm.acompletion(**kwargs)
                 async for chunk in response:
                     delta = chunk.choices[0].delta if chunk.choices else None
-                    if delta and delta.content:
-                        yield {"type": "token", "content": delta.content}
+                    if delta:
+                        token = delta.content or getattr(delta, "reasoning_content", None)
+                        if token:
+                            yield {"type": "token", "content": token}
                 yield {"type": "done"}
                 return
             except Exception as e:
@@ -218,8 +233,9 @@ class LLMGateway:
                     delta = chunk.choices[0].delta if chunk.choices else None
                     if delta is None:
                         continue
-                    if delta.content:
-                        yield {"type": "token", "content": delta.content}
+                    token = delta.content or getattr(delta, "reasoning_content", None)
+                    if token:
+                        yield {"type": "token", "content": token}
                     if delta.tool_calls:
                         for tc in delta.tool_calls:
                             idx = tc.index
@@ -256,6 +272,14 @@ class LLMGateway:
         async for item in self._stream_fallback(kwargs, last_error):
             yield item
 
+    @staticmethod
+    def _normalize_message(message):
+        """Ensure message.content is populated for reasoning-only models."""
+        content = extract_message_content(message)
+        if content and not getattr(message, "content", None):
+            message.content = content
+        return message
+
     def _build_kwargs(self, messages, tools=None, **extra_kwargs):
         kwargs = {
             "model": self.primary,
@@ -265,11 +289,14 @@ class LLMGateway:
         }
         if self.api_key:
             kwargs["api_key"] = self.api_key
-        if self.base_url:
+        resolved_base = resolve_kimi_base_url(self.api_key, self.base_url)
+        if resolved_base:
+            kwargs["api_base"] = resolved_base
+        elif self.base_url:
             kwargs["api_base"] = self.base_url
         if tools:
             kwargs["tools"] = tools
-        return kwargs
+        return apply_kimi_headers(kwargs)
 
     @staticmethod
     def _make_error_response(error: Exception):

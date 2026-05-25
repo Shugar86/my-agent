@@ -38,9 +38,10 @@
   }
 
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let revealObs = null;
 
   if (!reducedMotion) {
-    const revealObs = new IntersectionObserver(
+    revealObs = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
@@ -103,4 +104,46 @@
       }
     });
   }
+
+  /** Load top-3 live use cases on landing from showcase.json. */
+  async function loadLandingUseCases() {
+    const grid = document.getElementById('useCasesGrid');
+    if (!grid) return;
+    const featuredIds = ['ararat', 'pegasszn', 'pretenzia'];
+    try {
+      const res = await fetch('/welcome-assets/data/showcase.json');
+      if (!res.ok) throw new Error('load failed');
+      const data = await res.json();
+      const cards = (data.cards || []).filter((c) => featuredIds.includes(c.id));
+      if (cards.length === 0) throw new Error('no cards');
+      grid.innerHTML = cards
+        .map(
+          (card) => `<article class="use-case-card reveal${card.status === 'live' ? ' use-case-card--featured' : ''}">
+            ${card.status === 'live' ? '<span class="use-case-badge">Production</span>' : ''}
+            <h3>${escapeHtml(card.title)}</h3>
+            <p>${escapeHtml(card.one_liner)}</p>
+            <p style="font-size:13px;font-weight:600;color:var(--accent);margin-top:8px">${escapeHtml(card.metric)}</p>
+            <a href="/showcase#showcase" class="use-case-link">Подробнее →</a>
+          </article>`,
+        )
+        .join('');
+      if (!reducedMotion && revealObs) {
+        grid.querySelectorAll('.reveal').forEach((el) => revealObs.observe(el));
+      } else {
+        grid.querySelectorAll('.reveal').forEach((el) => el.classList.add('visible'));
+      }
+    } catch {
+      grid.innerHTML = `<p style="color:var(--text-secondary);grid-column:1/-1;text-align:center">
+        <a href="/showcase" class="btn btn-primary">Смотреть кейсы →</a>
+      </p>`;
+    }
+  }
+
+  function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  loadLandingUseCases();
 })();

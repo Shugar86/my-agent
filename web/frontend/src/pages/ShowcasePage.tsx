@@ -40,27 +40,47 @@ interface ShowcaseData {
   }>;
 }
 
-/** Authenticated mirror of /showcase — same JSON source-of-truth. */
+/** Authenticated mirror of /showcase — cards from JSON, featured templates from API. */
 export default function ShowcasePage() {
   const [data, setData] = useState<ShowcaseData | null>(null);
+  const [featuredTemplates, setFeaturedTemplates] = useState<ShowcaseData['featured_templates']>([]);
   const [expanded, setExpanded] = useState<string | null>(null);
   const [demoOpen, setDemoOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch('/welcome-assets/data/showcase.json')
-      .then((r) => {
-        if (!r.ok) throw new Error('Failed to load showcase');
-        return r.json();
+    Promise.all([
+      fetch('/welcome-assets/data/showcase.json')
+        .then((r) => {
+          if (!r.ok) throw new Error('Failed to load showcase');
+          return r.json();
+        }),
+      fetch('/api/public/templates?featured=true&limit=9')
+        .then((r) => (r.ok ? r.json() : { templates: [] }))
+        .catch(() => ({ templates: [] })),
+    ])
+      .then(([showcaseJson, featuredJson]) => {
+        setData(showcaseJson);
+        const apiTemplates = (featuredJson.templates || []).map(
+          (tpl: { id: string; name: string; category: string; description: string; nodes?: number }) => ({
+            id: tpl.id,
+            name: tpl.name,
+            category: tpl.category,
+            description: tpl.description,
+            nodes: tpl.nodes || 0,
+          }),
+        );
+        setFeaturedTemplates(
+          apiTemplates.length > 0 ? apiTemplates : showcaseJson.featured_templates || [],
+        );
       })
-      .then(setData)
       .catch((e: Error) => setError(e.message));
   }, []);
 
   if (error) {
     return (
       <div className="page-content">
-        <PageHeader title="Showcase" subtitle={error} />
+        <PageHeader title={t('showcase.title')} subtitle={error} />
       </div>
     );
   }
@@ -68,23 +88,29 @@ export default function ShowcasePage() {
   if (!data) {
     return (
       <div className="page-content">
-        <PageHeader title="Showcase" subtitle="Loading…" />
+        <PageHeader title={t('showcase.title')} subtitle={t('common.loading')} />
       </div>
     );
   }
 
+  const meta = data.meta;
+
   return (
     <div className="page-content">
       <PageHeader
-        title="Production vertical cases"
-        subtitle={`${data.meta.live_deployments} live · ${data.meta.personas} personas · ${data.meta.templates} templates`}
+        title={t('showcase.title')}
+        subtitle={t('showcase.subtitle', {
+          live: meta.live_deployments,
+          personas: meta.personas,
+          templates: meta.templates,
+        })}
         actions={
           <>
             <button type="button" className="btn btn-primary" onClick={() => setDemoOpen(true)}>
               {t('onboarding.runDemo')}
             </button>
             <a href="/showcase" className="btn btn-secondary" target="_blank" rel="noopener noreferrer">
-              Public page ↗
+              {t('showcase.publicPage')} ↗
             </a>
           </>
         }
@@ -122,7 +148,9 @@ export default function ShowcasePage() {
               </div>
             </div>
             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 10 }}>
-              <span className="badge badge-featured">{card.status === 'live' ? 'Production' : 'R&D Lab'}</span>
+              <span className="badge badge-featured">
+                {card.status === 'live' ? t('showcase.liveBadge') : t('showcase.labBadge')}
+              </span>
               <span className="badge">{card.platform}</span>
             </div>
             <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 8 }}>{card.one_liner}</p>
@@ -133,7 +161,7 @@ export default function ShowcasePage() {
               style={{ fontSize: 12, padding: '4px 8px', marginBottom: 12 }}
               onClick={() => setExpanded(expanded === card.id ? null : card.id)}
             >
-              {expanded === card.id ? 'Hide persona' : 'Persona YAML preview'}
+              {expanded === card.id ? t('showcase.personaHide') : t('showcase.personaToggle')}
             </button>
             {expanded === card.id && (
               <div style={{ fontSize: 12, background: 'var(--bg-tertiary)', borderRadius: 8, padding: 12, marginBottom: 12 }}>
@@ -161,7 +189,7 @@ export default function ShowcasePage() {
         ))}
       </div>
 
-      <h2 style={{ fontSize: 18, marginBottom: 12 }}>Featured templates</h2>
+      <h2 style={{ fontSize: 18, marginBottom: 12 }}>{t('showcase.featuredTemplates')}</h2>
       <div
         style={{
           display: 'grid',
@@ -170,12 +198,11 @@ export default function ShowcasePage() {
           marginBottom: 16,
         }}
       >
-        {data.featured_templates.map((tpl) => (
+        {featuredTemplates.map((tpl) => (
           <div key={tpl.id} className="card" style={{ padding: 16 }}>
             <div style={{ fontSize: 11, color: 'var(--accent)', textTransform: 'uppercase', marginBottom: 4 }}>{tpl.category}</div>
             <h3 style={{ fontSize: 14, marginBottom: 6 }}>{tpl.name}</h3>
-            <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 6 }}>{tpl.description}</p>
-            <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{tpl.nodes} nodes</div>
+            <p style={{ fontSize: 12, color: 'var(--text-muted)' }}>{tpl.description}</p>
           </div>
         ))}
       </div>

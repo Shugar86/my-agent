@@ -71,6 +71,34 @@
     animation: heroFadeIn 0.8s ease 0.2s both;
 }
 
+.device-frame {
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: var(--shadow-hover);
+    border: 1px solid var(--border);
+    background: #0d1117;
+}
+
+.device-frame__bar {
+    height: 28px;
+    background: #161b22;
+    border-bottom: 1px solid #30363d;
+    display: flex;
+    align-items: center;
+    padding: 0 12px;
+    gap: 6px;
+}
+
+.device-frame__dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #484f58;
+}
+
+.device-frame__body { padding: 0; min-height: 280px; }
+.device-frame__body img { width: 100%; display: block; }
+
 .hero-visual .device-frame__body { min-height: 280px; }
 
 @keyframes heroFadeIn {
