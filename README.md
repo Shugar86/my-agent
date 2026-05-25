@@ -1,7 +1,7 @@
 # My Agent — Technical Documentation
 
 > Last updated: 2026-05-26
-> Version: 3.3.0 (Architectural fix — iterations 1–2: Kimi, honest engine, RU builder)
+> Version: 3.3.1 (CEO audits — sales readiness + product depth)
 > Author: AI Assistant
 
 ---
@@ -45,7 +45,7 @@ Mock fallback works without API keys — safe for live investor presentations.
 | `/app/agents` | CRUD агентов |
 | `/app/knowledge` | База знаний (RAG) |
 | `/app/mcp` | MCP-серверы |
-| `/app/settings` | Интеграции / модели / профиль |
+| `/app/settings` | Интеграции, модели, API keys, billing, профиль workspace |
 | `/app/onboarding` | 4-step wizard + 90s demo |
 | `/app/showcase` | Demo-MVP vertical cases (auth) |
 | `/showcase` | Demo-MVP showcase (public, no auth) |
@@ -53,6 +53,14 @@ Mock fallback works without API keys — safe for live investor presentations.
 | `/welcome` | Маркетинговый лендинг |
 
 Дизайн-система: [`web/frontend/DESIGN.md`](web/frontend/DESIGN.md). Сборка: `cd web/frontend && bun run build`.
+
+### Changelog 3.3.1 (2026-05-26) — CEO audits
+
+**Sales readiness:** signup → onboarding, plan limits, template demo-run, API keys + billing UI, workspace isolation tests.
+
+**Product depth:** async workflow runs, schedule pause/resume UI, builder branch modal + edge panel, `enable_memory` on agent nodes, lazy bundle split, n8n registry, monitoring profile.
+
+Roadmap: [AUDIT_PRODUCT_2026.md](./AUDIT_PRODUCT_2026.md).
 
 ### Changelog 3.3.0 (2026-05-26) — Architectural fix
 
@@ -91,8 +99,8 @@ multi-agent orchestration, and deep research capabilities.
 - **Universal Assistant** — one chat for everything, Kimi K2.6, ~61 real tools (no phantom stubs)
 - **7 Specialized Agents** — researcher, developer, marketer, data_analyst, slides, docs, universal
 - **30+ Skills** — deep_research, research, parsing, RAG, browser, web3, voice_io, …
-- **Workflow Engine** — visual DAG builder (React Flow), 21+ node types, **honest run status**
-- **Marketplace** — 52 templates, featured section, draft templates hidden from popular
+- **Workflow Engine** — visual DAG builder (React Flow), 21+ node types, **async runs**, honest status
+- **Marketplace** — 52 templates, demo-run preview, featured section
 - **Investor Demo** — `POST /api/demo/run` with 3 presets + prerecorded fallback + DOCX
 - **n8n Integration** — `action.n8n_webhook` node (optional `--profile demo` stack)
 - **Auto-Agent Factory** — LLM analyzes tasks and spawns sub-agents dynamically

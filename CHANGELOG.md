@@ -1,5 +1,33 @@
 # Changelog — My Agent
 
+## 3.3.1 — 2026-05-26 (CEO audits — sales readiness + product depth)
+
+### Sales & onboarding (CEO audit B0–B4)
+- Self-serve signup on `/login` → `/app/onboarding` (password 12+ chars)
+- Template demo-run: `POST /api/workflow-templates/{id}/demo-run` + Marketplace button
+- Plan tiers: `core/billing/plans.py`, quota check on run (429), Billing tab in Settings
+- API Keys UI in Settings (list/create/delete via `/api/keys`)
+- Workspace isolation: access checks on runs + `tests/test_workspace_isolation.py`
+- Audit docs refreshed: `AUDIT_REPORT.md`, `AUDIT_2026.md`, `AUDIT_PRODUCT_2026.md`
+
+### Builder & UX
+- Condition branch modal + edge config side panel (removed `window.prompt`)
+- Stub triggers hidden from palette (`trigger.email`, `trigger.new_lead`)
+- Showcase graceful error state (no raw stack in subtitle)
+- Lazy-loaded `WorkflowBuilder` + `MarketplacePage` (main bundle ~1.05 MB)
+
+### Backend & infra
+- Async workflow runs by default (`start_background()`); sync via `{"wait": true}`
+- n8n provider in `integrations_registry.py`
+- Schedule pause/resume API + WorkflowList UI (next/last run)
+- `enable_memory` toggle on `agent.skill` node
+- Agent healthcheck in docker-compose; `--profile monitoring` (Prometheus + Grafana)
+
+### Deploy
+- VDS: `vds-push` → `/opt/projects/my-agent`; prod runs bare uvicorn on `:8020` (see `SERVER.md`)
+
+---
+
 ## 3.3.0 — 2026-05-26 (Architectural fix, iterations 1–2)
 
 ### Backend

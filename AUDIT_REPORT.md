@@ -18,7 +18,7 @@ My Agent is an **Autonomous Workflow OS**: React SPA (`/app`), FastAPI backend, 
 
 | Metric | Value |
 |--------|------:|
-| Version | 3.3.0 |
+| Version | 3.3.1 |
 | Marketplace templates | 52 (3 draft, 3 featured demo) |
 | Workflow node types | 21 |
 | Registered agents | 10 |

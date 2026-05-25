@@ -2,6 +2,27 @@
 
 ---
 
+## 2026-05-26 — CEO audits (v3.3.1)
+
+> **Focus:** Sales readiness + product depth + roadmap  
+> **Result:** Two audit cycles shipped in one day
+
+### Audit 1 — Sales & scale (B0–B4)
+- Removed `window.prompt`; stub triggers hidden; audit docs v3.3.0
+- Self-serve signup, template demo-run, async workflows, plan tiers
+- API keys + billing UI, workspace isolation test, n8n registry
+- Docker healthcheck + monitoring profile; code-split frontend bundle
+
+### Audit 2 — Product depth
+- Schedule pause/resume API + WorkflowList UI (next/last run)
+- `enable_memory` toggle on `agent.skill` nodes
+- `AUDIT_PRODUCT_2026.md` — Stripe, HubSpot, Grafana roadmap
+
+**Commits:** `4268efe`, `1cadb20`  
+**Verify:** `pytest tests/test_workflow_engine.py tests/test_scheduler.py -q` → 23 passed
+
+---
+
 ## 2026-05-26 — Architectural fix (iterations 1–2)
 
 > **Focus:** Close demo/marketplace gaps + engine correctness + RU UX polish  

@@ -1,7 +1,28 @@
 # My Agent — развёртывание на VDS
 
 > Сервер: `159.195.31.95` | Путь: `/opt/projects/my-agent/`  
-> Статус: **v3.2 UI/UX Polish** (React SPA RU, PWA, legacy → `/app/*` redirects)
+> Статус: **v3.3.1** (CEO audits — async runs, billing UI, schedule UI, monitoring profile)
+
+---
+
+## Prod runtime (важно)
+
+На VDS сервис работает как **bare uvicorn** (не сервис в root `docker-compose.yml`):
+
+```bash
+# Деплой кода
+vds-push   # из ~/dev/my-agent
+
+# Синхронизация work tree (если нужно)
+ssh vds-root 'cd /opt/projects/my-agent && git fetch /root/git/my-agent.git main && git reset --hard FETCH_HEAD'
+
+# Перезапуск
+ssh vds-root 'cd /opt/projects/my-agent && pkill -f "uvicorn web.server:app --host 127.0.0.1 --port 8020"; sleep 2; nohup .venv/bin/python -m uvicorn web.server:app --host 127.0.0.1 --port 8020 >> /var/log/my-agent.log 2>&1 &'
+
+curl -s http://127.0.0.1:8020/api/health
+```
+
+Frontend собирается локально и коммитится в `web/static/app/` (на VDS нет bun).
 
 ---
 
@@ -74,7 +95,7 @@ docker compose exec agent python scripts/generate_demo_artifact.py
 | `/app/mcp` | MCP-серверы |
 | `/app/analytics` | Usage dashboard |
 | `/app/admin` | Team members + system health (owner/admin) |
-| `/app/settings` | Интеграции, модели, профиль workspace |
+| `/app/settings` | Интеграции, API keys, billing, модели, workspace |
 | `/app/onboarding` | Team → integrations → template → 90s demo |
 | `/app/builder` | Agent Builder wizard |
 | `/metrics` | Prometheus scrape |
