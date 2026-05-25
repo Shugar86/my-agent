@@ -30,6 +30,16 @@ def _get_fernet() -> Fernet:
     return Fernet(_get_or_create_fernet_key())
 
 
+def encrypt_value(value: str) -> str:
+    """Encrypt a string value."""
+    return _get_fernet().encrypt(value.encode()).decode()
+
+
+def decrypt_value(value: str) -> str:
+    """Decrypt an encrypted string value."""
+    return _get_fernet().decrypt(value.encode()).decode()
+
+
 def save_api_key(name: str, value: str) -> bool:
     """Save an API key encrypted."""
     try:

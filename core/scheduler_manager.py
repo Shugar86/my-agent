@@ -52,6 +52,44 @@ class SchedulerManager:
             self._scheduler = None
             logger.info("Scheduler shutdown")
 
+    async def add_workflow_job(self, job_id: str, workflow_id: str, trigger_args: dict) -> dict:
+        """Add a scheduled workflow execution job."""
+        if not self._scheduler:
+            return {"success": False, "error": "Scheduler not started"}
+        try:
+            trigger = CronTrigger(**trigger_args)
+            self._scheduler.add_job(
+                func=_run_workflow_task,
+                trigger=trigger,
+                id=job_id,
+                replace_existing=True,
+                kwargs={"workflow_id": workflow_id, "job_id": job_id},
+            )
+            return {"success": True, "job_id": job_id}
+        except Exception as e:
+            logger.exception("Failed to add workflow job")
+            return {"success": False, "error": str(e)}
+
+    async def add_email_poll_job(
+        self, job_id: str, workflow_id: str, node_id: str, minutes: int = 5
+    ) -> dict:
+        """Add an interval job to poll Gmail for workflow email triggers."""
+        if not self._scheduler:
+            return {"success": False, "error": "Scheduler not started"}
+        try:
+            trigger = IntervalTrigger(minutes=max(1, minutes))
+            self._scheduler.add_job(
+                func=_run_email_poll_task,
+                trigger=trigger,
+                id=job_id,
+                replace_existing=True,
+                kwargs={"workflow_id": workflow_id, "node_id": node_id, "job_id": job_id},
+            )
+            return {"success": True, "job_id": job_id}
+        except Exception as e:
+            logger.exception("Failed to add email poll job")
+            return {"success": False, "error": str(e)}
+
     async def add_job(self, job_id: str, description: str, trigger_type: str,
                       trigger_args: dict, agent_role: str = "universal") -> dict:
         """Add a scheduled job.
@@ -156,4 +194,96 @@ async def _execute_scheduled(description: str, agent_role: str, job_id: str):
         db.execute(
             "INSERT INTO scheduled_jobs_log (job_id, description, result, status, executed_at) VALUES (?, ?, ?, ?, ?)",
             (job_id, description, str(e)[:2000], "error", datetime.utcnow().isoformat()),
+        )
+
+
+def _run_workflow_task(workflow_id: str, job_id: str):
+    """Callback for scheduled workflow execution."""
+    import asyncio
+    logger.info("Scheduled workflow job %s for workflow %s", job_id, workflow_id)
+    try:
+        loop = asyncio.get_running_loop()
+        loop.create_task(_execute_workflow(workflow_id, job_id))
+    except RuntimeError:
+        asyncio.run(_execute_workflow(workflow_id, job_id))
+
+
+async def _execute_workflow(workflow_id: str, job_id: str):
+    """Execute a workflow from scheduler."""
+    from core.workflow.executor import WorkflowExecutor
+    from core.db_manager import db
+    try:
+        executor = WorkflowExecutor()
+        result = await executor.run(workflow_id, trigger_payload={"scheduled": True, "job_id": job_id})
+        status = "success" if result.get("success") else "error"
+        db.execute(
+            "INSERT INTO scheduled_jobs_log (job_id, description, result, status, executed_at) VALUES (?, ?, ?, ?, ?)",
+            (job_id, f"workflow:{workflow_id}", str(result)[:2000], status, datetime.utcnow().isoformat()),
+        )
+    except Exception as e:
+        logger.exception("Workflow job %s failed", job_id)
+        db.execute(
+            "INSERT INTO scheduled_jobs_log (job_id, description, result, status, executed_at) VALUES (?, ?, ?, ?, ?)",
+            (job_id, f"workflow:{workflow_id}", str(e)[:2000], "error", datetime.utcnow().isoformat()),
+        )
+
+
+def _run_email_poll_task(workflow_id: str, node_id: str, job_id: str):
+    """Callback for email poll jobs."""
+    import asyncio
+    logger.info("Email poll job %s for workflow %s node %s", job_id, workflow_id, node_id)
+    try:
+        loop = asyncio.get_running_loop()
+        loop.create_task(_execute_email_poll(workflow_id, node_id, job_id))
+    except RuntimeError:
+        asyncio.run(_execute_email_poll(workflow_id, node_id, job_id))
+
+
+async def _execute_email_poll(workflow_id: str, node_id: str, job_id: str):
+    """Poll Gmail and trigger workflow on new messages."""
+    from core.workflow.executor import WorkflowExecutor
+    from core.workflow.store import workflow_store
+    from core.workflow.state import load_state, save_state
+    from core.db_manager import db
+
+    try:
+        wf = workflow_store.get_workflow(workflow_id)
+        if not wf or wf.get("status") != "active":
+            return
+
+        owner_id = wf.get("owner_id")
+        from skills.gmail.skill import gmail_list_unread
+
+        result = gmail_list_unread(max_results=10, user_id=owner_id)
+        if not result.get("success"):
+            logger.warning("Email poll skipped for %s: %s", workflow_id, result.get("error"))
+            return
+
+        messages = result.get("messages", [])
+        state = load_state(workflow_id)
+        seen = set(state.get("last_email_ids", []))
+        new_msgs = [m for m in messages if m.get("id") and m["id"] not in seen]
+        if not new_msgs:
+            return
+
+        all_ids = list(seen | {m["id"] for m in messages if m.get("id")})
+        state["last_email_ids"] = all_ids[-50:]
+        save_state(workflow_id, state)
+
+        executor = WorkflowExecutor()
+        run_result = await executor.run(
+            workflow_id,
+            trigger_payload={"emails": new_msgs, "email_trigger": True, "node_id": node_id},
+            user_id=owner_id,
+        )
+        status = "success" if run_result.get("success") else "error"
+        db.execute(
+            "INSERT INTO scheduled_jobs_log (job_id, description, result, status, executed_at) VALUES (?, ?, ?, ?, ?)",
+            (job_id, f"email_poll:{workflow_id}", str(run_result)[:2000], status, datetime.utcnow().isoformat()),
+        )
+    except Exception as e:
+        logger.exception("Email poll job %s failed", job_id)
+        db.execute(
+            "INSERT INTO scheduled_jobs_log (job_id, description, result, status, executed_at) VALUES (?, ?, ?, ?, ?)",
+            (job_id, f"email_poll:{workflow_id}", str(e)[:2000], "error", datetime.utcnow().isoformat()),
         )

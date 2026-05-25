@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Onboarding — My Agent</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', system-ui, sans-serif; background: #0d1117; color: #c9d1d9; min-height: 100vh; display: flex; align-items: center; justify-content: center; }
+        .container { width: 100%; max-width: 560px; padding: 24px; }
+        .card { background: #161b22; border: 1px solid #30363d; border-radius: 12px; padding: 32px; }
+        h1 { font-size: 1.5rem; margin-bottom: 8px; color: #58a6ff; }
+        .subtitle { color: #8b949e; margin-bottom: 24px; font-size: 0.95rem; }
+        .steps { display: flex; gap: 8px; margin-bottom: 24px; }
+        .step-dot { width: 32px; height: 32px; border-radius: 50%; background: #21262d; border: 1px solid #30363d; display: flex; align-items: center; justify-content: center; font-size: 0.85rem; }
+        .step-dot.active { background: #238636; border-color: #238636; color: white; }
+        .step-dot.done { background: #238636; border-color: #238636; color: white; }
+        label { display: block; font-size: 0.85rem; color: #8b949e; margin-bottom: 6px; margin-top: 12px; }
+        input, select, textarea { width: 100%; padding: 10px 12px; background: #0d1117; border: 1px solid #30363d; border-radius: 6px; color: #c9d1d9; font-size: 0.95rem; }
+        .btn { display: inline-block; padding: 10px 24px; background: #238636; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 0.95rem; margin-top: 20px; }
+        .btn:hover { background: #2ea043; }
+        .btn.secondary { background: #21262d; border: 1px solid #30363d; margin-right: 8px; }
+        .hidden { display: none; }
+        .template-card { background: #21262d; border: 1px solid #30363d; border-radius: 8px; padding: 16px; margin-top: 12px; cursor: pointer; }
+        .template-card:hover { border-color: #58a6ff; }
+        .template-card h3 { font-size: 1rem; margin-bottom: 4px; }
+        .template-card p { font-size: 0.85rem; color: #8b949e; }
+        .status { margin-top: 12px; font-size: 0.85rem; color: #8b949e; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <h1>Добро пожаловать в My Agent</h1>
+            <p class="subtitle">3 шага до первого workflow</p>
+            <div class="steps">
+                <div class="step-dot active" id="dot1">1</div>
+                <div class="step-dot" id="dot2">2</div>
+                <div class="step-dot" id="dot3">3</div>
+            </div>
+
+            <!-- Step 1: API Keys -->
+            <div id="step1">
+                <h2 style="font-size:1.1rem;margin-bottom:12px;">Шаг 1: LLM Provider</h2>
+                <label>OPENROUTER_API_KEY</label>
+                <input type="password" id="openrouter-key" placeholder="sk-or-...">
+                <label>TAVILY_API_KEY (optional, for research)</label>
+                <input type="password" id="tavily-key" placeholder="tvly-...">
+                <button class="btn" onclick="saveKeys()">Сохранить и продолжить →</button>
+                <div class="status" id="status1"></div>
+            </div>
+
+            <!-- Step 2: Integration -->
+            <div id="step2" class="hidden">
+                <h2 style="font-size:1.1rem;margin-bottom:12px;">Шаг 2: Подключить интеграцию</h2>
+                <label>Выберите сервис</label>
+                <select id="integration-provider">
+                    <option value="telegram">Telegram Bot</option>
+                    <option value="slack">Slack</option>
+                    <option value="notion">Notion</option>
+                    <option value="google">Google (Gmail + Sheets)</option>
+                </select>
+                <label id="token-label">Bot Token</label>
+                <input type="password" id="integration-token" placeholder="Token or API key">
+                <label>Google Refresh Token (for Google OAuth)</label>
+                <input type="password" id="google-refresh" placeholder="Optional — paste refresh token">
+                <button class="btn secondary" onclick="connectGoogle()">OAuth Google</button>
+                <button class="btn" onclick="saveIntegration()">Сохранить и продолжить →</button>
+                <div class="status" id="status2"></div>
+            </div>
+
+            <!-- Step 3: First Template -->
+            <div id="step3" class="hidden">
+                <h2 style="font-size:1.1rem;margin-bottom:12px;">Шаг 3: Первый workflow</h2>
+                <p style="color:#8b949e;font-size:0.9rem;margin-bottom:12px;">Выберите шаблон и запустите за 1 клик</p>
+                <div id="templates-list"></div>
+                <button class="btn" onclick="finishOnboarding()">Завершить onboarding →</button>
+                <div class="status" id="status3"></div>
+            </div>
+        </div>
+    </div>
+    <script>
+        let currentStep = 1;
+
+        const params = new URLSearchParams(location.search);
+        if (params.get('step') === '2' || params.get('google') === 'connected') {
+            goToStep(2);
+        }
+
+        function goToStep(n) {
+            currentStep = n;
+            [1,2,3].forEach(i => {
+                document.getElementById('step'+i).classList.toggle('hidden', i !== n);
+                const dot = document.getElementById('dot'+i);
+                dot.classList.toggle('active', i === n);
+                dot.classList.toggle('done', i < n);
+            });
+            if (n === 3) loadTemplates();
+        }
+
+        async function saveKeys() {
+            const orKey = document.getElementById('openrouter-key').value;
+            const tvKey = document.getElementById('tavily-key').value;
+            document.getElementById('status1').textContent = 'Saving...';
+            try {
+                if (orKey) await fetch('/api/keys', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({name:'OPENROUTER_API_KEY', value:orKey})});
+                if (tvKey) await fetch('/api/keys', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({name:'TAVILY_API_KEY', value:tvKey})});
+                goToStep(2);
+            } catch(e) {
+                document.getElementById('status1').textContent = 'Error saving keys';
+            }
+        }
+
+        async function saveIntegration() {
+            const provider = document.getElementById('integration-provider').value;
+            const token = document.getElementById('integration-token').value;
+            const googleRefresh = document.getElementById('google-refresh').value;
+            document.getElementById('status2').textContent = 'Saving...';
+            let credentials = {};
+            if (provider === 'google') {
+                credentials = { refresh_token: googleRefresh || token, client_id: '', client_secret: '' };
+            } else if (provider === 'telegram') {
+                credentials = { bot_token: token };
+            } else if (provider === 'slack') {
+                credentials = { bot_token: token };
+            } else if (provider === 'notion') {
+                credentials = { api_key: token };
+            }
+            try {
+                await fetch('/api/integrations/credentials', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ provider, credentials })
+                });
+                goToStep(3);
+            } catch(e) {
+                document.getElementById('status2').textContent = 'Error saving integration';
+            }
+        }
+
+        async function connectGoogle() {
+            try {
+                const res = await fetch('/api/integrations/google/auth');
+                const data = await res.json();
+                if (data.auth_url) window.location.href = data.auth_url;
+            } catch(e) {
+                document.getElementById('status2').textContent = 'Google OAuth not configured — paste refresh token manually';
+            }
+        }
+
+        async function loadTemplates() {
+            const res = await fetch('/api/workflow-templates');
+            const data = await res.json();
+            const list = document.getElementById('templates-list');
+            list.innerHTML = (data.templates || []).slice(0, 6).map(t => `
+                <div class="template-card" onclick="installTemplate('${t.id}')">
+                    <h3>${t.name}</h3>
+                    <p>${t.description}</p>
+                </div>
+            `).join('');
+        }
+
+        async function installTemplate(id) {
+            document.getElementById('status3').textContent = 'Installing...';
+            try {
+                const res = await fetch('/api/workflow-templates/' + id + '/install', { method: 'POST' });
+                const data = await res.json();
+                if (data.workflow) {
+                    document.getElementById('status3').textContent = 'Installed! Redirecting to builder...';
+                    setTimeout(() => location.href = '/workflows/' + data.workflow.id, 1000);
+                }
+            } catch(e) {
+                document.getElementById('status3').textContent = 'Install failed';
+            }
+        }
+
+        async function finishOnboarding() {
+            await fetch('/api/onboarding/complete', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ complete: true })
+            });
+            location.href = '/';
+        }
+    </script>
+</body>
+</html>

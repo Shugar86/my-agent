@@ -11,7 +11,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
 from pydantic import BaseModel
-from typing import Dict
+from typing import Dict, List
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
@@ -36,6 +36,9 @@ from core import feedback as feedback_module
 from prometheus_client import Counter, Histogram, Gauge, generate_latest, CONTENT_TYPE_LATEST, CollectorRegistry
 from web.mcp_server import router as mcp_router
 from web.a2a_server import router as a2a_router
+from web.workflow_router import router as workflow_router
+from web.sessions_router import router as sessions_router
+from core.db_migrate import run_migrations
 
 setup_logging(mode="web", log_level="INFO")
 
@@ -58,6 +61,12 @@ app.include_router(mcp_router)
 
 # A2A (Agent-to-Agent) protocol
 app.include_router(a2a_router)
+
+# Workflow engine + integrations
+app.include_router(workflow_router)
+
+# Chat sessions API
+app.include_router(sessions_router)
 
 # CORS — allow localhost origins
 app.add_middleware(
@@ -118,12 +127,21 @@ async def prometheus_metrics_middleware(request: Request, call_next):
 
 app.mount("/static", StaticFiles(directory=os.path.join(os.path.dirname(__file__), "static")), name="static")
 
+_WEBSITE_DIR = os.path.join(os.path.dirname(__file__), "..", "website")
+if os.path.isdir(_WEBSITE_DIR):
+    app.mount("/welcome-assets", StaticFiles(directory=_WEBSITE_DIR), name="welcome")
+
 user_manager = UserManager()
 
 # Absolute path to static files (works regardless of CWD)
 _STATIC_DIR = os.path.join(os.path.dirname(__file__), "static")
 
-PUBLIC_PATHS = {"/login", "/api/login", "/api/register", "/api/health", "/static", "/api/marketplace", "/metrics"}
+PUBLIC_PATHS = {
+    "/login", "/api/login", "/api/register", "/api/health", "/static", "/welcome-assets",
+    "/welcome", "/api/marketplace", "/api/workflow-templates", "/metrics",
+    "/api/workflows/webhook", "/api/integrations/telegram/webhook",
+    "/api/integrations/google/callback",
+}
 
 
 class AuthMiddleware(BaseHTTPMiddleware):
@@ -147,6 +165,25 @@ class AuthMiddleware(BaseHTTPMiddleware):
             request.state.user_role = payload.get("role", "user")
             ACTIVE_SESSIONS.inc()
             try:
+                if path == "/" and path != "/onboarding":
+                    from core.workflow.store import workflow_store
+                    profile = workflow_store.get_user_profile(payload["user_id"])
+                    if not profile.get("onboarding_complete"):
+                        return RedirectResponse(url="/onboarding")
+                if path == "/":
+                    return RedirectResponse(url="/app")
+                legacy_redirects = {
+                    "/chat": "/app/chat",
+                    "/marketplace": "/app/marketplace",
+                    "/builder": "/app/builder",
+                    "/settings": "/app/settings",
+                    "/workflows": "/app/workflows",
+                }
+                if path in legacy_redirects:
+                    return RedirectResponse(url=legacy_redirects[path], status_code=301)
+                if path.startswith("/workflows/"):
+                    wf_id = path.split("/workflows/", 1)[1]
+                    return RedirectResponse(url=f"/app/workflows/{wf_id}", status_code=301)
                 return await call_next(request)
             finally:
                 ACTIVE_SESSIONS.dec()
@@ -164,6 +201,7 @@ mcp_manager = MCPServerManager()
 @app.on_event("startup")
 async def startup():
     await redis_client.connect()
+    run_migrations()
     await scheduler_manager.start()
     await user_manager.connect()
     await user_manager.create_default_admin()
@@ -179,6 +217,8 @@ async def startup():
             executed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     """)
+    from core.workflow.executor import rehydrate_all_triggers
+    await rehydrate_all_triggers()
 
 
 @app.on_event("shutdown")
@@ -410,6 +450,7 @@ class ChatRequest(BaseModel):
     message: str
     agent_id: str = "universal"
     auto_agents: bool = False
+    session_id: str | None = None
 
 
 class AgentRequest(BaseModel):
@@ -432,7 +473,34 @@ class AgentRequest(BaseModel):
 
 @app.get("/", response_class=HTMLResponse)
 async def index():
+    """Public landing for unauthenticated users."""
+    website_path = os.path.join(os.path.dirname(__file__), "..", "website", "index.html")
+    if os.path.exists(website_path):
+        with open(website_path, "r", encoding="utf-8") as f:
+            return f.read()
     with open(os.path.join(_STATIC_DIR, "index.html"), "r", encoding="utf-8") as f:
+        return f.read()
+
+
+@app.get("/welcome", response_class=HTMLResponse)
+async def welcome_page():
+    """Marketing landing page."""
+    website_path = os.path.join(os.path.dirname(__file__), "..", "website", "index.html")
+    if os.path.exists(website_path):
+        with open(website_path, "r", encoding="utf-8") as f:
+            return f.read()
+    return RedirectResponse(url="/")
+
+
+@app.get("/app", response_class=HTMLResponse)
+@app.get("/app/{path:path}", response_class=HTMLResponse)
+async def app_spa(path: str = ""):
+    """Serve unified React SPA."""
+    spa_path = os.path.join(_STATIC_DIR, "app", "index.html")
+    if os.path.exists(spa_path):
+        with open(spa_path, "r", encoding="utf-8") as f:
+            return f.read()
+    with open(os.path.join(_STATIC_DIR, "workflow-fallback.html"), "r", encoding="utf-8") as f:
         return f.read()
 
 
@@ -475,6 +543,24 @@ async def marketplace_page():
 @app.get("/builder", response_class=HTMLResponse)
 async def builder_page():
     with open(os.path.join(_STATIC_DIR, "builder.html"), "r", encoding="utf-8") as f:
+        return f.read()
+
+
+@app.get("/workflows", response_class=HTMLResponse)
+@app.get("/workflows/{workflow_id}", response_class=HTMLResponse)
+async def workflows_spa(workflow_id: str = ""):
+    """Serve React Flow workflow builder SPA."""
+    spa_path = os.path.join(_STATIC_DIR, "workflow", "index.html")
+    if os.path.exists(spa_path):
+        with open(spa_path, "r", encoding="utf-8") as f:
+            return f.read()
+    with open(os.path.join(_STATIC_DIR, "workflow-fallback.html"), "r", encoding="utf-8") as f:
+        return f.read()
+
+
+@app.get("/onboarding", response_class=HTMLResponse)
+async def onboarding_page():
+    with open(os.path.join(_STATIC_DIR, "onboarding.html"), "r", encoding="utf-8") as f:
         return f.read()
 
 
@@ -631,10 +717,17 @@ async def chat_stream(request: Request, body: ChatRequest):
     uid = getattr(request.state, "user_id", "anon")
 
     async def event_stream():
-        raw_sid = f"stream_{uuid.uuid4().hex[:12]}"
+        raw_sid = body.session_id or f"stream_{uuid.uuid4().hex[:12]}"
         sid = _user_session_id(uid, raw_sid)
         set_session_context(body.agent_id)
+        from core.state_db import StateDB
+        state_db = StateDB(os.environ.get("STATE_DB_PATH", "data/state.db"))
+        if not state_db.get_session(sid):
+            state_db.create_session(sid, source="web", user_id=uid, model=body.agent_id)
+        if body.message.strip():
+            state_db.set_session_title(sid, body.message.strip()[:100])
         try:
+            yield f"data: {json.dumps({'type': 'session', 'session_id': raw_sid})}\n\n"
             agent_config = store.get_agent(body.agent_id)
             if not agent_config:
                 yield f"data: {json.dumps({'type': 'error', 'content': f'Agent {body.agent_id} not found'})}\n\n"
@@ -833,32 +926,50 @@ async def knowledge_delete(request: Request, doc_id: str):
 
 @app.get("/api/marketplace")
 async def marketplace_list(request: Request):
-    """Return available skills from the marketplace."""
+    """Return workflow templates and legacy skills from marketplace."""
+    from core.workflow.store import workflow_store
+    templates = workflow_store.list_templates()
     skills = [
-        {"name": "sql_db", "version": "1.0", "description": "SQLite query execution and table listing", "tags": ["database", "sql"], "installs": 42},
-        {"name": "ocr", "version": "1.0", "description": "Tesseract OCR for images and PDFs", "tags": ["image", "pdf", "text"], "installs": 128},
-        {"name": "audio_transcription", "version": "1.0", "description": "OpenAI Whisper API transcription", "tags": ["audio", "ai"], "installs": 89},
-        {"name": "rss_news", "version": "1.0", "description": "RSS feed parsing and article extraction", "tags": ["news", "web"], "installs": 56},
-        {"name": "email", "version": "1.0", "description": "SMTP email sending with attachments", "tags": ["email", "communication"], "installs": 34},
-        {"name": "image_generation", "version": "1.0", "description": "DALL-E 3 image generation", "tags": ["image", "ai", "generation"], "installs": 210},
-        {"name": "translation", "version": "1.0", "description": "Language detection and text translation", "tags": ["nlp", "language"], "installs": 67},
-        {"name": "git_integration", "version": "1.0", "description": "Git clone, status, GitHub issues", "tags": ["git", "github", "devops"], "installs": 145},
-        {"name": "social_media", "version": "1.0", "description": "Twitter/X post and search", "tags": ["social", "twitter"], "installs": 78},
+        {"name": "sql_db", "version": "1.0", "description": "SQLite query execution and table listing", "tags": ["database", "sql"], "installs": 42, "type": "skill"},
+        {"name": "ocr", "version": "1.0", "description": "Tesseract OCR for images and PDFs", "tags": ["image", "pdf", "text"], "installs": 128, "type": "skill"},
+        {"name": "email", "version": "1.0", "description": "SMTP email sending with attachments", "tags": ["email", "communication"], "installs": 34, "type": "skill"},
     ]
-    return {"skills": skills, "total": len(skills)}
+    workflow_items = [
+        {
+            "name": t["id"],
+            "version": "1.0",
+            "description": t["description"],
+            "tags": t.get("tags", []),
+            "installs": t.get("installs", 0),
+            "type": "workflow",
+            "category": t.get("category", "general"),
+        }
+        for t in templates
+    ]
+    all_items = workflow_items + skills
+    return {"skills": all_items, "templates": templates, "total": len(all_items)}
 
 
-@app.post("/api/marketplace/install/{skill_name}")
+@app.post("/api/marketplace/install/{item_name}")
 @limiter.limit("10/minute")
-async def marketplace_install(request: Request, skill_name: str):
+async def marketplace_install(request: Request, item_name: str):
+    user_id = getattr(request.state, "user_id", None)
+    from core.workflow.store import workflow_store
+
+    template = workflow_store.get_template(item_name)
+    if template:
+        wf = workflow_store.clone_template(item_name, owner_id=user_id)
+        if not wf:
+            raise HTTPException(status_code=404, detail="Template not found")
+        return {"status": "installed", "type": "workflow", "workflow": wf}
+
     if getattr(request.state, "user_role", "") != "admin":
-        raise HTTPException(status_code=403, detail="Admin only")
-    # In real implementation: pip install or git clone
+        raise HTTPException(status_code=403, detail="Admin only for skill install")
     db.execute(
         "INSERT OR REPLACE INTO installed_skills (name, version, source) VALUES (?, ?, ?)",
-        (skill_name, "1.0", f"builtin:{skill_name}"),
+        (item_name, "1.0", f"builtin:{item_name}"),
     )
-    return {"status": "installed", "skill": skill_name}
+    return {"status": "installed", "type": "skill", "skill": item_name}
 
 
 # ---------------------------------------------------------------------------

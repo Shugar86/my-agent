@@ -2,45 +2,33 @@
 
 ## Overview
 
-My Agent is a modular AI agent system with a web-based management interface, inspired by AutoGPT, OpenSwarm, and Hermes Desktop. It provides a Universal Assistant that auto-selects skills based on user requests, alongside specialized agents for specific domains.
+My Agent is a modular AI agent platform evolving into a **business automation product** — workflow engine + marketplace + AI agents. Competes with ASCN.ai on simplicity while retaining technical depth (MCP, A2A, Docker sandbox).
 
-## Core Value Proposition
+## Core Value Proposition (2026-05-25)
 
-1. **Universal Assistant** — One chat interface that auto-selects from 11 skills and 14 tools
-2. **Agent Ecosystem** — 7 specialized agents (researcher, developer, marketer, data_analyst, slides, docs, universal)
-3. **Auto-Agent Factory** — LLM-based dynamic agent spawning with parallel sub-agent execution
-4. **Production-Ready** — SQLite persistence, retry logic, async concurrency, safety guardrails
+1. **Workflow Automation** — n8n-like drag-and-drop builder with AI agent nodes
+2. **Marketplace** — 10+ ready-to-run business workflow templates
+3. **5 Key Integrations** — Telegram, Gmail, Google Sheets, Slack, Notion
+4. **Universal Assistant** — AI auto-selects skills for complex tasks
+5. **Production-Ready** — SQLite/PostgreSQL, JWT auth, Docker sandbox, 400+ tests
 
 ## Target Users
 
-- Solo developers who need an AI assistant with persistent memory
-- Small teams wanting a self-hosted alternative to ChatGPT with custom skills
-- Power users who need specialized agents (deep research, data analysis, presentations)
+- Small business owners automating sales, support, marketing
+- Solo founders needing no-code + AI power
+- Teams wanting self-hosted alternative to Zapier/n8n + ChatGPT
 
 ## Technology Stack
 
-- **Backend:** Python 3.11+, FastAPI, LiteLLM (OpenRouter)
-- **Frontend:** Vanilla HTML/JS, SSE streaming, dark theme
-- **Persistence:** SQLite with WAL mode, FTS5 full-text search
-- **Concurrency:** ThreadPoolExecutor + asyncio.to_thread()
-- **Models:** DeepSeek V4 Flash (free) via OpenRouter, with fallback
+- **Backend:** Python 3.11+, FastAPI, LiteLLM, Workflow Engine (JSON DAG)
+- **Frontend:** Vanilla HTML (dashboard) + React Flow SPA (workflow builder)
+- **Persistence:** SQLite (dev) / PostgreSQL (prod), Alembic migrations
+- **Integrations:** Google APIs, Notion, Telegram, Slack
 
-## Architecture Philosophy
+## Current Status (Phase 1)
 
-- **Modularity:** Skills and tools are self-registering via YAML frontmatter and Python modules
-- **Extensibility:** New skills can be added without touching core code
-- **Resilience:** Jittered exponential backoff, fallback models, error sanitization
-- **Observability:** Structured logging with session context, rotating files, secret redaction
+See `ROADMAP_90_DAYS.md` and `.planning/STATE.md`.
 
-## Current Status (v1.0)
+## Next Milestone
 
-All 5 production-critical issues have been fixed:
-1. Async concurrency via `asyncio.to_thread()` and `asyncio.gather()`
-2. SQLite WAL persistence with FTS5 search
-3. Retry logic with `jittered_backoff()` and error classification
-4. Safety guardrails: iteration budget, loop detection, tool error sanitization
-5. Centralized logging: `agent.log`, `errors.log`, `web.log` with `RedactingFormatter`
-
-## Next Milestone (v1.1)
-
-See `ROADMAP.md` for detailed phase planning.
+Phase 2 (days 31–60): Marketplace overhaul, Agent Builder 2.0, full UI redesign.

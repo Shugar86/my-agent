@@ -41,7 +41,11 @@
         .stat-card { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 16px; }
         .stat-card h3 { font-size: 0.8rem; color: #8b949e; margin-bottom: 8px; }
         .stat-card .value { font-size: 1.5rem; font-weight: 600; color: #58a6ff; }
-        .quick-actions { display: flex; gap: 12px; margin-bottom: 24px; flex-wrap: wrap; }
+        .quick-template { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 20px; cursor: pointer; transition: all 0.2s; }
+        .quick-template:hover { border-color: #238636; transform: translateY(-2px); }
+        .quick-template h3 { font-size: 1rem; margin-bottom: 6px; color: #58a6ff; }
+        .quick-template p { font-size: 0.85rem; color: #8b949e; }
+        .quick-template .tag { display: inline-block; background: #21262d; padding: 2px 8px; border-radius: 12px; font-size: 0.75rem; margin-top: 8px; }
     </style>
 </head>
 <body>
@@ -49,6 +53,7 @@
         <h1>🤖 My Agent</h1>
         <a href="/" class="active">📊 Dashboard</a>
         <a href="/chat">💬 Чат</a>
+        <a href="/workflows">⚡ Workflows</a>
         <a href="/agents">👥 Агенты</a>
         <a href="/marketplace">🛒 Маркетплейс</a>
         <a href="/builder">🏗️ Конструктор</a>
@@ -90,11 +95,18 @@
                 </div>
                 <div class="quick-actions" style="margin-top: 16px;">
                     <a href="/chat" class="btn">💬 Открыть чат</a>
+                    <a href="/workflows" class="btn secondary">⚡ Workflows</a>
                     <a href="/builder" class="btn secondary">🏗️ Создать агента</a>
                     <a href="/marketplace" class="btn secondary">🛒 Маркетплейс</a>
                 </div>
             </div>
         </div>
+
+        <div class="section-title">
+            <h2>Запусти за 1 клик</h2>
+            <p>Готовые workflow-шаблоны — установи и запусти за минуты</p>
+        </div>
+        <div class="capabilities" id="quick-templates" style="margin-bottom: 30px;"></div>
 
         <div class="section-title">
             <h2>Возможности</h2>
@@ -159,7 +171,33 @@
 
         loadAgents();
         loadStats();
-        setInterval(loadStats, 30000); // Refresh every 30s
+        loadQuickTemplates();
+        setInterval(loadStats, 30000);
+
+        async function loadQuickTemplates() {
+            try {
+                const res = await fetch('/api/workflow-templates');
+                const data = await res.json();
+                const templates = (data.templates || []).slice(0, 6);
+                document.getElementById('quick-templates').innerHTML = templates.map(t => `
+                    <div class="quick-template" onclick="installTemplate('${t.id}')">
+                        <h3>${t.name}</h3>
+                        <p>${t.description}</p>
+                        <span class="tag">${t.category}</span>
+                    </div>
+                `).join('');
+            } catch(e) {}
+        }
+
+        async function installTemplate(id) {
+            try {
+                const res = await fetch('/api/marketplace/install/' + id, { method: 'POST' });
+                if (res.status === 401) { location.href = '/login'; return; }
+                const data = await res.json();
+                if (data.workflow) location.href = '/workflows/' + data.workflow.id;
+                else location.href = '/workflows';
+            } catch(e) { location.href = '/marketplace'; }
+        }
     </script>
 </body>
 </html>

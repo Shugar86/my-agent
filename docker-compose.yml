@@ -1,28 +1,51 @@
+# My Agent — standalone stack (R&D)
+# Запуск: cd /opt/projects/my-agent && docker compose up -d --build
+#
+# Порты на этом сервере (159.195.31.95):
+#   8020 — Web UI (FastAPI + React Flow builder)
+#   5437 — PostgreSQL (только localhost)
+#   6380 — Redis (только localhost)
+#
 version: "3.8"
 
 services:
   db:
     image: postgres:16-alpine
+    container_name: my-agent-db
     environment:
       POSTGRES_USER: agent
-      POSTGRES_PASSWORD: agentpass
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-agentpass}
       POSTGRES_DB: agent_db
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5437:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U agent"]
       interval: 5s
       timeout: 5s
       retries: 5
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: my-agent-redis
+    ports:
+      - "127.0.0.1:6380:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
 
   agent:
     build: .
+    container_name: my-agent
     ports:
-      - "8000:8000"
+      - "127.0.0.1:8020:8020"
+    env_file:
+      - .env
     environment:
-      - DATABASE_URL=postgresql://agent:agentpass@db:5432/agent_db
+      - DATABASE_URL=postgresql://agent:${POSTGRES_PASSWORD:-agentpass}@db:5432/agent_db
+      - REDIS_URL=redis://redis:6379/0
       - ENV=production
       - PYTHONUNBUFFERED=1
     volumes:
@@ -31,14 +54,14 @@ services:
     depends_on:
       db:
         condition: service_healthy
-    command: ["python", "-m", "uvicorn", "web.server:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "4"]
-
-  redis:
-    image: redis:7-alpine
-    ports:
-      - "6379:6379"
-    volumes:
-      - redis_data:/data
+      redis:
+        condition: service_started
+    command:
+      [
+        "python", "-m", "uvicorn", "web.server:app",
+        "--host", "0.0.0.0", "--port", "8020", "--workers", "2"
+      ]
+    restart: unless-stopped
 
 volumes:
   postgres_data:

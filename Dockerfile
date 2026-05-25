@@ -1,4 +1,13 @@
 # Multi-stage Dockerfile for production optimization
+FROM node:20-slim AS frontend-builder
+
+WORKDIR /app
+COPY web/frontend/package*.json ./web/frontend/
+WORKDIR /app/web/frontend
+RUN npm ci 2>/dev/null || npm install
+COPY web/frontend/ ./
+RUN npm run build
+
 FROM python:3.11-slim AS builder
 
 WORKDIR /app
@@ -49,15 +58,18 @@ RUN python -m playwright install chromium || true
 # Copy application code
 COPY . .
 
+# Copy built frontend from node stage
+COPY --from=frontend-builder /app/web/static/app ./web/static/app
+
 # Create data directory with proper permissions
 RUN mkdir -p data && chown -R appuser:appuser data
 
 USER appuser
 
-EXPOSE 8000
+EXPOSE 8020
 
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONIOENCODING=utf-8
 
-CMD ["python", "-m", "uvicorn", "web.server:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["python", "-m", "uvicorn", "web.server:app", "--host", "0.0.0.0", "--port", "8020"]

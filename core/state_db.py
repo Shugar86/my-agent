@@ -323,6 +323,21 @@ class StateDB:
             ).fetchall()
         return [dict(r) for r in rows]
 
+    def list_sessions_for_user(self, user_id: str, limit: int = 30, offset: int = 0) -> List[Dict[str, Any]]:
+        """List sessions scoped to a user."""
+        prefix = f"{user_id}::"
+        with self._lock:
+            rows = self._conn.execute(
+                """SELECT id, source, started_at, ended_at, message_count,
+                          model, title
+                   FROM sessions
+                   WHERE user_id = ? OR id LIKE ?
+                   ORDER BY started_at DESC
+                   LIMIT ? OFFSET ?""",
+                (user_id, f"{prefix}%", limit, offset),
+            ).fetchall()
+        return [dict(r) for r in rows]
+
     def delete_session(self, session_id: str) -> None:
         def _do(conn):
             conn.execute("DELETE FROM messages WHERE session_id = ?", (session_id,))

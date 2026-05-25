@@ -1,7 +1,9 @@
 # Deployment Guide
 
-> My Agent — Production Deployment
-> Version: 1.0.0
+> My Agent — Production Deployment  
+> Version: 2.0.0 | Phase 1 (Workflow Engine)
+
+**На VDS `159.195.31.95`:** см. [SERVER.md](./SERVER.md) — порт **8020** (не 8000!).
 
 ---
 
