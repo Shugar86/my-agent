@@ -36,6 +36,28 @@ services:
       - redis_data:/data
     restart: unless-stopped
 
+  # n8n is optional — only enabled with `--profile demo` so it does not consume
+  # resources during regular development. Provides a real n8n instance the
+  # `action.n8n_webhook` node can trigger during the investor demo.
+  n8n:
+    image: n8nio/n8n:latest
+    container_name: my-agent-n8n
+    ports:
+      - "127.0.0.1:5678:5678"
+    environment:
+      - N8N_BASIC_AUTH_ACTIVE=true
+      - N8N_BASIC_AUTH_USER=${N8N_BASIC_AUTH_USER:-admin}
+      - N8N_BASIC_AUTH_PASSWORD=${N8N_BASIC_AUTH_PASS:-demo}
+      - GENERIC_TIMEZONE=${TIMEZONE:-Europe/Moscow}
+      - N8N_HOST=localhost
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=http
+      - WEBHOOK_URL=http://localhost:5678/
+    volumes:
+      - n8n_data:/home/node/.n8n
+    profiles: ["demo"]
+    restart: unless-stopped
+
   agent:
     build: .
     container_name: my-agent
@@ -66,3 +88,4 @@ services:
 volumes:
   postgres_data:
   redis_data:
+  n8n_data:

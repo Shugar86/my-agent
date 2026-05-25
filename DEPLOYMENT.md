@@ -1,9 +1,10 @@
 # Deployment Guide
 
 > My Agent — Production Deployment  
-> Version: 2.0.0 | Phase 1 (Workflow Engine)
+> Version: 3.1.0 | Investor Demo Ready
 
-**На VDS `159.195.31.95`:** см. [SERVER.md](./SERVER.md) — порт **8020** (не 8000!).
+**На VDS `159.195.31.95`:** см. [SERVER.md](./SERVER.md) — порт **8020** (не 8000!).  
+**Investor demo:** см. [DEMO.md](./DEMO.md) — 90-second Competitor Intelligence flow.
 
 ---
 

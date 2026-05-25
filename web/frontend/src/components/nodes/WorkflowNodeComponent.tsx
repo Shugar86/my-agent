@@ -29,6 +29,7 @@ function WorkflowNodeComponent({ data, selected }: NodeProps) {
 
   return (
     <div
+      className={running ? 'node-running' : undefined}
       style={{
         background,
         border: `2px solid ${borderColor}`,
@@ -38,7 +39,7 @@ function WorkflowNodeComponent({ data, selected }: NodeProps) {
         color: '#c9d1d9',
         fontSize: 13,
         boxShadow: running
-          ? '0 0 16px rgba(35,134,54,0.55)'
+          ? undefined
           : errored
           ? '0 0 12px rgba(248,81,73,0.45)'
           : selected

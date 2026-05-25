@@ -812,6 +812,108 @@ TEMPLATES = [
         },
     },
     {
+        "id": "tpl_competitor_intelligence",
+        "name": "Competitor Intelligence (Featured)",
+        "description": (
+            "Webhook → 2 параллельных research-агента → сравнительный анализ "
+            "→ DOCX отчёт → n8n hook. Saves ~4h of analyst work per brief."
+        ),
+        "category": "marketing",
+        "tags": ["featured", "research", "competitor", "demo"],
+        "definition": {
+            "nodes": [
+                {
+                    "id": "trg",
+                    "type": "trigger.webhook",
+                    "config": {},
+                    "position": {"x": 80, "y": 60},
+                },
+                {
+                    "id": "r1",
+                    "type": "agent.skill",
+                    "config": {
+                        "agent_id": "researcher",
+                        "skill": "deep_research",
+                        "prompt": (
+                            "Deep research on company: {{ trigger.payload.target }}. "
+                            "Cover product, pricing, target audience and positioning."
+                        ),
+                    },
+                    "position": {"x": 320, "y": 0},
+                },
+                {
+                    "id": "r2",
+                    "type": "agent.skill",
+                    "config": {
+                        "agent_id": "researcher",
+                        "skill": "deep_research",
+                        "prompt": (
+                            "Recent news, hires, funding and product launches for "
+                            "{{ trigger.payload.target }} in the last 90 days."
+                        ),
+                    },
+                    "position": {"x": 320, "y": 140},
+                },
+                {
+                    "id": "merge",
+                    "type": "util.merge",
+                    "config": {"sources": ["r1", "r2"]},
+                    "position": {"x": 580, "y": 70},
+                },
+                {
+                    "id": "an",
+                    "type": "agent.skill",
+                    "config": {
+                        "agent_id": "data_analyst",
+                        "prompt": (
+                            "Compare {{ trigger.payload.target }} vs "
+                            "{{ trigger.payload.our_company }}. "
+                            "Output SWOT + 3 concrete recommended actions. "
+                            "Source: {{ merge.output }}"
+                        ),
+                    },
+                    "position": {"x": 820, "y": 70},
+                },
+                {
+                    "id": "doc",
+                    "type": "agent.skill",
+                    "config": {
+                        "agent_id": "docs",
+                        "skill": "docs",
+                        "prompt": (
+                            "Generate DOCX report titled "
+                            "'Competitive Brief — {{ trigger.payload.target }}' "
+                            "from analysis: {{ an.output }}"
+                        ),
+                    },
+                    "position": {"x": 1080, "y": 70},
+                },
+                {
+                    "id": "n8n",
+                    "type": "action.n8n_webhook",
+                    "config": {
+                        "url": "{{ config.n8n_webhook_url }}",
+                        "payload": {
+                            "company": "{{ trigger.payload.target }}",
+                            "report_url": "{{ doc.output.url }}",
+                            "summary": "{{ an.output }}",
+                        },
+                    },
+                    "position": {"x": 1340, "y": 70},
+                },
+            ],
+            "edges": [
+                {"from": "trg", "to": "r1"},
+                {"from": "trg", "to": "r2"},
+                {"from": "r1", "to": "merge"},
+                {"from": "r2", "to": "merge"},
+                {"from": "merge", "to": "an"},
+                {"from": "an", "to": "doc"},
+                {"from": "doc", "to": "n8n"},
+            ],
+        },
+    },
+    {
         "id": "tpl_ops_data_quality_check",
         "name": "Ops: Data Quality Check + Retry",
         "description": "Pull dataset via HTTP with retries, run quality script, alert if bad",

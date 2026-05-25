@@ -1,21 +1,43 @@
 # My Agent — Technical Documentation
 
-> Last updated: 2026-05-21
-> Version: 1.0.0
+> Last updated: 2026-05-25
+> Version: 3.1.0 (Investor Demo)
 > Author: AI Assistant
+
+---
+
+## Investor Demo (90 seconds)
+
+**Killer use-case:** Competitor Intelligence — webhook → 2 parallel research agents →
+SWOT analysis → DOCX report → n8n hook. Replaces ~4 hours of analyst work.
+
+```bash
+docker compose --profile demo up -d --build
+docker compose exec agent python scripts/seed_workflow_templates.py
+docker compose exec agent python scripts/generate_demo_artifact.py
+# Open http://localhost:8020/app → "Try 90s demo"
+```
+
+Full script, talking points, and troubleshooting: **[DEMO.md](./DEMO.md)**.
+
+Mock fallback works without API keys — safe for live investor presentations.
 
 ---
 
 ## 1. Project Overview
 
-My Agent is a modular AI agent system with a web UI, agent profiles, sub-agent auto-creation/parallel execution, and deep research capabilities.
+My Agent is a modular AI agent system with a visual workflow builder, marketplace,
+multi-agent orchestration, and deep research capabilities.
 
 ### Key Features
 - **Universal Assistant** — one chat for everything, auto-selects skills based on task
 - **7 Specialized Agents** — researcher, developer, marketer, data_analyst, slides, docs, universal
 - **11 Skills** — deep_research, research, parsing, template, code_analysis, code_execution, web_automation, api_integration, data_analyst, slides, docs
 - **14 Tools** — search, scrape, file I/O, code execution, API calls, charts, presentations, documents
-- **Web UI** — FastAPI + vanilla JS, dark theme, SSE streaming
+- **Workflow Engine** — visual DAG builder (React Flow), 21 node types, retry/condition routing
+- **Marketplace** — 50+ templates, featured section, ratings, one-click install
+- **Investor Demo** — `POST /api/demo/run` with prerecorded fallback + DOCX artifact
+- **n8n Integration** — `action.n8n_webhook` node (optional `--profile demo` stack)
 - **Auto-Agent Factory** — LLM analyzes tasks and spawns sub-agents dynamically
 - **Graphify Integration** — codebase knowledge graph with community detection
 
@@ -24,9 +46,9 @@ My Agent is a modular AI agent system with a web UI, agent profiles, sub-agent a
 |-------|------------|
 | Backend | Python 3.11, FastAPI, Uvicorn |
 | AI Gateway | LiteLLM (OpenRouter) |
-| Frontend | Vanilla HTML/CSS/JS (no frameworks) |
-| Data | JSON files (agents, memory, config) |
-| Container | Docker + Docker Compose |
+| Frontend | React 18 + TypeScript + Vite + React Flow (`/app/*`) |
+| Data | PostgreSQL / SQLite, Redis |
+| Container | Docker + Docker Compose (+ optional n8n profile) |
 | Testing | pytest |
 
 ---

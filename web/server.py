@@ -37,6 +37,7 @@ from prometheus_client import Counter, Histogram, Gauge, generate_latest, CONTEN
 from web.mcp_server import router as mcp_router
 from web.a2a_server import router as a2a_router
 from web.workflow_router import router as workflow_router
+from web.demo_router import router as demo_router
 from web.security import is_public_path, resolve_rate_limit
 from web.sessions_router import router as sessions_router
 from web.teams_router import router as teams_router
@@ -68,6 +69,9 @@ app.include_router(a2a_router)
 
 # Workflow engine + integrations
 app.include_router(workflow_router)
+
+# Investor demo endpoints
+app.include_router(demo_router)
 
 # Chat sessions API
 app.include_router(sessions_router)

@@ -72,6 +72,11 @@ export default function MarketplacePage() {
     return { total, installs, avgRating: avgRating || 0 };
   }, [templates]);
 
+  const featured = useMemo(
+    () => templates.filter((t) => (t.tags || []).includes('featured')).slice(0, 3),
+    [templates],
+  );
+
   const handleInstall = async (id: string) => {
     try {
       const result = await installTemplate(id);
@@ -175,6 +180,40 @@ export default function MarketplacePage() {
         ))}
       </div>
 
+      {!loading && featured.length > 0 && category === 'all' && !debouncedSearch && (
+        <section style={{ marginBottom: 28 }}>
+          <h2 style={{ fontSize: 14, marginBottom: 12, color: 'var(--text-muted)', letterSpacing: 0.6, textTransform: 'uppercase' }}>
+            Featured
+          </h2>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))', gap: 16 }}>
+            {featured.map((t) => (
+              <div
+                key={t.id}
+                className="card"
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  position: 'relative',
+                  background: 'linear-gradient(135deg, rgba(31,111,235,0.10) 0%, rgba(234,75,113,0.08) 100%)',
+                  border: '1px solid rgba(31,111,235,0.35)',
+                }}
+              >
+                <span className="badge-featured" style={{ position: 'absolute', top: 14, right: 14 }}>Featured</span>
+                <WorkflowThumbnail definition={t.definition} height={120} />
+                <h3 style={{ fontSize: 17, color: 'var(--accent)', marginTop: 14, marginBottom: 6 }}>{t.name}</h3>
+                <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 16, flex: 1 }}>{t.description}</p>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button className="btn btn-primary" onClick={() => handleInstall(t.id)} style={{ flex: 1 }}>
+                    Try in 1 click
+                  </button>
+                  <button className="btn" onClick={() => handlePreview(t.id)}>Preview</button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
       {loading ? (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 16 }}>
           {[1, 2, 3, 4, 5, 6].map((i) => <div key={i} className="skeleton" style={{ height: 220 }} />)}
@@ -187,7 +226,10 @@ export default function MarketplacePage() {
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 16 }}>
           {templates.map((t) => (
-            <div key={t.id} className="card" style={{ display: 'flex', flexDirection: 'column' }}>
+            <div key={t.id} className="card" style={{ display: 'flex', flexDirection: 'column', position: 'relative' }}>
+              {(t.tags || []).includes('featured') && (
+                <span className="badge-featured" style={{ position: 'absolute', top: 12, right: 12, zIndex: 1 }}>Featured</span>
+              )}
               <WorkflowThumbnail definition={t.definition} height={90} />
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginTop: 12, marginBottom: 8, gap: 8 }}>
                 <h3 style={{ fontSize: 15, color: 'var(--accent)' }}>{t.name}</h3>

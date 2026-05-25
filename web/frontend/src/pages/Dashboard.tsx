@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { listAgents, listTemplates, installTemplate, getHealth, listIntegrations, type Integration } from '../api/appClient';
 import { listWorkflows } from '../api/workflowClient';
 import type { Workflow } from '../types/workflow';
+import DemoModal from '../components/DemoModal';
 
 interface Stat {
   label: string;
@@ -14,10 +15,11 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [agents, setAgents] = useState<Array<{ id: string; name: string; role?: string }>>([]);
-  const [templates, setTemplates] = useState<Array<{ id: string; name: string; description: string; category: string }>>([]);
+  const [templates, setTemplates] = useState<Array<{ id: string; name: string; description: string; category: string; tags?: string[] }>>([]);
   const [workflows, setWorkflows] = useState<Workflow[]>([]);
   const [integrations, setIntegrations] = useState<Integration[]>([]);
   const [stats, setStats] = useState<Stat[]>([]);
+  const [demoOpen, setDemoOpen] = useState(false);
 
   useEffect(() => {
     Promise.all([
@@ -69,25 +71,44 @@ export default function Dashboard() {
 
   return (
     <div style={{ padding: 30 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: 24, flexWrap: 'wrap', gap: 16 }}>
-        <div>
-          <h1 style={{ marginBottom: 8 }}>Dashboard</h1>
-          <p style={{ color: 'var(--text-muted)' }}>Your AI automation hub — workflows, agents, marketplace.</p>
+      <DemoModal open={demoOpen} onClose={() => setDemoOpen(false)} />
+
+      <section
+        style={{
+          background: 'linear-gradient(135deg, rgba(31,111,235,0.18) 0%, rgba(35,134,54,0.10) 50%, rgba(234,75,113,0.10) 100%)',
+          border: '1px solid var(--border)',
+          borderRadius: 14,
+          padding: '28px 32px',
+          marginBottom: 28,
+          display: 'flex',
+          flexWrap: 'wrap',
+          gap: 24,
+          alignItems: 'center',
+          justifyContent: 'space-between',
+        }}
+      >
+        <div style={{ flex: '1 1 320px' }}>
+          <div style={{ fontSize: 11, letterSpacing: 1.4, textTransform: 'uppercase', color: 'var(--accent)', marginBottom: 6 }}>
+            Autonomous Workflow OS
+          </div>
+          <h1 style={{ fontSize: 26, margin: 0, marginBottom: 8 }}>
+            From a webhook to a competitive brief in 90 seconds.
+          </h1>
+          <p style={{ color: 'var(--text-muted)', fontSize: 14, maxWidth: 560 }}>
+            Multi-agent research, comparative analysis, DOCX report and an n8n trigger —
+            replacing ~4 hours of analyst work in a single click.
+          </p>
         </div>
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          <Link to="/workflows/new" className="btn btn-primary">+ New workflow</Link>
-          <Link to="/marketplace" className="btn">Browse marketplace</Link>
-          <a
-            href="https://render.com/deploy"
-            target="_blank"
-            rel="noreferrer"
-            className="btn"
-            title="Deploy a fork to Render in one click"
-          >
-            Deploy to cloud →
-          </a>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10, alignItems: 'flex-end' }}>
+          <button type="button" className="btn btn-primary" onClick={() => setDemoOpen(true)} style={{ fontSize: 14, padding: '10px 18px' }}>
+            ▶ Try 90s demo
+          </button>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <Link to="/workflows/new" className="btn">+ New workflow</Link>
+            <Link to="/marketplace" className="btn">Marketplace</Link>
+          </div>
         </div>
-      </div>
+      </section>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 16, marginBottom: 32 }}>
         {stats.map((s) => (
@@ -132,7 +153,10 @@ export default function Dashboard() {
         <h2 style={{ fontSize: 16, marginBottom: 12 }}>Quick start templates</h2>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 12 }}>
           {templates.map((t) => (
-            <div key={t.id} className="card" style={{ cursor: 'pointer' }} onClick={() => handleInstall(t.id)}>
+            <div key={t.id} className="card" style={{ cursor: 'pointer', position: 'relative' }} onClick={() => handleInstall(t.id)}>
+              {(t.tags || []).includes('featured') && (
+                <span className="badge-featured" style={{ position: 'absolute', top: 10, right: 10 }}>Featured</span>
+              )}
               <h3 style={{ fontSize: 14, color: 'var(--accent)', marginBottom: 6 }}>{t.name}</h3>
               <p style={{ fontSize: 12, color: 'var(--text-muted)' }}>{t.description.slice(0, 80)}</p>
               <span style={{ fontSize: 11, background: 'var(--bg-tertiary)', padding: '2px 8px', borderRadius: 12, marginTop: 8, display: 'inline-block' }}>{t.category}</span>

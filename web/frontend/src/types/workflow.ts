@@ -44,6 +44,7 @@ export const NODE_TYPES = [
   { type: 'action.notion_db_update', label: 'Notion DB Update', category: 'action', color: '#8957e5', icon: 'ND' },
   { type: 'action.http', label: 'HTTP Request', category: 'action', color: '#8957e5', icon: 'HT' },
   { type: 'action.webhook', label: 'POST Webhook', category: 'action', color: '#8957e5', icon: 'WH' },
+  { type: 'action.n8n_webhook', label: 'n8n Webhook', category: 'action', color: '#ea4b71', icon: 'N8' },
 ];
 
 export const NODE_CATEGORIES: Array<{ id: string; label: string; color: string }> = [

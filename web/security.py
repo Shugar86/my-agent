@@ -32,6 +32,8 @@ PUBLIC_GET_PREFIXES = (
     "/api/marketplace",
     "/api/workflow-templates",
     "/api/public",
+    "/api/demo/artifact",
+    "/api/demo/sample",
 )
 
 

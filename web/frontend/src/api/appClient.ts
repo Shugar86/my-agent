@@ -280,6 +280,31 @@ export async function runWorkflowById(id: string, payload: Record<string, unknow
   return res.json();
 }
 
+export interface DemoRunResult {
+  mode: 'mock' | 'real';
+  workflow_id: string;
+  run_id: string;
+  expected_duration_ms?: number;
+  artifact_url: string;
+  summary?: { total_duration_ms?: number; total_duration_human?: string; tokens_used?: number; estimated_cost_usd?: number };
+}
+
+export async function startDemoRun(target = 'Notion', ourCompany = 'Linear', real = false): Promise<DemoRunResult> {
+  const res = await fetch('/api/demo/run', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ target, our_company: ourCompany, real }),
+  });
+  if (!res.ok) throw new Error('Demo run failed');
+  return res.json();
+}
+
+export async function getDemoSample(): Promise<{ summary: Record<string, unknown>; node_order: string[]; default_payload: Record<string, string> }> {
+  const res = await fetch('/api/demo/sample');
+  if (!res.ok) throw new Error('Demo sample fetch failed');
+  return res.json();
+}
+
 export async function streamChat(
   message: string,
   agentId: string,

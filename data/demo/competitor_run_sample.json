@@ -1,0 +1,154 @@
+{
+  "template_id": "tpl_competitor_intelligence",
+  "demo_mode": true,
+  "default_payload": {
+    "target": "Notion",
+    "our_company": "Linear"
+  },
+  "node_order": ["trg", "r1", "r2", "merge", "an", "doc", "n8n"],
+  "events": [
+    {
+      "delay_ms": 200,
+      "node_id": "trg",
+      "event": "started",
+      "detail": {"message": "Webhook received: target=Notion, our_company=Linear"}
+    },
+    {
+      "delay_ms": 350,
+      "node_id": "trg",
+      "event": "completed",
+      "detail": {"output": {"target": "Notion", "our_company": "Linear"}, "duration_ms": 150}
+    },
+    {
+      "delay_ms": 200,
+      "node_id": "r1",
+      "event": "started",
+      "detail": {"message": "Deep research agent: product, pricing, positioning"}
+    },
+    {
+      "delay_ms": 200,
+      "node_id": "r2",
+      "event": "started",
+      "detail": {"message": "Deep research agent: news, hires, funding (90 days)"}
+    },
+    {
+      "delay_ms": 4200,
+      "node_id": "r1",
+      "event": "log",
+      "detail": {"message": "Tavily: 12 sources fetched, ranking by relevance..."}
+    },
+    {
+      "delay_ms": 3100,
+      "node_id": "r2",
+      "event": "log",
+      "detail": {"message": "Tavily: 9 news sources, 3 funding mentions found"}
+    },
+    {
+      "delay_ms": 5800,
+      "node_id": "r1",
+      "event": "completed",
+      "detail": {
+        "output": {
+          "summary": "Notion: $10B valuation, 30M+ users, blocks-based workspace. Pricing: free→$10/$15/$25 per user. Positioning: 'all-in-one workspace'. Strengths: flexibility, AI features. Weaknesses: performance on large workspaces, mobile UX.",
+          "sources": 12
+        },
+        "duration_ms": 13200
+      }
+    },
+    {
+      "delay_ms": 1600,
+      "node_id": "r2",
+      "event": "completed",
+      "detail": {
+        "output": {
+          "summary": "Last 90 days: Notion AI 2.0 launched (Q1 2026), enterprise tier expanded, hired ex-Figma VP Product, no new funding round. 3 acquisitions: Cron, Skiff, Flowdash.",
+          "sources": 9
+        },
+        "duration_ms": 12500
+      }
+    },
+    {
+      "delay_ms": 250,
+      "node_id": "merge",
+      "event": "started",
+      "detail": {"message": "Merging research outputs from r1, r2"}
+    },
+    {
+      "delay_ms": 180,
+      "node_id": "merge",
+      "event": "completed",
+      "detail": {"output": {"merged_chars": 3420}, "duration_ms": 180}
+    },
+    {
+      "delay_ms": 200,
+      "node_id": "an",
+      "event": "started",
+      "detail": {"message": "Data analyst: SWOT + 3 actions, comparing Notion vs Linear"}
+    },
+    {
+      "delay_ms": 7400,
+      "node_id": "an",
+      "event": "completed",
+      "detail": {
+        "output": {
+          "swot": {
+            "strengths": ["Notion: ecosystem breadth, AI integration"],
+            "weaknesses": ["Notion: speed, opinionated structure"],
+            "opportunities": ["Linear: vertical for product/engineering teams, native git/issues"],
+            "threats": ["Notion's AI 2.0 closing the gap on issue tracking"]
+          },
+          "actions": [
+            "Double down on speed (sub-50ms interactions) as core differentiator",
+            "Ship native AI roadmap planner before Q3 to counter Notion AI 2.0",
+            "Expand integrations: Slack, GitHub, Figma → reduce switch cost"
+          ]
+        },
+        "duration_ms": 7400
+      }
+    },
+    {
+      "delay_ms": 200,
+      "node_id": "doc",
+      "event": "started",
+      "detail": {"message": "Generating DOCX: 'Competitive Brief — Notion'"}
+    },
+    {
+      "delay_ms": 2100,
+      "node_id": "doc",
+      "event": "completed",
+      "detail": {
+        "output": {
+          "url": "/api/demo/artifact/competitor_brief_notion_vs_linear.docx",
+          "filename": "competitor_brief_notion_vs_linear.docx",
+          "size_bytes": 37826
+        },
+        "duration_ms": 2100
+      }
+    },
+    {
+      "delay_ms": 200,
+      "node_id": "n8n",
+      "event": "started",
+      "detail": {"message": "POST to n8n webhook with brief summary + report URL"}
+    },
+    {
+      "delay_ms": 600,
+      "node_id": "n8n",
+      "event": "completed",
+      "detail": {
+        "output": {
+          "status_code": 200,
+          "body": {"workflowExecution": "started", "executionId": "demo-exec-7421"}
+        },
+        "duration_ms": 600
+      }
+    }
+  ],
+  "summary": {
+    "total_duration_ms": 30000,
+    "total_duration_human": "~30s real / ~4h human work saved",
+    "tokens_used": 18420,
+    "estimated_cost_usd": 0.42,
+    "artifact": "/api/demo/artifact/competitor_brief_notion_vs_linear.docx"
+  }
+}

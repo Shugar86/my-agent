@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import os
 from typing import Any
 
 import httpx
@@ -176,6 +177,47 @@ async def handle_action_http(ctx: RunContext, config: dict[str, Any]) -> dict[st
         return {"output": {"error": str(exc)}, "success": False}
 
 
+async def handle_action_n8n(ctx: RunContext, config: dict[str, Any]) -> dict[str, Any]:
+    """Trigger n8n workflow via webhook with optional Basic Auth.
+
+    Resolves URL from node config first, then falls back to ``N8N_WEBHOOK_URL`` env var.
+    Picks up ``N8N_BASIC_AUTH_USER`` / ``N8N_BASIC_AUTH_PASS`` automatically if set.
+
+    Trade-off: keeping a thin wrapper over httpx (instead of an n8n SDK) means we
+    avoid an extra dependency while supporting any self-hosted n8n instance.
+    """
+    resolved = ctx.resolve_config(config)
+    url = str(resolved.get("url") or os.getenv("N8N_WEBHOOK_URL", "")).strip()
+    if not url:
+        return {"output": {"error": "n8n url not configured"}, "success": False}
+
+    headers = resolved.get("headers") or {}
+    if not isinstance(headers, dict):
+        headers = {}
+    payload = resolved.get("payload", {})
+
+    auth_user = os.getenv("N8N_BASIC_AUTH_USER")
+    auth_pass = os.getenv("N8N_BASIC_AUTH_PASS")
+
+    try:
+        async with httpx.AsyncClient(timeout=30) as client:
+            kwargs: dict[str, Any] = {"json": payload, "headers": headers}
+            if auth_user and auth_pass:
+                kwargs["auth"] = (auth_user, auth_pass)
+            resp = await client.post(url, **kwargs)
+            try:
+                body: Any = resp.json()
+            except ValueError:
+                body = resp.text[:1500]
+            return {
+                "output": {"status_code": resp.status_code, "body": body},
+                "success": resp.is_success,
+            }
+    except httpx.HTTPError as exc:
+        logger.warning("n8n webhook failed: %s", exc)
+        return {"output": {"error": str(exc)}, "success": False}
+
+
 def register_action_handlers() -> None:
     """Register all action node handlers."""
     register_node_handler("action.telegram", handle_action_telegram)
@@ -187,3 +229,4 @@ def register_action_handlers() -> None:
     register_node_handler("action.notion_db_update", handle_action_notion_db)
     register_node_handler("action.webhook", handle_action_webhook)
     register_node_handler("action.http", handle_action_http)
+    register_node_handler("action.n8n_webhook", handle_action_n8n)

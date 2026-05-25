@@ -11,9 +11,12 @@ import {
   saveIntegrationCredentials,
   testIntegration,
   getIntegrationAuthUrl,
+  startDemoRun,
   type Integration,
   type Template,
 } from '../api/appClient';
+import { getRun } from '../api/workflowClient';
+import ExecutionTimeline from '../components/ExecutionTimeline';
 
 const STEPS = ['Workspace', 'Integrations', 'First workflow', 'Test run'] as const;
 
@@ -31,6 +34,15 @@ export default function OnboardingPage() {
   const [drafts, setDrafts] = useState<Record<string, Record<string, string>>>({});
   const [testing, setTesting] = useState<string | null>(null);
   const [testResults, setTestResults] = useState<Record<string, boolean>>({});
+  const [demoRun, setDemoRun] = useState<{
+    workflow_id: string;
+    run_id: string;
+    mode: 'mock' | 'real';
+    artifact_url?: string;
+    logs: Array<{ node_id: string; event: string; detail?: unknown }>;
+    status: string;
+  } | null>(null);
+  const [demoStarting, setDemoStarting] = useState(false);
 
   useEffect(() => {
     const invite = params.get('invite');
@@ -97,19 +109,49 @@ export default function OnboardingPage() {
   };
 
   const handleTestRun = async () => {
-    if (!installedWfId) return;
+    setDemoStarting(true);
+    setStatus('');
     try {
-      await fetch(`/api/workflows/${installedWfId}/run`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ payload: { test: true } }),
+      const result = await startDemoRun('Notion', 'Linear', false);
+      setDemoRun({
+        workflow_id: result.workflow_id,
+        run_id: result.run_id,
+        mode: result.mode,
+        artifact_url: result.artifact_url,
+        logs: [],
+        status: 'running',
       });
-      await completeOnboarding();
-      navigate(`/workflows/${installedWfId}`);
     } catch {
-      setStatus('Test run failed');
+      setStatus('Demo run failed — try again or skip to dashboard');
+    } finally {
+      setDemoStarting(false);
     }
   };
+
+  useEffect(() => {
+    if (!demoRun || demoRun.status !== 'running') return undefined;
+    const interval = setInterval(async () => {
+      try {
+        const run = await getRun(demoRun.workflow_id, demoRun.run_id);
+        setDemoRun((prev) =>
+          prev
+            ? {
+                ...prev,
+                logs: run.logs || [],
+                status: run.status,
+              }
+            : prev,
+        );
+        if (run.status !== 'running') {
+          clearInterval(interval);
+          completeOnboarding().catch(() => {});
+        }
+      } catch {
+        clearInterval(interval);
+      }
+    }, 800);
+    return () => clearInterval(interval);
+  }, [demoRun?.run_id, demoRun?.status]);
 
   const finish = async () => {
     await completeOnboarding();
@@ -265,14 +307,82 @@ export default function OnboardingPage() {
 
       {step === 4 && (
         <div className="card">
-          <h2 style={{ fontSize: 16, marginBottom: 12 }}>Run a test execution</h2>
+          <h2 style={{ fontSize: 16, marginBottom: 8 }}>Run the 90-second demo</h2>
           <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 16 }}>
-            Send a sample payload through your new workflow to verify everything is wired up.
+            Watch a Competitor Intelligence workflow execute live: 2 research agents in parallel,
+            comparative analysis, DOCX report and an n8n hook. Falls back to a prerecorded run when
+            API keys aren't configured.
           </p>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <button type="button" className="btn btn-primary" onClick={handleTestRun}>Run test & open builder</button>
-            <button type="button" className="btn" onClick={finish}>Skip and go to dashboard</button>
-          </div>
+          {!demoRun ? (
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button type="button" className="btn btn-primary" onClick={handleTestRun} disabled={demoStarting}>
+                {demoStarting ? 'Starting…' : '▶ Run 90s demo'}
+              </button>
+              {installedWfId && (
+                <button
+                  type="button"
+                  className="btn"
+                  onClick={() => navigate(`/workflows/${installedWfId}`)}
+                >
+                  Open my installed workflow
+                </button>
+              )}
+              <button type="button" className="btn" onClick={finish}>
+                Skip to dashboard
+              </button>
+            </div>
+          ) : (
+            <div>
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  marginBottom: 12,
+                  padding: '8px 12px',
+                  background: 'var(--bg-tertiary)',
+                  borderRadius: 6,
+                  fontSize: 12,
+                }}
+              >
+                <span>
+                  Mode: <strong>{demoRun.mode}</strong> · Status:{' '}
+                  <strong style={{ color: demoRun.status === 'success' ? 'var(--success)' : demoRun.status === 'failed' ? 'var(--danger)' : 'var(--accent)' }}>
+                    {demoRun.status}
+                  </strong>
+                </span>
+                <span style={{ color: 'var(--text-muted)' }}>
+                  {demoRun.logs.length} events · run_id: {demoRun.run_id.slice(0, 12)}
+                </span>
+              </div>
+              <div style={{ maxHeight: 400, overflowY: 'auto', border: '1px solid var(--border)', borderRadius: 6, padding: 12 }}>
+                <ExecutionTimeline logs={demoRun.logs} />
+              </div>
+              <div style={{ display: 'flex', gap: 8, marginTop: 16, flexWrap: 'wrap' }}>
+                {demoRun.status !== 'running' && demoRun.artifact_url && (
+                  <a
+                    href={demoRun.artifact_url}
+                    className="btn btn-primary"
+                    download
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    ↓ Download brief (DOCX)
+                  </a>
+                )}
+                <button
+                  type="button"
+                  className="btn"
+                  onClick={() => navigate(`/workflows/${demoRun.workflow_id}?run=${demoRun.run_id}`)}
+                >
+                  Open in builder
+                </button>
+                <button type="button" className="btn" onClick={finish}>
+                  Go to dashboard
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>

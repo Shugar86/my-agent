@@ -5,7 +5,9 @@
 .env.local
 
 # Runtime data
-data/
+data/*
+!data/demo/
+!data/demo/**
 logs/
 output/
 *.log

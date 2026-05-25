@@ -4,7 +4,30 @@
 
 **Ключевой дифференциатор:** "Мощь My Agent + простота ASCN + безопасность Docker sandbox"
 
-**Статус на 2026-05-25:** Phase 1 ✅ | Phase 2 ✅ | Phase 3 ✅ (B2B scope, без Stripe)
+**Статус на 2026-05-25:** Phase 1 ✅ | Phase 2 ✅ | Phase 3 ✅ (B2B scope, без Stripe) | **Investor Demo ✅**
+
+---
+
+## Investor Demo Polish (May 2026) — ✅ COMPLETE
+
+**Цель:** Подготовить продукт к показу инвестору за 3 минуты без риска срыва демо.
+
+### Ключевые фичи
+
+| Компонент | Статус | Реализация |
+|-----------|--------|------------|
+| Killer use-case | ✅ | `tpl_competitor_intelligence` — 7 нод, featured tag |
+| Demo API | ✅ | `POST /api/demo/run` + mock fallback (`web/demo_router.py`) |
+| n8n integration | ✅ | `action.n8n_webhook` node + `--profile demo` в compose |
+| UI polish | ✅ | Dashboard hero, Marketplace featured, pulsing nodes, durations |
+| Onboarding demo | ✅ | Step 4 — inline live run + DOCX download |
+| Demo docs | ✅ | `DEMO.md` — script, talking points, metrics |
+
+### Метрики успеха
+
+- Time-to-wow: **90 секунд** (mock) / ~30s real
+- Demo never breaks without API keys ✅
+- Artifact: DOCX brief, ~38 KB ✅
 
 ---
 

@@ -1,7 +1,7 @@
 # My Agent — развёртывание на VDS
 
 > Сервер: `159.195.31.95` | Путь: `/opt/projects/my-agent/`  
-> Статус: **v3.0 B2B Ready** (Phase 1–3 complete)
+> Статус: **v3.1 Investor Demo Ready** (Phase 1–3 + demo polish)
 
 ---
 
@@ -12,6 +12,7 @@
 | Web UI | `127.0.0.1:8020` | 8020 | ❌ 8000 занят magikbook-api |
 | PostgreSQL | `127.0.0.1:5437` | 5432 | ❌ 5436 infodon, 5435 coffeeman |
 | Redis | `127.0.0.1:6380` | 6379 | magikbook-redis без host-порта |
+| n8n (demo) | `127.0.0.1:5678` | 5678 | только с `--profile demo` |
 
 ---
 
@@ -23,20 +24,33 @@ cd /opt/projects/my-agent
 # 1. Конфиг
 cp .env.example .env
 # Заполнить: OPENROUTER_API_KEY, AGENT_SECRET_KEY, AGENT_PASSWORD
-# Опционально: GOOGLE_AUTH_CLIENT_ID/SECRET для Sign-in with Google
+# Опционально: GOOGLE_AUTH_CLIENT_ID/SECRET, N8N_WEBHOOK_URL
 
 # 2. Собрать frontend (если менялся web/frontend/)
 cd web/frontend && npm install && npm run build && cd ../..
 
-# 3. Seed workflow-шаблонов (первый раз)
+# 3. Seed workflow-шаблонов + demo-артефакт (первый раз)
 python3 scripts/seed_workflow_templates.py
+python3 scripts/generate_demo_artifact.py
 
-# 4. Запуск (миграции Alembic включая 004_teams — автоматически)
+# 4. Запуск (миграции Alembic — автоматически)
 docker compose up -d --build
 
 # 5. Проверка
 curl -s http://127.0.0.1:8020/api/health | python3 -m json.tool
 ```
+
+### Investor demo (с n8n)
+
+```bash
+docker compose --profile demo up -d --build
+docker compose exec agent python scripts/seed_workflow_templates.py
+docker compose exec agent python scripts/generate_demo_artifact.py
+# http://127.0.0.1:8020/app → "Try 90s demo"
+# n8n UI: http://127.0.0.1:5678 (admin / demo)
+```
+
+Сценарий для инвестора: **[DEMO.md](./DEMO.md)**.
 
 Логин: `admin` / `AGENT_PASSWORD` из `.env`, или **Sign in with Google** (если настроен OAuth).
 
@@ -52,8 +66,16 @@ curl -s http://127.0.0.1:8020/api/health | python3 -m json.tool
 | `/app/marketplace` | Templates |
 | `/app/analytics` | Usage dashboard |
 | `/app/admin` | Team members + system health (owner/admin) |
-| `/app/onboarding` | Team setup + integrations + first template |
+| `/app/onboarding` | Team setup + integrations + 90s demo run (step 4) |
 | `/metrics` | Prometheus scrape |
+
+### Demo API
+
+| Method | Endpoint | Описание |
+|--------|----------|----------|
+| POST | `/api/demo/run` | Запуск Competitor Intelligence (mock fallback без ключей) |
+| GET | `/api/demo/artifact/{filename}` | Скачать DOCX-артефакт |
+| GET | `/api/demo/sample` | Метрики demo run (ROI, tokens, duration) |
 
 ---
 
@@ -108,5 +130,8 @@ cd web/frontend && npm run build
 | 3 | Usage ledger | `core/usage/`, `web/usage_router.py` |
 | 3 | Google auth | `web/auth_router.py` |
 | 3 | Migration | `alembic/versions/004_teams.py` |
+| Demo | Investor demo | `web/demo_router.py`, `DEMO.md`, `data/demo/` |
+| Demo | n8n node | `action.n8n_webhook` in `core/workflow/nodes/action.py` |
+| Demo | Featured template | `tpl_competitor_intelligence` in seed script |
 
-Документация: `ROADMAP_90_DAYS.md`, `SECURITY.md`, `.planning/STATE.md`, `ARCHITECTURE.md`.
+Документация: `DEMO.md`, `ROADMAP_90_DAYS.md`, `SECURITY.md`, `.planning/STATE.md`, `ARCHITECTURE.md`.

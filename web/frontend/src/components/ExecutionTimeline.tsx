@@ -4,6 +4,21 @@ interface LogEntry {
   detail?: unknown;
 }
 
+function formatDuration(ms: number): string {
+  if (ms < 1000) return `${ms}ms`;
+  if (ms < 60_000) return `${(ms / 1000).toFixed(1)}s`;
+  const minutes = Math.floor(ms / 60_000);
+  const seconds = Math.round((ms % 60_000) / 1000);
+  return `${minutes}m ${seconds}s`;
+}
+
+function extractDuration(detail: unknown): number | null {
+  if (!detail || typeof detail !== 'object') return null;
+  const d = detail as Record<string, unknown>;
+  if (typeof d.duration_ms === 'number') return d.duration_ms;
+  return null;
+}
+
 interface Props {
   logs: LogEntry[];
   activeNodeId?: string;
@@ -54,19 +69,29 @@ export default function ExecutionTimeline({ logs, activeNodeId }: Props) {
               )}
             </div>
             <div style={{ paddingBottom: 14, flex: 1 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 6 }}>
                 <span style={{ fontSize: 12, fontWeight: 600 }}>{log.node_id}</span>
-                <span
-                  style={{
-                    fontSize: 10,
-                    color,
-                    border: `1px solid ${color}`,
-                    padding: '1px 6px',
-                    borderRadius: 8,
-                  }}
-                >
-                  {EVENT_LABEL[log.event] || log.event}
-                </span>
+                <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                  {(() => {
+                    const dur = extractDuration(log.detail);
+                    return dur !== null ? (
+                      <span style={{ fontSize: 10, color: 'var(--text-subtle)', fontVariantNumeric: 'tabular-nums' }}>
+                        {formatDuration(dur)}
+                      </span>
+                    ) : null;
+                  })()}
+                  <span
+                    style={{
+                      fontSize: 10,
+                      color,
+                      border: `1px solid ${color}`,
+                      padding: '1px 6px',
+                      borderRadius: 8,
+                    }}
+                  >
+                    {EVENT_LABEL[log.event] || log.event}
+                  </span>
+                </div>
               </div>
               {log.detail != null && (
                 <pre
