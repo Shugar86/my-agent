@@ -165,17 +165,44 @@ async def validate_workflow_endpoint(request: Request, body: WorkflowValidateReq
 
 @router.post("/api/workflows/{workflow_id}/run")
 async def run_workflow(request: Request, workflow_id: str):
-    """Manually trigger workflow execution."""
+    """Manually trigger workflow execution (background by default)."""
     user_id = getattr(request.state, "user_id", None)
+    workspace_id = getattr(request.state, "workspace_id", None)
     if user_id and not workflow_store.user_can_access_workflow(workflow_id, user_id, min_role="member"):
         raise HTTPException(status_code=403, detail="Forbidden")
-    body = {}
+    body: dict[str, Any] = {}
     try:
         body = await request.json()
     except Exception:
         pass
-    payload = body.get("payload", {}) if isinstance(body, dict) else {}
-    result = await executor.run(workflow_id, trigger_payload=payload, user_id=user_id)
+    if not isinstance(body, dict):
+        body = {}
+    payload = body.get("payload", {})
+
+    from core.billing.plans import check_workflow_run_allowed
+    from core.teams.store import team_store
+
+    plan = "free"
+    if workspace_id:
+        team = team_store.get_team(workspace_id)
+        plan = (team or {}).get("plan", "free")
+    quota = check_workflow_run_allowed(workspace_id, plan)
+    if not quota["allowed"]:
+        raise HTTPException(
+            status_code=429,
+            detail=f"Plan limit reached: {quota['used']}/{quota['limit']} workflow runs this month",
+        )
+
+    wait = body.get("wait", False) is True
+    if wait:
+        result = await executor.run(workflow_id, trigger_payload=payload, user_id=user_id)
+        if not result.get("success") and result.get("run_id"):
+            return result
+        if not result.get("success"):
+            raise HTTPException(status_code=500, detail=result.get("error", "Execution failed"))
+        return result
+
+    result = await executor.start_background(workflow_id, trigger_payload=payload, user_id=user_id)
     if not result.get("success"):
         raise HTTPException(status_code=500, detail=result.get("error", "Execution failed"))
     return result
@@ -184,6 +211,9 @@ async def run_workflow(request: Request, workflow_id: str):
 @router.get("/api/workflows/{workflow_id}/runs/{run_id}")
 async def get_workflow_run(request: Request, workflow_id: str, run_id: str):
     """Get a single workflow run with logs."""
+    user_id = getattr(request.state, "user_id", None)
+    if user_id and not workflow_store.user_can_access_workflow(workflow_id, user_id, min_role="member"):
+        raise HTTPException(status_code=403, detail="Forbidden")
     run = workflow_store.get_run(run_id)
     if not run or run["workflow_id"] != workflow_id:
         raise HTTPException(status_code=404, detail="Run not found")
@@ -193,6 +223,9 @@ async def get_workflow_run(request: Request, workflow_id: str, run_id: str):
 @router.get("/api/workflows/{workflow_id}/runs")
 async def list_workflow_runs(request: Request, workflow_id: str):
     """List execution history for a workflow."""
+    user_id = getattr(request.state, "user_id", None)
+    if user_id and not workflow_store.user_can_access_workflow(workflow_id, user_id, min_role="member"):
+        raise HTTPException(status_code=403, detail="Forbidden")
     runs = workflow_store.list_runs(workflow_id)
     return {"runs": runs, "total": len(runs)}
 
@@ -317,6 +350,43 @@ async def rate_template(request: Request, template_id: str, body: TemplateRateRe
     if not tpl:
         raise HTTPException(status_code=404, detail="Template not found")
     return {"success": True, "template": tpl}
+
+
+@router.post("/api/workflow-templates/{template_id}/demo-run")
+async def template_demo_run(request: Request, template_id: str):
+    """Return a mock successful run for template preview (no integrations required)."""
+    from core.workflow.template_demo import build_template_demo_run
+
+    tpl = workflow_store.get_template(template_id)
+    if not tpl:
+        raise HTTPException(status_code=404, detail="Template not found")
+    return build_template_demo_run(tpl)
+
+
+@router.get("/api/billing/plan")
+async def get_billing_plan(request: Request):
+    """Return current workspace plan and usage limits."""
+    from core.billing.plans import check_workflow_run_allowed
+    from core.teams.store import team_store
+
+    workspace_id = getattr(request.state, "workspace_id", None)
+    plan = "free"
+    team_name = ""
+    if workspace_id:
+        team = team_store.get_team(workspace_id)
+        if team:
+            plan = team.get("plan", "free")
+            team_name = team.get("name", "")
+    quota = check_workflow_run_allowed(workspace_id, plan)
+    return {
+        "workspace_id": workspace_id,
+        "workspace_name": team_name,
+        "plan": quota["plan"],
+        "label": quota.get("label", "Free"),
+        "workflow_runs_used": quota["used"],
+        "workflow_runs_limit": quota["limit"],
+        "allowed": quota["allowed"],
+    }
 
 
 @router.post("/api/workflow-templates/{template_id}/install")

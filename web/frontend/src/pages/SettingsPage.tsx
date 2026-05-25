@@ -8,14 +8,20 @@ import {
   getAppConfig,
   saveAppConfig,
   getMe,
+  getBillingPlan,
+  listApiKeys,
+  saveApiKey,
+  deleteApiKey,
   type Integration,
   type MeUser,
+  type BillingPlan,
+  type ApiKeyEntry,
 } from '../api/appClient';
 import PageHeader from '../components/ui/PageHeader';
 import { useToast } from '../components/ui/Toast';
 import { t } from '../i18n';
 
-type TabId = 'integrations' | 'models' | 'workspace';
+type TabId = 'integrations' | 'models' | 'workspace' | 'apiKeys' | 'billing';
 
 interface ConnectionDraft {
   [field: string]: string;
@@ -37,6 +43,10 @@ export default function SettingsPage() {
     { value: 'kimi', label: 'Kimi K2.6 Code' },
   ]);
   const [me, setMe] = useState<MeUser | null>(null);
+  const [billing, setBilling] = useState<BillingPlan | null>(null);
+  const [apiKeys, setApiKeys] = useState<ApiKeyEntry[]>([]);
+  const [newKeyName, setNewKeyName] = useState('');
+  const [newKeyValue, setNewKeyValue] = useState('');
 
   const refresh = () => {
     listIntegrations().then(setIntegrations).catch(() => setIntegrations([]));
@@ -61,6 +71,8 @@ export default function SettingsPage() {
       })
       .catch(() => {});
     getMe().then(setMe).catch(() => {});
+    getBillingPlan().then(setBilling).catch(() => setBilling(null));
+    listApiKeys().then((data) => setApiKeys(data.keys || [])).catch(() => setApiKeys([]));
   }, []);
 
   const handleField = (provider: string, name: string, value: string) => {
@@ -125,9 +137,42 @@ export default function SettingsPage() {
     }
   };
 
+  const handleAddApiKey = async () => {
+    if (!newKeyName.trim() || !newKeyValue.trim()) return;
+    setBusy('apikey');
+    try {
+      await saveApiKey(newKeyName.trim(), newKeyValue.trim());
+      setNewKeyName('');
+      setNewKeyValue('');
+      const data = await listApiKeys();
+      setApiKeys(data.keys || []);
+      showToast(t('settings.saved'));
+    } catch {
+      showToast(t('settings.saveFailed'), 'error');
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const handleDeleteApiKey = async (name: string) => {
+    setBusy(name);
+    try {
+      await deleteApiKey(name);
+      const data = await listApiKeys();
+      setApiKeys(data.keys || []);
+      showToast(t('common.success'));
+    } catch {
+      showToast(t('common.error'), 'error');
+    } finally {
+      setBusy(null);
+    }
+  };
+
   const tabs: { id: TabId; label: string }[] = [
     { id: 'integrations', label: t('settings.tabs.integrations') },
     { id: 'models', label: t('settings.tabs.models') },
+    { id: 'apiKeys', label: t('settings.tabs.apiKeys') },
+    { id: 'billing', label: t('settings.tabs.billing') },
     { id: 'workspace', label: t('settings.tabs.workspace') },
   ];
 
@@ -242,11 +287,62 @@ export default function SettingsPage() {
           <div className="card">
             <h2 style={{ fontSize: 15, marginBottom: 12 }}>{t('settings.workspaceInfo')}</h2>
             <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>{me?.username} · {me?.email || '—'}</p>
-            <p style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 8 }}>{t('settings.version')}: 3.1.0</p>
+            <p style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 8 }}>{t('settings.version')}: 3.3.0</p>
             <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>{t('settings.framework')}: FastAPI</p>
             <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>{t('settings.defaultModel')}: {primaryModel}</p>
           </div>
         </>
+      )}
+
+      {tab === 'apiKeys' && (
+        <div className="card">
+          <h2 style={{ fontSize: 15, marginBottom: 12 }}>{t('settings.tabs.apiKeys')}</h2>
+          {apiKeys.length === 0 && (
+            <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 12 }}>{t('settings.apiKeyEmpty')}</p>
+          )}
+          {apiKeys.map((key) => (
+            <div key={key.name} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+              <span style={{ fontFamily: 'monospace', fontSize: 13 }}>{key.name}</span>
+              <button type="button" className="btn" onClick={() => handleDeleteApiKey(key.name)} disabled={busy === key.name}>
+                {t('common.delete')}
+              </button>
+            </div>
+          ))}
+          <div className="form-group" style={{ marginTop: 16 }}>
+            <label>{t('settings.apiKeyName')}</label>
+            <input className="input" value={newKeyName} onChange={(e) => setNewKeyName(e.target.value)} placeholder="OPENROUTER_API_KEY" />
+          </div>
+          <div className="form-group">
+            <label>{t('settings.apiKeyValue')}</label>
+            <input className="input" type="password" value={newKeyValue} onChange={(e) => setNewKeyValue(e.target.value)} />
+          </div>
+          <button type="button" className="btn btn-primary" onClick={handleAddApiKey} disabled={busy === 'apikey'}>
+            {t('settings.apiKeyAdd')}
+          </button>
+        </div>
+      )}
+
+      {tab === 'billing' && (
+        <div className="card">
+          <h2 style={{ fontSize: 15, marginBottom: 12 }}>{t('settings.billingPlan')}</h2>
+          {billing ? (
+            <>
+              <p style={{ fontSize: 22, color: 'var(--accent)', fontWeight: 600, marginBottom: 8 }}>{billing.label}</p>
+              <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 16 }}>
+                {billing.workspace_name || me?.username || '—'}
+              </p>
+              <p style={{ fontSize: 14 }}>
+                {t('settings.billingUsage')}: {billing.workflow_runs_used}
+                {billing.workflow_runs_limit != null ? ` / ${billing.workflow_runs_limit}` : ''}
+              </p>
+              {!billing.allowed && (
+                <p style={{ fontSize: 13, color: '#f85149', marginTop: 12 }}>{t('settings.billingLimitReached')}</p>
+              )}
+            </>
+          ) : (
+            <div className="skeleton" style={{ height: 80 }} />
+          )}
+        </div>
       )}
     </div>
   );

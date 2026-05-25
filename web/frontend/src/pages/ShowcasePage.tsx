@@ -74,13 +74,16 @@ export default function ShowcasePage() {
           apiTemplates.length > 0 ? apiTemplates : showcaseJson.featured_templates || [],
         );
       })
-      .catch((e: Error) => setError(e.message));
+      .catch(() => setError(t('showcase.loadError')));
   }, []);
 
   if (error) {
     return (
       <div className="page-content">
         <PageHeader title={t('showcase.title')} subtitle={error} />
+        <div className="card" style={{ marginTop: 16 }}>
+          <p style={{ color: 'var(--text-muted)' }}>{t('showcase.loadError')}</p>
+        </div>
       </div>
     );
   }

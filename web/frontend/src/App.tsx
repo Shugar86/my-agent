@@ -1,12 +1,11 @@
+import { lazy, Suspense } from 'react';
 import './layout/theme.css';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import AppShell from './layout/AppShell';
 import Dashboard from './pages/Dashboard';
-import MarketplacePage from './pages/MarketplacePage';
 import ChatPage from './pages/ChatPage';
 import SettingsPage from './pages/SettingsPage';
 import WorkflowList from './pages/WorkflowList';
-import WorkflowBuilder from './pages/WorkflowBuilder';
 import AnalyticsPage from './pages/AnalyticsPage';
 import AdminPage from './pages/AdminPage';
 import OnboardingPage from './pages/OnboardingPage';
@@ -16,6 +15,22 @@ import KnowledgePage from './pages/KnowledgePage';
 import McpPage from './pages/McpPage';
 import ShowcasePage from './pages/ShowcasePage';
 
+const WorkflowBuilder = lazy(() => import('./pages/WorkflowBuilder'));
+const MarketplacePage = lazy(() => import('./pages/MarketplacePage'));
+
+function PageFallback() {
+  return (
+    <div style={{ padding: 30 }}>
+      <div className="skeleton" style={{ height: 48, width: 240, marginBottom: 16 }} />
+      <div className="skeleton" style={{ height: 200 }} />
+    </div>
+  );
+}
+
+function LazyPage({ children }: { children: React.ReactNode }) {
+  return <Suspense fallback={<PageFallback />}>{children}</Suspense>;
+}
+
 export default function App() {
   return (
     <BrowserRouter basename="/app">
@@ -23,8 +38,8 @@ export default function App() {
         <Route element={<AppShell />}>
           <Route index element={<Dashboard />} />
           <Route path="workflows" element={<WorkflowList />} />
-          <Route path="workflows/:workflowId" element={<WorkflowBuilder />} />
-          <Route path="marketplace" element={<MarketplacePage />} />
+          <Route path="workflows/:workflowId" element={<LazyPage><WorkflowBuilder /></LazyPage>} />
+          <Route path="marketplace" element={<LazyPage><MarketplacePage /></LazyPage>} />
           <Route path="showcase" element={<ShowcasePage />} />
           <Route path="chat" element={<ChatPage />} />
           <Route path="builder" element={<Navigate to="/agents" replace />} />

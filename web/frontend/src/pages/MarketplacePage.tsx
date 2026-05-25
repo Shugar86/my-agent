@@ -7,6 +7,7 @@ import {
   getMe,
   publishTemplate,
   getTemplate,
+  demoRunTemplate,
   type Template,
 } from '../api/appClient';
 import WorkflowThumbnail from '../components/WorkflowThumbnail';
@@ -52,6 +53,7 @@ export default function MarketplacePage() {
   const [pubTags, setPubTags] = useState('');
   const [pubDefinition, setPubDefinition] = useState('{"nodes":[],"edges":[]}');
   const [previewTemplate, setPreviewTemplate] = useState<Template | null>(null);
+  const [demoPreview, setDemoPreview] = useState<{ templateId: string; logs: Array<{ node_id: string; event: string }> } | null>(null);
 
   useEffect(() => {
     const t = setTimeout(() => setDebouncedSearch(search), 250);
@@ -116,6 +118,16 @@ export default function MarketplacePage() {
       );
       setTemplates(refreshed);
       showToast(t('common.success'));
+    } catch {
+      showToast(t('common.error'), 'error');
+    }
+  };
+
+  const handleDemoRun = async (id: string) => {
+    try {
+      const result = await demoRunTemplate(id);
+      setDemoPreview({ templateId: id, logs: result.logs || [] });
+      showToast(t('marketplace.demoRunDone'), 'success');
     } catch {
       showToast(t('common.error'), 'error');
     }
@@ -217,6 +229,7 @@ export default function MarketplacePage() {
                       <button type="button" className="btn btn-primary" onClick={() => handleInstall(tpl.id)} style={{ flex: 1 }}>
                         {t('marketplace.cloneEdit')}
                       </button>
+                      <button type="button" className="btn" onClick={() => handleDemoRun(tpl.id)}>{t('marketplace.demoRun')}</button>
                       <button type="button" className="btn" onClick={() => handlePreview(tpl.id)}>{t('marketplace.preview')}</button>
                     </div>
                   </div>
@@ -246,12 +259,22 @@ export default function MarketplacePage() {
                   <button type="button" className="btn btn-primary" onClick={() => handleInstall(tpl.id)} style={{ flex: 1 }}>
                     {t('marketplace.cloneEdit')}
                   </button>
+                  <button type="button" className="btn" onClick={() => handleDemoRun(tpl.id)}>{t('marketplace.demoRun')}</button>
                   <button type="button" className="btn" onClick={() => handlePreview(tpl.id)}>{t('marketplace.preview')}</button>
                 </div>
               </div>
             ))}
           </div>
         </>
+      )}
+
+      {demoPreview && (
+        <div className="card" style={{ marginTop: 24 }}>
+          <h3 style={{ fontSize: 14, marginBottom: 8 }}>{t('marketplace.demoRun')}: {demoPreview.templateId}</h3>
+          <pre style={{ fontSize: 11, maxHeight: 200, overflow: 'auto', background: 'var(--bg)', padding: 12, borderRadius: 6 }}>
+            {JSON.stringify(demoPreview.logs.slice(0, 20), null, 2)}
+          </pre>
+        </div>
       )}
 
       {previewTemplate && (

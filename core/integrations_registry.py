@@ -95,6 +95,22 @@ _REGISTRY: list[Integration] = [
         docs_url="https://developers.notion.com/docs/create-a-notion-integration",
     ),
     Integration(
+        provider="n8n",
+        name="n8n",
+        category="automation",
+        description="Trigger n8n workflows via webhook URL.",
+        auth_method="api_key",
+        actions=["action.n8n_webhook"],
+        fields=[
+            IntegrationField(
+                "webhook_url",
+                "Default Webhook URL",
+                help="https://your-n8n.example/webhook/...",
+            ),
+        ],
+        docs_url="https://docs.n8n.io/integrations/builtin/core-nodes/n8n-nodes-base.webhook/",
+    ),
+    Integration(
         provider="webhook",
         name="Generic Webhook",
         category="protocol",

@@ -1,18 +1,25 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { listWorkflows } from '../api/workflowClient';
+import { listScheduleJobs, type ScheduleJob } from '../api/appClient';
 import type { Workflow } from '../types/workflow';
 import { t } from '../i18n';
 
 export default function WorkflowList() {
   const navigate = useNavigate();
   const [workflows, setWorkflows] = useState<Workflow[]>([]);
+  const [jobs, setJobs] = useState<ScheduleJob[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    listWorkflows()
-      .then(setWorkflows)
-      .catch(() => setWorkflows([]))
+    Promise.all([
+      listWorkflows().catch(() => []),
+      listScheduleJobs().then((data) => data.jobs || []).catch(() => []),
+    ])
+      .then(([wfList, jobList]) => {
+        setWorkflows(wfList);
+        setJobs(jobList);
+      })
       .finally(() => setLoading(false));
   }, []);
 
@@ -25,6 +32,20 @@ export default function WorkflowList() {
         </div>
         <button className="btn btn-primary" onClick={() => navigate('/workflows/new')}>{t('workflows.new')}</button>
       </div>
+
+      {jobs.length > 0 && (
+        <section className="card" style={{ marginBottom: 24 }}>
+          <h2 style={{ fontSize: 14, marginBottom: 12 }}>{t('workflows.scheduleNext')}</h2>
+          {jobs.map((job) => (
+            <div key={job.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, marginBottom: 8 }}>
+              <span style={{ fontFamily: 'monospace' }}>{job.id}</span>
+              <span style={{ color: 'var(--text-muted)' }}>
+                {(job as { next_run_time?: string }).next_run_time || t('workflows.scheduleNone')}
+              </span>
+            </div>
+          ))}
+        </section>
+      )}
 
       {loading && (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 16 }}>

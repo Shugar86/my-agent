@@ -67,8 +67,9 @@
             </div>
             <div class="form-group">
                 <label>Пароль</label>
-                <input type="password" id="reg-password" placeholder="Минимум 4 символа">
+                <input type="password" id="reg-password" placeholder="Мин. 12 символов, Aa1…">
             </div>
+            <p style={{ fontSize: 11, color: '#8b949e', marginBottom: 8 }}>Заглавная, строчная буква и цифра обязательны</p>
             <button type="submit" class="btn" id="reg-btn">✨ Создать аккаунт</button>
             <div class="error" id="reg-error">Ошибка регистрации</div>
         </form>
@@ -127,7 +128,7 @@
                     body: JSON.stringify({ username, password }),
                 });
                 const data = await res.json();
-                if (data.success) { window.location.href = '/'; }
+                if (data.success) { window.location.href = '/app/onboarding'; }
                 else {
                     err.textContent = data.detail || 'Ошибка регистрации';
                     err.style.display = 'block';

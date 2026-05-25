@@ -114,6 +114,10 @@ export default function WorkflowBuilder() {
   const [showWebhookTester, setShowWebhookTester] = useState(false);
   const [webhookPayload, setWebhookPayload] = useState('{\n  "name": "Test Lead",\n  "email": "test@example.com"\n}');
   const [search, setSearch] = useState('');
+  const [branchModalOpen, setBranchModalOpen] = useState(false);
+  const [branchLabel, setBranchLabel] = useState('true');
+  const [pendingConnection, setPendingConnection] = useState<Connection | null>(null);
+  const [selectedEdge, setSelectedEdge] = useState<Edge | null>(null);
 
   const handleSaveRef = useRef<() => Promise<void>>();
 
@@ -213,27 +217,66 @@ export default function WorkflowBuilder() {
   const onConnect = useCallback(
     (params: Connection) => {
       const sourceNode = nodes.find((n) => n.id === params.source);
-      let label: string | undefined;
       if (params.sourceHandle === 'error') {
-        label = 'error';
-      } else if (sourceNode && String(sourceNode.data.nodeType) === 'condition') {
-        label = window.prompt(t('builder.branchPrompt'), 'true') || 'true';
-        if (label !== 'true' && label !== 'false') label = 'true';
+        setEdges((eds) =>
+          addEdge(
+            { ...params, label: 'error', animated: true, style: edgeStyle('error') },
+            eds,
+          ),
+        );
+        return;
+      }
+      if (sourceNode && String(sourceNode.data.nodeType) === 'condition') {
+        setPendingConnection(params);
+        setBranchLabel('true');
+        setBranchModalOpen(true);
+        return;
       }
       setEdges((eds) =>
-        addEdge(
-          {
-            ...params,
-            label,
-            animated: true,
-            style: edgeStyle(label),
-          },
-          eds,
-        ),
+        addEdge({ ...params, animated: true, style: edgeStyle(undefined) }, eds),
       );
     },
     [setEdges, nodes],
   );
+
+  const confirmBranchConnection = () => {
+    if (!pendingConnection) return;
+    const label = branchLabel === 'false' ? 'false' : 'true';
+    setEdges((eds) =>
+      addEdge(
+        {
+          ...pendingConnection,
+          label,
+          animated: true,
+          style: edgeStyle(label),
+        },
+        eds,
+      ),
+    );
+    setBranchModalOpen(false);
+    setPendingConnection(null);
+  };
+
+  const updateEdgeLabel = (edgeId: string, label: string) => {
+    const normalized = label === 'false' || label === 'error' ? label : label || undefined;
+    setEdges((eds) =>
+      eds.map((e) =>
+        e.id === edgeId
+          ? {
+              ...e,
+              label: normalized,
+              sourceHandle: normalized === 'error' ? 'error' : 'success',
+              style: edgeStyle(normalized),
+            }
+          : e,
+      ),
+    );
+    setSelectedEdge((prev) =>
+      prev && prev.id === edgeId
+        ? { ...prev, label: normalized, style: edgeStyle(normalized) }
+        : prev,
+    );
+  };
 
   const addNode = (type: string) => {
     const id = `n${Date.now()}`;
@@ -281,11 +324,15 @@ export default function WorkflowBuilder() {
     setShowRuns(true);
     setErroredNodeIds(new Set());
     try {
-      const result = await runWorkflow(id, { manual: true }) as { success: boolean; run_id?: string };
+      const result = await runWorkflow(id, { manual: true }) as { success: boolean; run_id?: string; status?: string };
       if (result.run_id) {
         await pollRun(id, result.run_id);
       }
-      setStatus(result.success ? t('builder.runOk') : t('builder.runFailed'));
+      setStatus(
+        result.status === 'running' || result.success
+          ? t('builder.runOk')
+          : t('builder.runFailed'),
+      );
       await loadRuns(id);
     } catch {
       setStatus(t('builder.runFailed'));
@@ -362,6 +409,7 @@ export default function WorkflowBuilder() {
       ...cat,
       items: NODE_TYPES.filter(
         (nt) =>
+          !(nt as { paletteHidden?: boolean }).paletteHidden &&
           nt.category === cat.id &&
           (!term
             || builderNodeLabel(nt.type).toLowerCase().includes(term)
@@ -474,8 +522,18 @@ export default function WorkflowBuilder() {
               onNodesChange={onNodesChange}
               onEdgesChange={onEdgesChange}
               onConnect={onConnect}
-              onNodeClick={(_, node) => setSelectedNode(node)}
-              onPaneClick={() => setSelectedNode(null)}
+              onNodeClick={(_, node) => {
+                setSelectedNode(node);
+                setSelectedEdge(null);
+              }}
+              onEdgeClick={(_, edge) => {
+                setSelectedEdge(edge);
+                setSelectedNode(null);
+              }}
+              onPaneClick={() => {
+                setSelectedNode(null);
+                setSelectedEdge(null);
+              }}
               nodeTypes={nodeTypes}
               fitView
               defaultEdgeOptions={{ animated: true }}
@@ -516,6 +574,60 @@ export default function WorkflowBuilder() {
           )}
         </div>
       </div>
+
+      {branchModalOpen && (
+        <div
+          style={{
+            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 2000,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}
+          onClick={() => setBranchModalOpen(false)}
+        >
+          <div className="card" style={{ width: 360 }} onClick={(e) => e.stopPropagation()}>
+            <h3 style={{ fontSize: 16, marginBottom: 12 }}>{t('builder.branchModalTitle')}</h3>
+            <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 12 }}>{t('builder.branchModalDesc')}</p>
+            <select className="input" value={branchLabel} onChange={(e) => setBranchLabel(e.target.value)} style={{ marginBottom: 16 }}>
+              <option value="true">{t('builder.branchTrue')}</option>
+              <option value="false">{t('builder.branchFalse')}</option>
+            </select>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button type="button" className="btn btn-primary" onClick={confirmBranchConnection}>{t('common.confirm')}</button>
+              <button type="button" className="btn" onClick={() => { setBranchModalOpen(false); setPendingConnection(null); }}>{t('common.cancel')}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {selectedEdge && (
+        <div style={{ width: 300, borderLeft: '1px solid var(--border)', padding: 12, overflowY: 'auto', background: 'var(--bg-secondary)' }}>
+          <h3 style={{ fontSize: 14 }}>{t('builder.edgeConfigTitle')}</h3>
+          <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 12 }}>
+            {selectedEdge.source} → {selectedEdge.target}
+          </p>
+          <label style={labelStyle}>{t('builder.edgeLabel')}</label>
+          <select
+            className="input"
+            value={String(selectedEdge.label || '')}
+            onChange={(e) => updateEdgeLabel(selectedEdge.id, e.target.value)}
+          >
+            <option value="">{t('builder.edgeDefault')}</option>
+            <option value="true">{t('builder.branchTrue')}</option>
+            <option value="false">{t('builder.branchFalse')}</option>
+            <option value="error">{t('builder.edgeError')}</option>
+          </select>
+          <button
+            type="button"
+            className="btn"
+            style={{ marginTop: 16, width: '100%' }}
+            onClick={() => {
+              setEdges((eds) => eds.filter((e) => e.id !== selectedEdge.id));
+              setSelectedEdge(null);
+            }}
+          >
+            {t('builder.deleteEdge')}
+          </button>
+        </div>
+      )}
 
       {selectedNode && (
         <div style={{ width: 300, borderLeft: '1px solid var(--border)', padding: 12, overflowY: 'auto', background: 'var(--bg-secondary)' }}>

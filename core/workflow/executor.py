@@ -40,6 +40,7 @@ class WorkflowExecutor:
         workflow_id: str,
         trigger_payload: dict[str, Any] | None = None,
         user_id: str | None = None,
+        existing_run_id: str | None = None,
     ) -> dict[str, Any]:
         """Execute workflow by ID using BFS with condition branch routing."""
         _ensure_handlers()
@@ -48,7 +49,10 @@ class WorkflowExecutor:
             return {"success": False, "error": f"Workflow '{workflow_id}' not found"}
 
         definition = WorkflowDefinition.from_dict(workflow["definition"])
-        run = self.store.create_run(workflow_id)
+        if existing_run_id:
+            run = {"id": existing_run_id, "workflow_id": workflow_id, "status": "running"}
+        else:
+            run = self.store.create_run(workflow_id)
         from core.workflow.state import load_state, save_state
 
         persisted_state = load_state(workflow_id)
@@ -187,6 +191,43 @@ class WorkflowExecutor:
         except ValueError as exc:
             self.store.finish_run(run["id"], "failed", ctx.logs + [{"event": "error", "detail": str(exc)}])
             return {"success": False, "run_id": run["id"], "error": str(exc)}
+
+    async def start_background(
+        self,
+        workflow_id: str,
+        trigger_payload: dict[str, Any] | None = None,
+        user_id: str | None = None,
+    ) -> dict[str, Any]:
+        """Enqueue workflow execution; return run_id without blocking the HTTP worker."""
+        workflow = self.store.get_workflow(workflow_id)
+        if not workflow:
+            return {"success": False, "error": f"Workflow '{workflow_id}' not found"}
+        run = self.store.create_run(workflow_id)
+        run_id = run["id"]
+
+        async def _execute() -> None:
+            try:
+                await self.run(
+                    workflow_id,
+                    trigger_payload=trigger_payload,
+                    user_id=user_id,
+                    existing_run_id=run_id,
+                )
+            except Exception as exc:
+                logger.exception("Background workflow %s failed: %s", workflow_id, exc)
+                self.store.finish_run(
+                    run_id,
+                    "failed",
+                    [{"node_id": "", "event": "error", "detail": str(exc)}],
+                )
+
+        asyncio.create_task(_execute())
+        return {
+            "success": True,
+            "run_id": run_id,
+            "status": "running",
+            "background": True,
+        }
 
     async def _run_with_retry(
         self,

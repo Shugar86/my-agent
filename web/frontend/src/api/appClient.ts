@@ -205,6 +205,63 @@ export async function rateTemplate(id: string, score: number): Promise<void> {
   });
 }
 
+export async function demoRunTemplate(id: string): Promise<{
+  success: boolean;
+  run_id: string;
+  status: string;
+  mode: string;
+  logs: Array<{ node_id: string; event: string; detail?: unknown }>;
+  message?: string;
+}> {
+  return fetchJson(`/api/workflow-templates/${id}/demo-run`, { method: 'POST' });
+}
+
+export interface BillingPlan {
+  workspace_id?: string;
+  workspace_name?: string;
+  plan: string;
+  label: string;
+  workflow_runs_used: number;
+  workflow_runs_limit: number | null;
+  allowed: boolean;
+}
+
+export async function getBillingPlan(): Promise<BillingPlan> {
+  return fetchJson('/api/billing/plan');
+}
+
+export interface ApiKeyEntry {
+  name: string;
+  masked?: string;
+}
+
+export async function listApiKeys(): Promise<{ keys: ApiKeyEntry[]; count: number }> {
+  return fetchJson('/api/keys');
+}
+
+export async function saveApiKey(name: string, value: string): Promise<void> {
+  await fetchJson('/api/keys', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name, value }),
+  });
+}
+
+export async function deleteApiKey(name: string): Promise<void> {
+  await fetchJson(`/api/keys/${encodeURIComponent(name)}`, { method: 'DELETE' });
+}
+
+export interface ScheduleJob {
+  id: string;
+  description?: string;
+  next_run?: string;
+  trigger?: string;
+}
+
+export async function listScheduleJobs(): Promise<{ jobs: ScheduleJob[] }> {
+  return fetchJson('/api/schedule');
+}
+
 export async function getHealth(): Promise<Record<string, unknown>> {
   return fetchJson('/api/health');
 }

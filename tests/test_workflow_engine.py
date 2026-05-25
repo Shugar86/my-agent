@@ -282,7 +282,10 @@ class TestWorkflowAPI:
         assert resp.status_code == 200
         wf_id = resp.json()["id"]
 
-        run_resp = await client.post(f"/api/workflows/{wf_id}/run", json={"payload": {"hello": "world"}})
+        run_resp = await client.post(
+            f"/api/workflows/{wf_id}/run",
+            json={"payload": {"hello": "world"}, "wait": True},
+        )
         assert run_resp.status_code == 200
         assert run_resp.json()["success"] is True
 
