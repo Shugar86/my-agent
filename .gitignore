@@ -25,6 +25,12 @@ __pycache__/
 *.egg-info/
 dist/
 build/
+.venv/
+
+# Node / frontend
+web/frontend/node_modules/
+web/frontend/test-results/
+web/frontend/playwright-report/
 
 # IDE
 .vscode/

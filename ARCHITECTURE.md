@@ -1,7 +1,7 @@
 # Architecture
 
 > My Agent — System Architecture
-> Version: 1.0.0
+> Version: 3.2.0
 
 ---
 
@@ -16,10 +16,11 @@
                        ▼
 ┌─────────────────────────────────────────────────────────────┐
 │                     FRONTEND                                │
-│              (Vanilla HTML/CSS/JS)                          │
+│         React 18 SPA (`/app/*`, RU i18n, PWA)               │
 │  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐   │
 │  │Dashboard │  │  Chat    │  │ Agents   │  │Settings  │   │
 │  └──────────┘  └──────────┘  └──────────┘  └──────────┘   │
+│  login.html + /welcome — static; legacy → 301 to /app/*    │
 └──────────────────────┬──────────────────────────────────────┘
                        │ HTTP / SSE
                        ▼

@@ -3,6 +3,29 @@
 ## Session Date
 2026-05-25
 
+## UI/UX Polish (v3.2) ✅ COMPLETE
+
+### Definition of Done
+
+| Item | Status |
+|------|--------|
+| React SPA RU i18n (`src/i18n/ru.ts`) | ✅ |
+| Shared UI primitives (Modal, Toast, PageHeader) | ✅ |
+| Agents / Knowledge / MCP migrated to React | ✅ |
+| Chat 2.1 (markdown, tools, feedback) | ✅ |
+| Onboarding → `/app/onboarding` redirect | ✅ |
+| Legacy routes 301 → `/app/*` | ✅ |
+| Settings tabs (integrations / models / workspace) | ✅ |
+| PWA manifest + service worker | ✅ |
+| Playwright smoke tests (3 passed) | ✅ |
+| UX events `POST /api/usage/event` | ✅ |
+| Design system doc `web/frontend/DESIGN.md` | ✅ |
+
+### Delivered
+- **Pages:** `AgentsPage`, `KnowledgePage`, `McpPage`; updated Dashboard, Chat, Marketplace, Settings, Onboarding
+- **Nav:** 10 пунктов в AppShell (RU)
+- **Mobile:** chat threads drawer, safe-area, 44px touch targets
+
 ## Investor Demo Polish (v3.1) ✅ COMPLETE
 
 ### Definition of Done

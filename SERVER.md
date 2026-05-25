@@ -1,7 +1,7 @@
 # My Agent — развёртывание на VDS
 
 > Сервер: `159.195.31.95` | Путь: `/opt/projects/my-agent/`  
-> Статус: **v3.1 Investor Demo Ready** (Phase 1–3 + demo polish)
+> Статус: **v3.2 UI/UX Polish** (React SPA RU, PWA, legacy → `/app/*` redirects)
 
 ---
 
@@ -56,18 +56,27 @@ docker compose exec agent python scripts/generate_demo_artifact.py
 
 ---
 
-## UI routes (Phase 3)
+## UI routes
 
 | URL | Назначение |
 |-----|------------|
 | `/login` | JWT login + Google |
-| `/app` | Dashboard |
+| `/welcome` | Маркетинговый лендинг |
+| `/app` | Панель (dashboard) |
+| `/app/chat` | Чат (markdown, SSE, `/run workflow`) |
 | `/app/workflows` | Workflow list + builder |
 | `/app/marketplace` | Templates |
+| `/app/agents` | Управление агентами |
+| `/app/knowledge` | База знаний (RAG) |
+| `/app/mcp` | MCP-серверы |
 | `/app/analytics` | Usage dashboard |
 | `/app/admin` | Team members + system health (owner/admin) |
-| `/app/onboarding` | Team setup + integrations + 90s demo run (step 4) |
+| `/app/settings` | Интеграции, модели, профиль workspace |
+| `/app/onboarding` | Team → integrations → template → 90s demo |
+| `/app/builder` | Agent Builder wizard |
 | `/metrics` | Prometheus scrape |
+
+Legacy paths (`/chat`, `/agents`, `/knowledge`, `/mcp`, `/onboarding`, …) → **301** на `/app/*` для авторизованных пользователей. Новый пользователь без onboarding → `/app/onboarding`.
 
 ### Demo API
 
@@ -113,8 +122,10 @@ cd /opt/projects/my-agent
 .venv/bin/python -m pytest \
   tests/test_teams.py tests/test_usage.py tests/test_google_auth.py \
   tests/test_dod_closure.py tests/test_workflow_engine.py tests/test_marketplace.py -v
-cd web/frontend && npm run build
+cd web/frontend && npm run build && npm run test:e2e
 ```
+
+Playwright smoke tests требуют запущенный сервер на `:8020`. Auth-тесты: `E2E_USER=admin E2E_PASS=... npm run test:e2e`.
 
 ---
 
@@ -133,5 +144,9 @@ cd web/frontend && npm run build
 | Demo | Investor demo | `web/demo_router.py`, `DEMO.md`, `data/demo/` |
 | Demo | n8n node | `action.n8n_webhook` in `core/workflow/nodes/action.py` |
 | Demo | Featured template | `tpl_competitor_intelligence` in seed script |
+| UI v3.2 | React SPA RU + PWA | `web/frontend/` → `web/static/app/` |
+| UI v3.2 | i18n + shared UI | `web/frontend/src/i18n/`, `src/components/ui/` |
+| UI v3.2 | UX events API | `POST /api/usage/event` in `web/usage_router.py` |
+| UI v3.2 | Playwright E2E | `web/frontend/e2e/smoke.spec.ts` |
 
-Документация: `DEMO.md`, `ROADMAP_90_DAYS.md`, `SECURITY.md`, `.planning/STATE.md`, `ARCHITECTURE.md`.
+Дизайн-система: `web/frontend/DESIGN.md`. OpenCode reference: `DESIGN-opencode-reference.md`.

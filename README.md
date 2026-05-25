@@ -1,7 +1,7 @@
 # My Agent — Technical Documentation
 
 > Last updated: 2026-05-25
-> Version: 3.1.0 (Investor Demo)
+> Version: 3.2.0 (UI/UX Polish — React SPA RU + PWA)
 > Author: AI Assistant
 
 ---
@@ -21,6 +21,26 @@ docker compose exec agent python scripts/generate_demo_artifact.py
 Full script, talking points, and troubleshooting: **[DEMO.md](./DEMO.md)**.
 
 Mock fallback works without API keys — safe for live investor presentations.
+
+### Web UI (v3.2)
+
+Единый React SPA на `/app/*` (интерфейс на русском). Legacy static (`/agents`, `/chat`, …) редиректит в SPA.
+
+| URL | Назначение |
+|-----|------------|
+| `/login` | JWT + Google OAuth |
+| `/app/` | Панель (dashboard, demo hero) |
+| `/app/chat` | Чат (markdown, tool bubbles, feedback) |
+| `/app/workflows` | Workflow builder (React Flow) |
+| `/app/marketplace` | Маркетплейс шаблонов |
+| `/app/agents` | CRUD агентов |
+| `/app/knowledge` | База знаний (RAG) |
+| `/app/mcp` | MCP-серверы |
+| `/app/settings` | Интеграции / модели / профиль |
+| `/app/onboarding` | 4-step wizard + 90s demo |
+| `/welcome` | Маркетинговый лендинг |
+
+Дизайн-система: [`web/frontend/DESIGN.md`](web/frontend/DESIGN.md). Сборка: `cd web/frontend && npm run build`.
 
 ---
 
@@ -46,10 +66,10 @@ multi-agent orchestration, and deep research capabilities.
 |-------|------------|
 | Backend | Python 3.11, FastAPI, Uvicorn |
 | AI Gateway | LiteLLM (OpenRouter) |
-| Frontend | React 18 + TypeScript + Vite + React Flow (`/app/*`) |
+| Frontend | React 18 + TypeScript + Vite + React Flow (`/app/*`), RU i18n, PWA |
 | Data | PostgreSQL / SQLite, Redis |
 | Container | Docker + Docker Compose (+ optional n8n profile) |
-| Testing | pytest |
+| Testing | pytest + Playwright E2E (`web/frontend/e2e/`) |
 
 ---
 
@@ -60,12 +80,14 @@ my-agent/
 ├── agent.py              # CLI entry point
 ├── web/
 │   ├── server.py         # FastAPI backend
-│   ├── static/           # Frontend HTML files
-│   │   ├── index.html    # Dashboard
-│   │   ├── chat.html     # Chat interface
-│   │   ├── agents.html   # Agent management
-│   │   └── settings.html # Settings page
-│   └── Dockerfile        # Container config
+│   ├── frontend/         # React SPA source (Vite)
+│   │   ├── src/          # Pages, components, i18n (RU)
+│   │   ├── e2e/          # Playwright smoke tests
+│   │   └── DESIGN.md     # Product design system
+│   ├── static/
+│   │   ├── app/          # Built SPA (npm run build)
+│   │   └── login.html    # Auth page (legacy static)
+│   └── Dockerfile
 ├── core/                 # Core framework modules
 │   ├── builder.py        # AgentBuilder (fluent pattern)
 │   ├── runtime.py        # AgentRuntime (execution loop)

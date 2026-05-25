@@ -121,4 +121,18 @@
 
 ---
 
+## Post-v3.1: UI/UX Polish (v3.2) — ✅ COMPLETE
+
+| Компонент | Статус |
+|-----------|--------|
+| React SPA RU i18n | ✅ |
+| Agents / Knowledge / MCP в React | ✅ |
+| Chat markdown + tool bubbles + feedback | ✅ |
+| Onboarding redirect `/app/onboarding` | ✅ |
+| PWA (manifest + service worker) | ✅ |
+| Playwright E2E smoke tests | ✅ |
+| Design system `web/frontend/DESIGN.md` | ✅ |
+
+---
+
 *Обновлено: 2026-05-25*

@@ -4,15 +4,22 @@ import { listAgents, listTemplates, installTemplate, getHealth, listIntegrations
 import { listWorkflows } from '../api/workflowClient';
 import type { Workflow } from '../types/workflow';
 import DemoModal from '../components/DemoModal';
+import PageHeader from '../components/ui/PageHeader';
+import EmptyState from '../components/ui/EmptyState';
+import { useToast } from '../components/ui/Toast';
+import { t } from '../i18n';
 
 interface Stat {
   label: string;
   value: number | string;
   hint?: string;
+  to?: string;
 }
 
+/** Home dashboard with stats, demo hero, templates and agents. */
 export default function Dashboard() {
   const navigate = useNavigate();
+  const { showToast } = useToast();
   const [loading, setLoading] = useState(true);
   const [agents, setAgents] = useState<Array<{ id: string; name: string; role?: string }>>([]);
   const [templates, setTemplates] = useState<Array<{ id: string; name: string; description: string; category: string; tags?: string[] }>>([]);
@@ -40,10 +47,10 @@ export default function Dashboard() {
       const active = safeWfs.filter((w) => w.status === 'active').length;
       const connected = safeIntegs.filter((i) => i.configured).length;
       setStats([
-        { label: 'Active workflows', value: active, hint: `${safeWfs.length} total` },
-        { label: 'Templates', value: safeTpls.length, hint: 'in marketplace' },
-        { label: 'Integrations', value: `${connected}/${safeIntegs.length}`, hint: 'connected' },
-        { label: 'Agents', value: safeAgents.length, hint: 'available' },
+        { label: t('dashboard.activeWorkflows'), value: active, hint: `${safeWfs.length} ${t('dashboard.total')}`, to: '/workflows' },
+        { label: t('dashboard.templates'), value: safeTpls.length, hint: t('dashboard.inMarketplace'), to: '/marketplace' },
+        { label: t('dashboard.integrations'), value: `${connected}/${safeIntegs.length}`, hint: t('dashboard.connected'), to: '/settings' },
+        { label: t('dashboard.agents'), value: safeAgents.length, hint: t('dashboard.available'), to: '/agents' },
       ]);
       setLoading(false);
     });
@@ -54,15 +61,15 @@ export default function Dashboard() {
       const result = await installTemplate(id);
       navigate(`/workflows/${result.workflow.id}`);
     } catch {
-      alert('Install failed');
+      showToast(t('dashboard.installFailed'), 'error');
     }
   };
 
   if (loading) {
     return (
-      <div style={{ padding: 30 }}>
+      <div className="page-content">
         <div className="skeleton" style={{ height: 40, width: 200, marginBottom: 24 }} />
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16 }}>
+        <div className="stats-grid">
           {[1, 2, 3, 4].map((i) => <div key={i} className="skeleton" style={{ height: 80 }} />)}
         </div>
       </div>
@@ -70,49 +77,34 @@ export default function Dashboard() {
   }
 
   return (
-    <div style={{ padding: 30 }}>
+    <div className="page-content">
       <DemoModal open={demoOpen} onClose={() => setDemoOpen(false)} />
 
-      <section
-        style={{
-          background: 'linear-gradient(135deg, rgba(31,111,235,0.18) 0%, rgba(35,134,54,0.10) 50%, rgba(234,75,113,0.10) 100%)',
-          border: '1px solid var(--border)',
-          borderRadius: 14,
-          padding: '28px 32px',
-          marginBottom: 28,
-          display: 'flex',
-          flexWrap: 'wrap',
-          gap: 24,
-          alignItems: 'center',
-          justifyContent: 'space-between',
-        }}
-      >
+      <section className="dashboard-hero">
         <div style={{ flex: '1 1 320px' }}>
-          <div style={{ fontSize: 11, letterSpacing: 1.4, textTransform: 'uppercase', color: 'var(--accent)', marginBottom: 6 }}>
-            Autonomous Workflow OS
-          </div>
-          <h1 style={{ fontSize: 26, margin: 0, marginBottom: 8 }}>
-            From a webhook to a competitive brief in 90 seconds.
-          </h1>
-          <p style={{ color: 'var(--text-muted)', fontSize: 14, maxWidth: 560 }}>
-            Multi-agent research, comparative analysis, DOCX report and an n8n trigger —
-            replacing ~4 hours of analyst work in a single click.
-          </p>
+          <div className="dashboard-hero__badge">{t('dashboard.heroBadge')}</div>
+          <h1 className="dashboard-hero__title">{t('dashboard.heroTitle')}</h1>
+          <p className="dashboard-hero__desc">{t('dashboard.heroDesc')}</p>
         </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10, alignItems: 'flex-end' }}>
-          <button type="button" className="btn btn-primary" onClick={() => setDemoOpen(true)} style={{ fontSize: 14, padding: '10px 18px' }}>
-            ▶ Try 90s demo
-          </button>
+        <div className="dashboard-hero__actions">
+          <button type="button" className="btn btn-primary" onClick={() => setDemoOpen(true)}>{t('dashboard.tryDemo')}</button>
           <div style={{ display: 'flex', gap: 8 }}>
-            <Link to="/workflows/new" className="btn">+ New workflow</Link>
-            <Link to="/marketplace" className="btn">Marketplace</Link>
+            <Link to="/workflows/new" className="btn">{t('dashboard.newWorkflow')}</Link>
+            <Link to="/marketplace" className="btn">{t('nav.marketplace')}</Link>
           </div>
         </div>
       </section>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 16, marginBottom: 32 }}>
+      <div className="stats-grid">
         {stats.map((s) => (
-          <div key={s.label} className="card">
+          <div
+            key={s.label}
+            className="card stat-card"
+            role={s.to ? 'link' : undefined}
+            tabIndex={s.to ? 0 : undefined}
+            onClick={() => s.to && navigate(s.to)}
+            onKeyDown={(e) => s.to && e.key === 'Enter' && navigate(s.to)}
+          >
             <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{s.label}</div>
             <div style={{ fontSize: 28, color: 'var(--accent)', fontWeight: 600 }}>{s.value}</div>
             {s.hint && <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{s.hint}</div>}
@@ -120,25 +112,15 @@ export default function Dashboard() {
         ))}
       </div>
 
-      {workflows.length > 0 && (
+      {workflows.length > 0 ? (
         <section style={{ marginBottom: 32 }}>
-          <h2 style={{ fontSize: 16, marginBottom: 12 }}>Recent workflows</h2>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 12 }}>
+          <PageHeader title={t('dashboard.recentWorkflows')} />
+          <div className="cards-grid">
             {workflows.map((wf) => (
               <Link key={wf.id} to={`/workflows/${wf.id}`} className="card" style={{ display: 'block' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
                   <h3 style={{ fontSize: 14, color: 'var(--accent)' }}>{wf.name}</h3>
-                  <span
-                    style={{
-                      fontSize: 10,
-                      padding: '2px 6px',
-                      borderRadius: 8,
-                      background: wf.status === 'active' ? 'rgba(35,134,54,0.2)' : 'var(--bg-tertiary)',
-                      color: wf.status === 'active' ? '#7ee787' : 'var(--text-muted)',
-                    }}
-                  >
-                    {wf.status}
-                  </span>
+                  <span className={`badge ${wf.status === 'active' ? 'badge-success' : ''}`}>{wf.status}</span>
                 </div>
                 <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
                   {wf.definition?.nodes?.length || 0} nodes · {wf.definition?.edges?.length || 0} edges
@@ -147,40 +129,37 @@ export default function Dashboard() {
             ))}
           </div>
         </section>
+      ) : (
+        <EmptyState
+          title={t('dashboard.noWorkflows')}
+          actionLabel={t('dashboard.noWorkflowsCta')}
+          actionTo="/marketplace"
+        />
       )}
 
       <section style={{ marginBottom: 32 }}>
-        <h2 style={{ fontSize: 16, marginBottom: 12 }}>Quick start templates</h2>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 12 }}>
-          {templates.map((t) => (
-            <div key={t.id} className="card" style={{ cursor: 'pointer', position: 'relative' }} onClick={() => handleInstall(t.id)}>
-              {(t.tags || []).includes('featured') && (
-                <span className="badge-featured" style={{ position: 'absolute', top: 10, right: 10 }}>Featured</span>
+        <PageHeader title={t('dashboard.quickStart')} />
+        <div className="cards-grid">
+          {templates.map((tpl) => (
+            <div key={tpl.id} className="card" style={{ cursor: 'pointer', position: 'relative' }} onClick={() => handleInstall(tpl.id)}>
+              {(tpl.tags || []).includes('featured') && (
+                <span className="badge-featured" style={{ position: 'absolute', top: 10, right: 10 }}>{t('dashboard.featured')}</span>
               )}
-              <h3 style={{ fontSize: 14, color: 'var(--accent)', marginBottom: 6 }}>{t.name}</h3>
-              <p style={{ fontSize: 12, color: 'var(--text-muted)' }}>{t.description.slice(0, 80)}</p>
-              <span style={{ fontSize: 11, background: 'var(--bg-tertiary)', padding: '2px 8px', borderRadius: 12, marginTop: 8, display: 'inline-block' }}>{t.category}</span>
+              <h3 style={{ fontSize: 14, color: 'var(--accent)', marginBottom: 6 }}>{tpl.name}</h3>
+              <p style={{ fontSize: 12, color: 'var(--text-muted)' }}>{tpl.description.slice(0, 80)}</p>
+              <span className="badge" style={{ marginTop: 8 }}>{tpl.category}</span>
             </div>
           ))}
         </div>
-        <Link to="/marketplace" style={{ color: 'var(--accent)', fontSize: 13, marginTop: 12, display: 'inline-block' }}>View all templates →</Link>
+        <Link to="/marketplace" style={{ color: 'var(--accent)', fontSize: 13, marginTop: 12, display: 'inline-block' }}>{t('common.viewAll')}</Link>
       </section>
 
       <section>
-        <h2 style={{ fontSize: 16, marginBottom: 12 }}>Agents</h2>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 12 }}>
+        <PageHeader title={t('dashboard.agents')} />
+        <div className="cards-grid">
           {agents.map((a) => (
             <Link key={a.id} to={`/chat?agent=${a.id}`} className="card" style={{ display: 'block' }}>
-              <div
-                style={{
-                  width: 36, height: 36, borderRadius: 8,
-                  background: 'linear-gradient(135deg, var(--accent), #1f6feb)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  color: '#fff', fontWeight: 700, marginBottom: 8,
-                }}
-              >
-                {(a.name || a.id).slice(0, 2).toUpperCase()}
-              </div>
+              <div className="agent-avatar">{(a.name || a.id).slice(0, 2).toUpperCase()}</div>
               <h3 style={{ fontSize: 14 }}>{a.name || a.id}</h3>
               <p style={{ fontSize: 12, color: 'var(--text-muted)' }}>{a.role?.slice(0, 60) || 'AI Agent'}</p>
             </Link>

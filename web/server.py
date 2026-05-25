@@ -187,7 +187,9 @@ class AuthMiddleware(BaseHTTPMiddleware):
                     from core.workflow.store import workflow_store
                     profile = workflow_store.get_user_profile(payload["user_id"])
                     if not profile.get("onboarding_complete"):
-                        return RedirectResponse(url="/onboarding")
+                        return RedirectResponse(url="/app/onboarding")
+                if path == "/onboarding":
+                    return RedirectResponse(url="/app/onboarding", status_code=301)
                 if path == "/":
                     return RedirectResponse(url="/app")
                 legacy_redirects = {
@@ -196,6 +198,9 @@ class AuthMiddleware(BaseHTTPMiddleware):
                     "/builder": "/app/builder",
                     "/settings": "/app/settings",
                     "/workflows": "/app/workflows",
+                    "/agents": "/app/agents",
+                    "/knowledge": "/app/knowledge",
+                    "/mcp": "/app/mcp",
                 }
                 if path in legacy_redirects:
                     return RedirectResponse(url=legacy_redirects[path], status_code=301)

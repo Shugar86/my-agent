@@ -12,6 +12,9 @@ import AnalyticsPage from './pages/AnalyticsPage';
 import AdminPage from './pages/AdminPage';
 import OnboardingPage from './pages/OnboardingPage';
 import PublicTemplatePage from './pages/PublicTemplatePage';
+import AgentsPage from './pages/AgentsPage';
+import KnowledgePage from './pages/KnowledgePage';
+import McpPage from './pages/McpPage';
 
 export default function App() {
   return (
@@ -27,6 +30,9 @@ export default function App() {
           <Route path="settings" element={<SettingsPage />} />
           <Route path="analytics" element={<AnalyticsPage />} />
           <Route path="admin" element={<AdminPage />} />
+          <Route path="agents" element={<AgentsPage />} />
+          <Route path="knowledge" element={<KnowledgePage />} />
+          <Route path="mcp" element={<McpPage />} />
         </Route>
         <Route path="onboarding" element={<OnboardingPage />} />
         <Route path="share/templates/:templateId" element={<PublicTemplatePage />} />

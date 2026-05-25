@@ -2,16 +2,20 @@ import { useEffect, useState } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
 import TeamSwitcher from '../components/TeamSwitcher';
 import { getMe, type MeUser } from '../api/appClient';
+import { t } from '../i18n';
 import './theme.css';
 
 const NAV = [
-  { to: '/', label: 'Dashboard' },
-  { to: '/chat', label: 'Chat' },
-  { to: '/workflows', label: 'Workflows' },
-  { to: '/marketplace', label: 'Marketplace' },
-  { to: '/analytics', label: 'Analytics' },
-  { to: '/builder', label: 'Agent Builder' },
-  { to: '/settings', label: 'Settings' },
+  { to: '/', labelKey: 'nav.dashboard' as const },
+  { to: '/chat', labelKey: 'nav.chat' as const },
+  { to: '/workflows', labelKey: 'nav.workflows' as const },
+  { to: '/marketplace', labelKey: 'nav.marketplace' as const },
+  { to: '/analytics', labelKey: 'nav.analytics' as const },
+  { to: '/builder', labelKey: 'nav.builder' as const },
+  { to: '/agents', labelKey: 'nav.agents' as const },
+  { to: '/knowledge', labelKey: 'nav.knowledge' as const },
+  { to: '/mcp', labelKey: 'nav.mcp' as const },
+  { to: '/settings', labelKey: 'nav.settings' as const },
 ];
 
 const THEME_STORAGE_KEY = 'my-agent.theme';
@@ -44,13 +48,13 @@ export default function AppShell() {
       <button
         className="mobile-toggle btn"
         onClick={() => setSidebarOpen(!sidebarOpen)}
-        aria-label="Toggle menu"
+        aria-label={t('app.menu')}
         style={{
           display: 'none',
           position: 'fixed', top: 12, left: 12, zIndex: 1001,
         }}
       >
-        Menu
+        {t('app.menu')}
       </button>
 
       <aside
@@ -70,11 +74,11 @@ export default function AppShell() {
         }}
       >
         <div style={{ padding: '0 18px 14px', borderBottom: '1px solid var(--border)', marginBottom: 8 }}>
-          <h1 style={{ fontSize: '1.05rem', color: 'var(--accent)', letterSpacing: '-0.01em' }}>My Agent</h1>
-          <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>Visual workflows for AI</p>
+          <h1 style={{ fontSize: '1.05rem', color: 'var(--accent)', letterSpacing: '-0.01em' }}>{t('app.title')}</h1>
+          <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>{t('app.tagline')}</p>
         </div>
         <TeamSwitcher />
-        <nav style={{ flex: 1 }}>
+        <nav style={{ flex: 1, overflowY: 'auto' }}>
           {NAV.map((item) => (
             <NavLink
               key={item.to}
@@ -93,7 +97,7 @@ export default function AppShell() {
                 transition: 'all 0.15s',
               })}
             >
-              {item.label}
+              {t(item.labelKey)}
             </NavLink>
           ))}
           {showAdmin && (
@@ -110,19 +114,19 @@ export default function AppShell() {
                 fontSize: 13,
               })}
             >
-              Admin
+              {t('nav.admin')}
             </NavLink>
           )}
         </nav>
         <div style={{ padding: '12px 18px', borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>Theme</span>
+          <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{t('app.theme')}</span>
           <button
             type="button"
             className="btn btn-ghost"
             onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
             style={{ padding: '4px 8px', fontSize: 11 }}
           >
-            {theme === 'dark' ? 'Light' : 'Dark'}
+            {theme === 'dark' ? t('app.themeLight') : t('app.themeDark')}
           </button>
         </div>
       </aside>
@@ -136,7 +140,7 @@ export default function AppShell() {
           .mobile-toggle { display: inline-flex !important; }
           .sidebar { transform: translateX(-100%); width: 240px !important; min-width: 240px !important; }
           .sidebar.open { transform: translateX(0); }
-          main { margin-left: 0 !important; padding-top: 56px; }
+          main { margin-left: 0 !important; }
         }
       `}</style>
     </div>

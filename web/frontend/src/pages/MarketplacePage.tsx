@@ -10,6 +10,10 @@ import {
   type Template,
 } from '../api/appClient';
 import WorkflowThumbnail from '../components/WorkflowThumbnail';
+import PageHeader from '../components/ui/PageHeader';
+import EmptyState from '../components/ui/EmptyState';
+import { useToast } from '../components/ui/Toast';
+import { t } from '../i18n';
 
 const CATEGORIES = ['all', 'sales', 'support', 'marketing', 'ops', 'productivity', 'finance', 'hr'];
 
@@ -27,13 +31,13 @@ function Stars({ rating, onRate }: { rating: number; onRate?: (n: number) => voi
 
 export default function MarketplacePage() {
   const navigate = useNavigate();
+  const { showToast } = useToast();
   const [templates, setTemplates] = useState<Template[]>([]);
   const [category, setCategory] = useState('all');
   const [sort, setSort] = useState('popular');
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [loading, setLoading] = useState(true);
-  const [toast, setToast] = useState('');
   const [isAdmin, setIsAdmin] = useState(false);
   const [showPublish, setShowPublish] = useState(false);
   const [pubName, setPubName] = useState('');
@@ -80,11 +84,10 @@ export default function MarketplacePage() {
   const handleInstall = async (id: string) => {
     try {
       const result = await installTemplate(id);
-      setToast('Template installed!');
-      setTimeout(() => setToast(''), 2000);
+      showToast(t('common.success'));
       navigate(`/workflows/${result.workflow.id}`);
     } catch {
-      setToast('Install failed');
+      showToast(t('dashboard.installFailed'), 'error');
     }
   };
 
@@ -93,7 +96,7 @@ export default function MarketplacePage() {
       const full = await getTemplate(id);
       setPreviewTemplate(full);
     } catch {
-      setToast('Preview failed');
+      showToast(t('common.error'), 'error');
     }
   };
 
@@ -106,10 +109,9 @@ export default function MarketplacePage() {
         debouncedSearch || undefined,
       );
       setTemplates(refreshed);
-      setToast('Rating saved');
-      setTimeout(() => setToast(''), 2000);
+      showToast(t('common.success'));
     } catch {
-      setToast('Rating failed');
+      showToast(t('common.error'), 'error');
     }
   };
 
@@ -121,7 +123,7 @@ export default function MarketplacePage() {
         description: pubDesc,
         category: pubCategory,
         definition,
-        tags: pubTags.split(',').map((t) => t.trim()).filter(Boolean),
+        tags: pubTags.split(',').map((tag) => tag.trim()).filter(Boolean),
       });
       setShowPublish(false);
       setPubName('');
@@ -132,133 +134,118 @@ export default function MarketplacePage() {
         debouncedSearch || undefined,
       );
       setTemplates(refreshed);
-      setToast('Template published!');
-      setTimeout(() => setToast(''), 2000);
+      showToast(t('common.success'));
     } catch {
-      setToast('Publish failed — check JSON definition');
+      showToast(t('common.error'), 'error');
     }
   };
 
   return (
-    <div style={{ padding: 30 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8, gap: 16, flexWrap: 'wrap' }}>
-        <div>
-          <h1 style={{ marginBottom: 4 }}>Marketplace</h1>
-          <p style={{ color: 'var(--text-muted)' }}>
-            {stats.total} templates · {stats.installs.toLocaleString()} total installs
-            {stats.avgRating > 0 ? ` · avg ${stats.avgRating.toFixed(1)}` : ''}
-          </p>
+    <div className="page-content">
+      <PageHeader
+        title={t('marketplace.title')}
+        actions={isAdmin ? (
+          <button type="button" className="btn btn-primary" onClick={() => setShowPublish(true)}>+ Publish</button>
+        ) : undefined}
+      />
+
+      <div className="marketplace-filters">
+        <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap', alignItems: 'center' }}>
+          <input
+            className="input"
+            placeholder={t('marketplace.searchPlaceholder')}
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            style={{ flex: 1, minWidth: 200, maxWidth: 360 }}
+          />
+          <select className="input" style={{ width: 'auto' }} value={sort} onChange={(e) => setSort(e.target.value)}>
+            <option value="popular">Popular</option>
+            <option value="recent">Recent</option>
+          </select>
         </div>
-        {isAdmin && (
-          <button className="btn btn-primary" onClick={() => setShowPublish(true)}>+ Publish template</button>
-        )}
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          {CATEGORIES.map((c) => (
+            <button
+              key={c}
+              type="button"
+              className={`btn ${category === c ? 'btn-primary' : ''}`}
+              onClick={() => setCategory(c)}
+            >
+              {c}
+            </button>
+          ))}
+        </div>
       </div>
 
-      <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap', alignItems: 'center' }}>
-        <input
-          className="input"
-          placeholder="Search templates by name, tag, or description..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          style={{ flex: 1, minWidth: 200, maxWidth: 360 }}
-        />
-        <select className="input" style={{ width: 'auto' }} value={sort} onChange={(e) => setSort(e.target.value)}>
-          <option value="popular">Popular</option>
-          <option value="recent">Recent</option>
-        </select>
-      </div>
+      {loading ? (
+        <div className="cards-grid">
+          {[1, 2, 3, 4].map((i) => <div key={i} className="skeleton" style={{ height: 200 }} />)}
+        </div>
+      ) : templates.length === 0 ? (
+        <EmptyState title={t('marketplace.noResults')} actionLabel={t('common.refresh')} onAction={() => setSearch('')} />
+      ) : (
+        <>
+          {featured.length > 0 && category === 'all' && !debouncedSearch && (
+            <section style={{ marginBottom: 28 }}>
+              <h2 style={{ fontSize: 14, marginBottom: 12, color: 'var(--text-muted)', letterSpacing: 0.6, textTransform: 'uppercase' }}>
+                {t('marketplace.featured')}
+              </h2>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))', gap: 16 }}>
+                {featured.map((tpl) => (
+                  <div
+                    key={tpl.id}
+                    className="card"
+                    style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      position: 'relative',
+                      background: 'linear-gradient(135deg, rgba(31,111,235,0.10) 0%, rgba(234,75,113,0.08) 100%)',
+                      border: '1px solid rgba(31,111,235,0.35)',
+                    }}
+                  >
+                    <span className="badge-featured" style={{ position: 'absolute', top: 14, right: 14 }}>{t('marketplace.featured')}</span>
+                    <WorkflowThumbnail definition={tpl.definition} height={120} />
+                    <h3 style={{ fontSize: 17, color: 'var(--accent)', marginTop: 14, marginBottom: 6 }}>{tpl.name}</h3>
+                    <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 16, flex: 1 }}>{tpl.description}</p>
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      <button type="button" className="btn btn-primary" onClick={() => handleInstall(tpl.id)} style={{ flex: 1 }}>
+                        {t('marketplace.cloneEdit')}
+                      </button>
+                      <button type="button" className="btn" onClick={() => handlePreview(tpl.id)}>Preview</button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
 
-      <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap' }}>
-        {CATEGORIES.map((c) => (
-          <button
-            key={c}
-            className={`btn ${category === c ? 'btn-primary' : ''}`}
-            onClick={() => setCategory(c)}
-          >
-            {c}
-          </button>
-        ))}
-      </div>
-
-      {!loading && featured.length > 0 && category === 'all' && !debouncedSearch && (
-        <section style={{ marginBottom: 28 }}>
-          <h2 style={{ fontSize: 14, marginBottom: 12, color: 'var(--text-muted)', letterSpacing: 0.6, textTransform: 'uppercase' }}>
-            Featured
-          </h2>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))', gap: 16 }}>
-            {featured.map((t) => (
-              <div
-                key={t.id}
-                className="card"
-                style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  position: 'relative',
-                  background: 'linear-gradient(135deg, rgba(31,111,235,0.10) 0%, rgba(234,75,113,0.08) 100%)',
-                  border: '1px solid rgba(31,111,235,0.35)',
-                }}
-              >
-                <span className="badge-featured" style={{ position: 'absolute', top: 14, right: 14 }}>Featured</span>
-                <WorkflowThumbnail definition={t.definition} height={120} />
-                <h3 style={{ fontSize: 17, color: 'var(--accent)', marginTop: 14, marginBottom: 6 }}>{t.name}</h3>
-                <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 16, flex: 1 }}>{t.description}</p>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 16 }}>
+            {templates.map((tpl) => (
+              <div key={tpl.id} className="card" style={{ display: 'flex', flexDirection: 'column', position: 'relative' }}>
+                {(tpl.tags || []).includes('featured') && (
+                  <span className="badge-featured" style={{ position: 'absolute', top: 12, right: 12, zIndex: 1 }}>{t('marketplace.featured')}</span>
+                )}
+                <WorkflowThumbnail definition={tpl.definition} height={90} />
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginTop: 12, marginBottom: 8, gap: 8 }}>
+                  <h3 style={{ fontSize: 15, color: 'var(--accent)' }}>{tpl.name}</h3>
+                  <span className="badge">{tpl.category}</span>
+                </div>
+                <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 12, minHeight: 40, flex: 1 }}>{tpl.description}</p>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12, fontSize: 13 }}>
+                  <Stars rating={tpl.rating_avg || 0} onRate={(score) => handleRate(tpl.id, score)} />
+                  <span style={{ color: 'var(--text-muted)' }}>({tpl.rating_count || 0})</span>
+                  <span style={{ color: 'var(--text-muted)', marginLeft: 'auto' }}>↓ {tpl.installs}</span>
+                </div>
                 <div style={{ display: 'flex', gap: 8 }}>
-                  <button className="btn btn-primary" onClick={() => handleInstall(t.id)} style={{ flex: 1 }}>
-                    Try in 1 click
+                  <button type="button" className="btn btn-primary" onClick={() => handleInstall(tpl.id)} style={{ flex: 1 }}>
+                    {t('marketplace.cloneEdit')}
                   </button>
-                  <button className="btn" onClick={() => handlePreview(t.id)}>Preview</button>
+                  <button type="button" className="btn" onClick={() => handlePreview(tpl.id)}>Preview</button>
                 </div>
               </div>
             ))}
           </div>
-        </section>
-      )}
-
-      {loading ? (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 16 }}>
-          {[1, 2, 3, 4, 5, 6].map((i) => <div key={i} className="skeleton" style={{ height: 220 }} />)}
-        </div>
-      ) : templates.length === 0 ? (
-        <div className="card" style={{ textAlign: 'center', padding: 40 }}>
-          <h3 style={{ marginBottom: 8 }}>No templates match your filters</h3>
-          <p style={{ color: 'var(--text-muted)' }}>Try clearing search or selecting a different category.</p>
-        </div>
-      ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 16 }}>
-          {templates.map((t) => (
-            <div key={t.id} className="card" style={{ display: 'flex', flexDirection: 'column', position: 'relative' }}>
-              {(t.tags || []).includes('featured') && (
-                <span className="badge-featured" style={{ position: 'absolute', top: 12, right: 12, zIndex: 1 }}>Featured</span>
-              )}
-              <WorkflowThumbnail definition={t.definition} height={90} />
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginTop: 12, marginBottom: 8, gap: 8 }}>
-                <h3 style={{ fontSize: 15, color: 'var(--accent)' }}>{t.name}</h3>
-                <span style={{ fontSize: 11, background: 'var(--bg-tertiary)', padding: '2px 8px', borderRadius: 12, whiteSpace: 'nowrap' }}>{t.category}</span>
-              </div>
-              <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 12, minHeight: 40, flex: 1 }}>{t.description}</p>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12, fontSize: 13 }}>
-                <Stars rating={t.rating_avg || 0} onRate={(score) => handleRate(t.id, score)} />
-                <span style={{ color: 'var(--text-muted)' }}>({t.rating_count || 0})</span>
-                <span style={{ color: 'var(--text-muted)', marginLeft: 'auto' }}>↓ {t.installs}</span>
-              </div>
-              {t.tags && t.tags.length > 0 && (
-                <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginBottom: 12 }}>
-                  {t.tags.slice(0, 4).map((tag) => (
-                    <span key={tag} style={{ fontSize: 10, padding: '2px 6px', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 8, color: 'var(--text-muted)' }}>
-                      {tag}
-                    </span>
-                  ))}
-                </div>
-              )}
-              <div style={{ display: 'flex', gap: 8 }}>
-                <button className="btn btn-primary" onClick={() => handleInstall(t.id)} style={{ flex: 1 }}>
-                  Clone & edit
-                </button>
-                <button className="btn" onClick={() => handlePreview(t.id)}>Preview</button>
-              </div>
-            </div>
-          ))}
-        </div>
+        </>
       )}
 
       {previewTemplate && (
@@ -301,10 +288,9 @@ export default function MarketplacePage() {
                 onClick={() => {
                   const url = `${window.location.origin}/app/share/templates/${previewTemplate.id}`;
                   navigator.clipboard?.writeText(url).then(
-                    () => setToast('Share link copied'),
-                    () => setToast('Copy failed'),
+                    () => showToast(t('common.success')),
+                    () => showToast(t('common.error'), 'error'),
                   );
-                  setTimeout(() => setToast(''), 2000);
                 }}
               >
                 Copy share link
@@ -340,8 +326,6 @@ export default function MarketplacePage() {
           </div>
         </div>
       )}
-
-      {toast && <div className="toast">{toast}</div>}
     </div>
   );
 }

@@ -28,7 +28,7 @@
 - [x] Vector DB integration (ChromaDB) for RAG
 - [x] MCP server support
 - [x] Plugin marketplace (stub → workflow templates in Phase 7)
-- [ ] Mobile-responsive UI / PWA
+- [x] Mobile-responsive UI / PWA
 - [x] OAuth (Google — Phase 7)
 
 ## Phase 6: Enterprise (Future)
@@ -76,11 +76,12 @@
 | v2.0 Workflow MVP | 2026-06-25 | ✅ Complete |
 | v2.5 Marketplace | 2026-07-25 | ✅ Complete |
 | v3.0 SaaS Ready | 2026-08-25 | ✅ Complete (B2B, no Stripe) |
+| v3.2 UI/UX Polish | 2026-05-25 | ✅ Complete |
 
 ## Decision Log
 
 1. **FastAPI over Flask/Django** — Better async support
-2. **Hybrid frontend** — React SPA at `/app/*` for all main screens; vanilla HTML for login/onboarding legacy
+2. **Hybrid frontend** — React SPA at `/app/*` for all product screens (RU); static HTML only for `/login` and `/welcome`; legacy paths redirect 301
 3. **SQLite + PostgreSQL dual mode** — Zero-config dev, prod scale
 4. **LiteLLM** — Unified multi-provider LLM gateway
 5. **JSON DAG over custom DSL** — Simpler Phase 1, visual editor maps 1:1

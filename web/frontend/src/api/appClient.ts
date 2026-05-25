@@ -3,13 +3,17 @@ const API = '';
 export async function fetchJson<T>(url: string, options?: RequestInit): Promise<T> {
   const res = await fetch(`${API}${url}`, options);
   if (!res.ok) throw new Error(`Request failed: ${url}`);
-  return res.json();
+  const text = await res.text();
+  if (!text) return {} as T;
+  return JSON.parse(text) as T;
 }
 
 export interface Agent {
   id: string;
   name: string;
   role?: string;
+  icon?: string;
+  description?: string;
   skills?: string[];
   tools?: string[];
   memory?: { enabled: boolean };
@@ -51,6 +55,116 @@ export async function saveAgent(config: Record<string, unknown>): Promise<{ id: 
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(config),
   });
+}
+
+export async function deleteAgent(id: string): Promise<void> {
+  await fetchJson(`/api/agents/${id}`, { method: 'DELETE' });
+}
+
+export async function duplicateAgent(id: string): Promise<{ id: string }> {
+  return fetchJson(`/api/agents/${id}/duplicate`, { method: 'POST' });
+}
+
+export interface KnowledgeDoc {
+  id: string;
+  source: string;
+  preview: string;
+  created_at?: string;
+}
+
+export async function uploadKnowledge(content: string, source = ''): Promise<{ id: string }> {
+  return fetchJson('/api/knowledge/upload', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ content, source }),
+  });
+}
+
+export async function searchKnowledge(query: string, nResults = 5): Promise<Array<{ content: string; source: string; score: number }>> {
+  const data = await fetchJson<{ results: Array<{ content: string; source: string; score: number }> }>(
+    '/api/knowledge/search',
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query, n_results: nResults }),
+    },
+  );
+  return data.results || [];
+}
+
+export async function listKnowledgeDocs(): Promise<KnowledgeDoc[]> {
+  const data = await fetchJson<{ documents: KnowledgeDoc[] }>('/api/knowledge/list');
+  return data.documents || [];
+}
+
+export async function deleteKnowledgeDoc(docId: string): Promise<void> {
+  await fetchJson(`/api/knowledge/delete/${docId}`, { method: 'DELETE' });
+}
+
+export interface McpServer {
+  name: string;
+  enabled: boolean;
+  connected: boolean;
+  tools_count: number;
+  command?: string;
+}
+
+export async function listMcpServers(): Promise<McpServer[]> {
+  const data = await fetchJson<{ servers: McpServer[] }>('/api/mcp/list');
+  return data.servers || [];
+}
+
+export async function startMcpServer(name: string): Promise<{ success: boolean; tools?: number; error?: string }> {
+  return fetchJson(`/api/mcp/start/${encodeURIComponent(name)}`, { method: 'POST' });
+}
+
+export async function stopMcpServer(name: string): Promise<{ success: boolean; error?: string }> {
+  return fetchJson(`/api/mcp/stop/${encodeURIComponent(name)}`, { method: 'POST' });
+}
+
+export async function startAllMcp(): Promise<unknown> {
+  return fetchJson('/api/mcp/start-all', { method: 'POST' });
+}
+
+export async function stopAllMcp(): Promise<unknown> {
+  return fetchJson('/api/mcp/stop-all', { method: 'POST' });
+}
+
+export async function submitFeedback(body: {
+  session_id: string;
+  message_id: string;
+  query: string;
+  response: string;
+  rating: number;
+  agent_id?: string;
+}): Promise<void> {
+  await fetchJson('/api/feedback', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+}
+
+export async function getAppConfig(): Promise<{ model?: { primary?: string; api_key?: string } }> {
+  return fetchJson('/api/config');
+}
+
+export async function saveAppConfig(config: { model?: { primary?: string; api_key?: string } }): Promise<void> {
+  await fetchJson('/api/config', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(config),
+  });
+}
+
+export async function logUxEvent(event: string, metadata: Record<string, unknown> = {}): Promise<void> {
+  try {
+    await fetch('/api/usage/event', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ event_type: event, metadata }),
+    });
+  } catch { /* best-effort */ }
 }
 
 export async function listTemplates(

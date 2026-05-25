@@ -28,6 +28,25 @@ async def usage_summary(
     return usage_tracker.summary(tid, period_days=days)
 
 
+@router.post("/api/usage/event")
+async def track_ux_event(request: Request):
+    """Record a UX analytics event (onboarding, chat, etc.)."""
+    user_id = getattr(request.state, "user_id", None)
+    workspace_id = getattr(request.state, "workspace_id", None)
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    body = await request.json()
+    event_type = body.get("event_type", "ux_event")
+    metadata = body.get("metadata") or {}
+    usage_tracker.track(
+        event_type,
+        team_id=workspace_id,
+        user_id=user_id,
+        metadata=metadata,
+    )
+    return {"ok": True}
+
+
 @router.get("/api/usage/events")
 async def usage_events(
     request: Request,
