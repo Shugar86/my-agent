@@ -39,15 +39,34 @@ def test_scheduler_manager_list_jobs():
         mock_inst = MagicMock()
         fake_job = MagicMock()
         fake_job.id = "task_001"
+        fake_job.next_run_time = MagicMock()
         fake_job.next_run_time.isoformat.return_value = "2026-05-24T10:00:00"
         fake_job.trigger = "interval[0:30:00]"
         mock_inst.get_jobs.return_value = [fake_job]
         MockSched.return_value = mock_inst
+        with patch("core.db_manager.db.fetchone", return_value=None):
+            import asyncio
+            asyncio.run(mgr.start())
+            jobs = asyncio.run(mgr.list_jobs())
+            assert len(jobs) == 1
+            assert jobs[0]["id"] == "task_001"
+            assert jobs[0]["paused"] is False
+
+
+def test_scheduler_manager_pause_resume():
+    mgr = SchedulerManager()
+    with patch("core.scheduler_manager.AsyncIOScheduler") as MockSched:
+        mock_inst = MagicMock()
+        mock_inst.get_jobs.return_value = []
+        MockSched.return_value = mock_inst
         import asyncio
         asyncio.run(mgr.start())
-        jobs = asyncio.run(mgr.list_jobs())
-        assert len(jobs) == 1
-        assert jobs[0]["id"] == "task_001"
+        pause = asyncio.run(mgr.pause_job("task_001"))
+        assert pause["success"] is True
+        mock_inst.pause_job.assert_called_once_with("task_001")
+        resume = asyncio.run(mgr.resume_job("task_001"))
+        assert resume["success"] is True
+        mock_inst.resume_job.assert_called_once_with("task_001")
 
 
 def test_schedule_task_sync():

@@ -290,6 +290,56 @@ class TestWorkflowAPI:
         assert run_resp.json()["success"] is True
 
     @pytest.mark.asyncio
+    async def test_background_run_returns_run_id(self, client):
+        async def mock_trigger(ctx, config):
+            return {"output": "ok"}
+
+        from core.workflow.registry import register_node_handler, reset_registry
+        import core.workflow.executor as exec_mod
+        reset_registry()
+        register_node_handler("trigger.webhook", mock_trigger)
+        exec_mod._handlers_registered = True
+
+        resp = await client.post("/api/workflows", json={
+            "name": "BG Test",
+            "definition": {
+                "nodes": [{"id": "t1", "type": "trigger.webhook", "config": {}}],
+                "edges": [],
+            },
+        })
+        wf_id = resp.json()["id"]
+        run_resp = await client.post(f"/api/workflows/{wf_id}/run", json={"payload": {}})
+        assert run_resp.status_code == 200
+        data = run_resp.json()
+        assert data.get("background") is True
+        assert data.get("run_id", "").startswith("run_")
+
+    @pytest.mark.asyncio
+    async def test_agent_skill_enable_memory_flag(self):
+        from unittest.mock import AsyncMock, MagicMock, patch
+        from core.workflow.models import RunContext
+        from core.workflow.nodes.agent import handle_agent_skill
+
+        ctx = RunContext(run_id="r1", workflow_id="w1")
+        mock_agent = MagicMock()
+        mock_agent.run = AsyncMock(return_value="done")
+        mock_builder = MagicMock()
+        mock_builder.set_model.return_value = mock_builder
+        mock_builder.set_role.return_value = mock_builder
+        mock_builder.set_skills.return_value = mock_builder
+        mock_builder.set_tools.return_value = mock_builder
+        mock_builder.set_memory.return_value = mock_builder
+        mock_builder.enable_events.return_value = mock_builder
+        mock_builder.enable_compression.return_value = mock_builder
+        mock_builder.build.return_value = mock_agent
+
+        with patch("core.workflow.nodes.agent.AgentBuilder", return_value=mock_builder):
+            with patch("core.workflow.nodes.agent._store") as mock_store:
+                mock_store.get_agent.return_value = {"skills": [], "tools": [], "role": "test"}
+                await handle_agent_skill(ctx, {"prompt": "hi", "enable_memory": True})
+                mock_builder.set_memory.assert_called_with({"enabled": True})
+
+    @pytest.mark.asyncio
     async def test_validate_workflow(self, client):
         resp = await client.post("/api/workflows/validate", json={
             "definition": {

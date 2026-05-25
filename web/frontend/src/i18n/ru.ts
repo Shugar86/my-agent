@@ -284,6 +284,8 @@ const ru = {
     scheduleLast: 'Последний запуск',
     scheduleNone: 'Расписание не настроено',
     schedulePaused: 'на паузе',
+    schedulePause: 'Пауза',
+    scheduleResume: 'Возобновить',
   },
   analytics: {
     title: 'Аналитика',
@@ -409,6 +411,7 @@ const ru = {
     fields: {
       prompt: 'Prompt',
       agentId: 'Agent ID',
+      enableMemory: 'Включить память сессии (multi-step сценарии)',
       sourceNode: 'Source Node',
       field: 'Field',
       operator: 'Operator',

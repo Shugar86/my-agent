@@ -35,6 +35,7 @@ async def handle_agent_skill(ctx: RunContext, config: dict[str, Any]) -> dict[st
         skills = agent_config.get("skills", [])
     tools = resolved.get("tools") or agent_config.get("tools", [])
     role = resolved.get("role_text") or agent_config.get("role", "You are a helpful assistant.")
+    enable_memory = bool(resolved.get("enable_memory", False))
 
     builder = (
         AgentBuilder()
@@ -42,7 +43,7 @@ async def handle_agent_skill(ctx: RunContext, config: dict[str, Any]) -> dict[st
         .set_role(role)
         .set_skills(skills)
         .set_tools(tools)
-        .set_memory({"enabled": False})
+        .set_memory({"enabled": enable_memory})
         .enable_events(False)
         .enable_compression(True)
     )

@@ -129,18 +129,51 @@ class SchedulerManager:
         except Exception as e:
             return {"success": False, "error": str(e)}
 
+    async def pause_job(self, job_id: str) -> dict:
+        """Pause a scheduled job without deleting it."""
+        if not self._scheduler:
+            return {"success": False, "error": "Scheduler not started"}
+        try:
+            self._scheduler.pause_job(job_id)
+            return {"success": True, "job_id": job_id, "paused": True}
+        except Exception as e:
+            return {"success": False, "error": str(e)}
+
+    async def resume_job(self, job_id: str) -> dict:
+        """Resume a paused scheduled job."""
+        if not self._scheduler:
+            return {"success": False, "error": "Scheduler not started"}
+        try:
+            self._scheduler.resume_job(job_id)
+            return {"success": True, "job_id": job_id, "paused": False}
+        except Exception as e:
+            return {"success": False, "error": str(e)}
+
     async def list_jobs(self) -> list:
         if not self._scheduler:
             return []
+        from core import db_manager as _dm
+
         jobs = self._scheduler.get_jobs()
-        return [
-            {
-                "id": job.id,
-                "next_run_time": job.next_run_time.isoformat() if job.next_run_time else None,
-                "trigger": str(job.trigger),
-            }
-            for job in jobs
-        ]
+        result: list[dict] = []
+        for job in jobs:
+            last_row = _dm.db.fetchone(
+                """SELECT executed_at, status FROM scheduled_jobs_log
+                   WHERE job_id = ? ORDER BY executed_at DESC LIMIT 1""",
+                (job.id,),
+            )
+            paused = job.next_run_time is None
+            result.append(
+                {
+                    "id": job.id,
+                    "next_run_time": job.next_run_time.isoformat() if job.next_run_time else None,
+                    "last_run_time": last_row["executed_at"] if last_row else None,
+                    "last_run_status": last_row["status"] if last_row else None,
+                    "paused": paused,
+                    "trigger": str(job.trigger),
+                }
+            )
+        return result
 
     async def get_job(self, job_id: str) -> Optional[dict]:
         if not self._scheduler:

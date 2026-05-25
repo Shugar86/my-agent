@@ -1106,6 +1106,30 @@ async def schedule_delete(request: Request, job_id: str):
     raise HTTPException(status_code=404, detail=result.get("error"))
 
 
+@app.post("/api/schedule/{job_id}/pause")
+@limiter.limit("10/minute")
+async def schedule_pause(request: Request, job_id: str):
+    """Pause a scheduled job (admin only)."""
+    if getattr(request.state, "user_role", "") != "admin":
+        raise HTTPException(status_code=403, detail="Admin only")
+    result = await scheduler_manager.pause_job(job_id)
+    if result.get("success"):
+        return result
+    raise HTTPException(status_code=404, detail=result.get("error", "Job not found"))
+
+
+@app.post("/api/schedule/{job_id}/resume")
+@limiter.limit("10/minute")
+async def schedule_resume(request: Request, job_id: str):
+    """Resume a paused scheduled job (admin only)."""
+    if getattr(request.state, "user_role", "") != "admin":
+        raise HTTPException(status_code=403, detail="Admin only")
+    result = await scheduler_manager.resume_job(job_id)
+    if result.get("success"):
+        return result
+    raise HTTPException(status_code=404, detail=result.get("error", "Job not found"))
+
+
 @app.get("/api/schedule/{job_id}/logs")
 @limiter.limit("30/minute")
 async def schedule_logs(request: Request, job_id: str):

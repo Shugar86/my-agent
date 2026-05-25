@@ -254,12 +254,23 @@ export async function deleteApiKey(name: string): Promise<void> {
 export interface ScheduleJob {
   id: string;
   description?: string;
-  next_run?: string;
+  next_run_time?: string | null;
+  last_run_time?: string | null;
+  last_run_status?: string | null;
+  paused?: boolean;
   trigger?: string;
 }
 
 export async function listScheduleJobs(): Promise<{ jobs: ScheduleJob[] }> {
   return fetchJson('/api/schedule');
+}
+
+export async function pauseScheduleJob(jobId: string): Promise<{ success: boolean }> {
+  return fetchJson(`/api/schedule/${encodeURIComponent(jobId)}/pause`, { method: 'POST' });
+}
+
+export async function resumeScheduleJob(jobId: string): Promise<{ success: boolean }> {
+  return fetchJson(`/api/schedule/${encodeURIComponent(jobId)}/resume`, { method: 'POST' });
 }
 
 export async function getHealth(): Promise<Record<string, unknown>> {

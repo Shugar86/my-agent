@@ -699,6 +699,14 @@ function NodeConfigEditor({ nodeType, config, onChange }: NodeConfigProps) {
           onChange={(e) => onChange('agent_id', e.target.value)}
           className="input"
         />
+        <label style={{ ...labelStyle, display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+          <input
+            type="checkbox"
+            checked={Boolean(config.enable_memory)}
+            onChange={(e) => onChange('enable_memory', e.target.checked)}
+          />
+          {f('builder.fields.enableMemory')}
+        </label>
       </>
     );
   }
