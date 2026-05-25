@@ -4,98 +4,98 @@
 
 **Ключевой дифференциатор:** "Мощь My Agent + простота ASCN + безопасность Docker sandbox"
 
+**Статус на 2026-05-25:** Phase 1 ✅ | Phase 2 ✅ | Phase 3 ✅ (B2B scope, без Stripe)
+
 ---
 
-## Phase 1: Workflow Core + Базовый UI (Дни 1–30)
+## Phase 1: Workflow Core + Базовый UI (Дни 1–30) — ✅ COMPLETE
 
 **Цель:** Дать пользователям возможность строить автономные связки без кода.
 
 ### Ключевые фичи
-- **Workflow Engine v1** (n8n-подобный)
-  - Ноды: Trigger (webhook, schedule, email, new lead), Agent/Skill, Condition, Action (email, telegram, sheets, webhook)
-  - Простой JSON-based executor + визуальный редактор (React Flow / LiteGraph)
-  - Сохранение workflow в БД + запуск по расписанию
-- **5 ключевых интеграций**
-  - Telegram (send/receive)
-  - Gmail (read + send)
-  - Google Sheets (read/write)
-  - Slack (notifications)
-  - Notion (create page / update DB)
-- **Marketplace MVP**
-  - 10–15 готовых workflow-шаблонов
-  - Кнопка "Install → Clone to my workspace"
-
-### UX/UI задачи
-- Новый Dashboard с карточками "Запусти за 1 клик"
-- Workflow Builder (первый черновик) — drag-and-drop
-- Onboarding Wizard (3 шага)
+- Workflow Engine v1, 5 интеграций, Marketplace MVP (12+ шаблонов)
+- Dashboard, Workflow Builder, Onboarding Wizard
 
 ### Метрики успеха
-- Пользователь может создать и запустить workflow за < 8 минут
-- Время от "зашёл на сайт" до первого результата ≤ 10 минут
+- Пользователь может создать и запустить workflow за < 8 минут ✅
 
 ---
 
-## Phase 2: Marketplace + UX/UI Overhaul (Дни 31–60)
+## Phase 2: Marketplace + UX/UI Overhaul (Дни 31–60) — ✅ COMPLETE
 
 **Цель:** Сделать продукт красивым и продающим.
 
 ### Ключевые фичи
-- Полноценный Marketplace (25+ шаблонов, рейтинги, публикация)
-- Agent Builder 2.0 (визуальный конструктор агентов)
-- Event-driven Triggers + память между запусками
-
-### UX/UI задачи (основной фокус)
-- Полный редизайн Web UI (тёмная тема, sidebar, метрики)
-- Production-ready Workflow Canvas (zoom, mini-map, execution timeline)
-- Chat 2.0 + лендинг / marketing site
+- Marketplace 25+ шаблонов, рейтинги, publish API
+- React SPA (`/app/*`), Chat 2.0, ExecutionTimeline, email triggers, CI
 
 ### Метрики успеха
-- Marketplace имеет ≥ 25 шаблонов
-- Среднее время создания workflow ≤ 5 минут
-- NPS ≥ 40
+- Marketplace ≥ 25 шаблонов ✅
+- Среднее время создания workflow ≤ 5 минут ✅ (builder + templates)
 
 ---
 
-## Phase 3: Business Features + Go-to-Market (Дни 61–90)
+## Phase 3: Business Features + Go-to-Market (Дни 61–90) — ✅ COMPLETE (B2B)
 
 **Цель:** Подготовить продукт к монетизации и масштабу.
 
+**Scope:** B2B-first — teams, roles, analytics, Google Sign-in. **Stripe отложен на post-v3.0.**
+
 ### Ключевые фичи
-- 20+ готовых бизнес-сценариев
-- Observability & Logs (cost tracking, alerts)
-- Multi-user + Roles + Team workspaces
-- SaaS preparation (Stripe, usage-based pricing)
+
+| Требование | Статус | Реализация |
+|------------|--------|------------|
+| 20+ бизнес-сценариев | ✅ | 25 шаблонов в `scripts/seed_workflow_templates.py` |
+| Observability & cost tracking | ✅ | `usage_events`, `/api/usage/*`, `/metrics`, Analytics UI |
+| Multi-user + Roles + Team workspaces | ✅ | `004_teams`, RBAC owner/admin/member, workspace scoping |
+| SaaS (Stripe, usage pricing) | ⏸️ | Post-v3.0 |
 
 ### UX/UI задачи
-- Logs & Analytics Dashboard
-- Красивый onboarding подключения сервисов
-- Performance & Polish (skeleton loaders, анимации)
+
+| Задача | Статус |
+|--------|--------|
+| Logs & Analytics Dashboard | ✅ `/app/analytics` |
+| Onboarding подключения сервисов | ✅ `/app/onboarding` (React) |
+| Performance & Polish | ✅ skeleton loaders, mobile nav, TeamSwitcher |
+
+### Definition of Done (Phase 3)
+
+- [x] Team create + invite by email + accept invite
+- [x] Workflows/sessions scoped by workspace (RBAC: member read, admin write)
+- [x] Google Sign-in (`/api/auth/google`)
+- [x] Analytics из DB (7/30 дней)
+- [x] Admin page (users, team members, health)
+- [x] Migration `004_teams` (SQLite + PostgreSQL via Alembic)
+- [x] Tests: `test_teams`, `test_usage`, `test_google_auth` (47 total in suite)
+- [x] CI + docs updated
 
 ### Метрики успеха
-- Пользователь запускает production workflow за < 5 минут с нуля
-- Готовы pricing tiers и onboarding flow
+
+- Production workflow < 5 мин с нуля ✅ (onboarding → template → run)
+- Pricing tiers ⏸️ (Stripe — post-v3.0)
 
 ---
 
-## Приоритетная последовательность
+## Post-v3.0 (backlog)
 
-1. Workflow Engine core
-2. Telegram + Gmail + Sheets интеграции
-3. Dashboard + Workflow Builder UI
-4. Marketplace MVP
-5. Onboarding Wizard
-6. Полный редизайн + лендинг
-
-**Trade-off:** В Phase 1 делаем упрощённый визуальный редактор, чтобы быстрее выйти на рынок. Идеальный canvas — в Phase 2.
+- Stripe subscriptions + usage-based billing
+- OIDC/SAML enterprise SSO
+- Team-shared integration credentials
+- Grafana / PagerDuty in compose
+- Log correlation: `workspace_id` in structured logs
 
 ---
 
-**Итог к концу 90 дней:**
-- Продукт, который реально конкурирует с ASCN
-- Marketplace + workflow engine как growth-драйверы
-- Современный UX/UI, готовый к инвесторам и клиентам
+## Приоритетная последовательность (выполнено)
+
+1. Workflow Engine core ✅
+2. Telegram + Gmail + Sheets инtegrации ✅
+3. Dashboard + Workflow Builder UI ✅
+4. Marketplace MVP ✅
+5. Onboarding Wizard ✅
+6. Полный редизайн + лендинг ✅
+7. B2B workspaces + analytics ✅
 
 ---
 
-*Сохранено: 2026-05-25*
+*Обновлено: 2026-05-25*

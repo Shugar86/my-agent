@@ -8,6 +8,9 @@ import AgentBuilderPage from './pages/AgentBuilderPage';
 import SettingsPage from './pages/SettingsPage';
 import WorkflowList from './pages/WorkflowList';
 import WorkflowBuilder from './pages/WorkflowBuilder';
+import AnalyticsPage from './pages/AnalyticsPage';
+import AdminPage from './pages/AdminPage';
+import OnboardingPage from './pages/OnboardingPage';
 
 export default function App() {
   return (
@@ -21,7 +24,10 @@ export default function App() {
           <Route path="chat" element={<ChatPage />} />
           <Route path="builder" element={<AgentBuilderPage />} />
           <Route path="settings" element={<SettingsPage />} />
+          <Route path="analytics" element={<AnalyticsPage />} />
+          <Route path="admin" element={<AdminPage />} />
         </Route>
+        <Route path="onboarding" element={<OnboardingPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>

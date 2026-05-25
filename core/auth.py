@@ -93,3 +93,16 @@ def decode_access_token(token: str) -> dict | None:
     except JWTError as e:
         logger.warning("JWT decode failed: %s", e)
         return None
+
+
+def set_auth_cookie(response, token: str) -> None:
+    """Attach JWT to httpOnly cookie on a Starlette response."""
+    secure = os.environ.get("ENV", "").lower() in ("production", "prod", "staging")
+    response.set_cookie(
+        key="access_token",
+        value=token,
+        httponly=True,
+        secure=secure,
+        samesite="lax",
+        max_age=86400,
+    )

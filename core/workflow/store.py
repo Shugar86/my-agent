@@ -29,15 +29,16 @@ class WorkflowStore:
         owner_id: str | None = None,
         status: str = "draft",
         source_template_id: str | None = None,
+        workspace_id: str | None = None,
     ) -> dict[str, Any]:
         """Create a new workflow."""
         wf_id = f"wf_{uuid.uuid4().hex[:12]}"
         webhook_token = uuid.uuid4().hex
         _db().execute(
             """INSERT INTO workflows
-               (id, name, definition_json, status, owner_id, source_template_id, webhook_token)
-               VALUES (?, ?, ?, ?, ?, ?, ?)""",
-            (wf_id, name, json.dumps(definition), status, owner_id, source_template_id, webhook_token),
+               (id, name, definition_json, status, owner_id, source_template_id, webhook_token, workspace_id)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
+            (wf_id, name, json.dumps(definition), status, owner_id, source_template_id, webhook_token, workspace_id),
         )
         return self.get_workflow(wf_id)
 
@@ -46,9 +47,18 @@ class WorkflowStore:
         row = _db().fetchone("SELECT * FROM workflows WHERE id = ?", (workflow_id,))
         return self._row_to_workflow(row) if row else None
 
-    def list_workflows(self, owner_id: str | None = None) -> list[dict[str, Any]]:
-        """List workflows, optionally filtered by owner."""
-        if owner_id:
+    def list_workflows(
+        self,
+        owner_id: str | None = None,
+        workspace_id: str | None = None,
+    ) -> list[dict[str, Any]]:
+        """List workflows, optionally filtered by workspace or owner."""
+        if workspace_id:
+            rows = _db().fetchall(
+                "SELECT * FROM workflows WHERE workspace_id = ? ORDER BY updated_at DESC",
+                (workspace_id,),
+            )
+        elif owner_id:
             rows = _db().fetchall(
                 "SELECT * FROM workflows WHERE owner_id = ? ORDER BY updated_at DESC",
                 (owner_id,),
@@ -57,6 +67,20 @@ class WorkflowStore:
             rows = _db().fetchall("SELECT * FROM workflows ORDER BY updated_at DESC")
         return [self._row_to_workflow(r) for r in rows]
 
+    def user_can_access_workflow(self, workflow_id: str, user_id: str, min_role: str = "member") -> bool:
+        """Check if user can access workflow via workspace membership."""
+        from core.teams.permissions import has_min_role
+        from core.teams.store import team_store
+
+        wf = self.get_workflow(workflow_id)
+        if not wf:
+            return False
+        ws = wf.get("workspace_id")
+        if ws:
+            role = team_store.get_member_role(ws, user_id)
+            return bool(role and has_min_role(role, min_role))
+        return wf.get("owner_id") == user_id
+
     def list_active_workflows(self) -> list[dict[str, Any]]:
         """List all workflows with status=active."""
         rows = _db().fetchall("SELECT * FROM workflows WHERE status = 'active' ORDER BY updated_at DESC")
@@ -64,7 +88,7 @@ class WorkflowStore:
 
     def update_workflow(self, workflow_id: str, **fields: Any) -> dict[str, Any] | None:
         """Update workflow fields."""
-        allowed = {"name", "definition_json", "status", "owner_id"}
+        allowed = {"name", "definition_json", "status", "owner_id", "workspace_id"}
         updates = []
         params: list[Any] = []
         for key, val in fields.items():
@@ -205,7 +229,7 @@ class WorkflowStore:
         )
 
     def clone_template(
-        self, template_id: str, owner_id: str | None, name: str | None = None
+        self, template_id: str, owner_id: str | None, name: str | None = None, workspace_id: str | None = None
     ) -> dict[str, Any] | None:
         """Clone template into a new workflow."""
         template = self.get_template(template_id)
@@ -218,6 +242,7 @@ class WorkflowStore:
             owner_id=owner_id,
             status="draft",
             source_template_id=template_id,
+            workspace_id=workspace_id,
         )
         self.increment_template_installs(template_id)
         return wf
@@ -248,12 +273,14 @@ class WorkflowStore:
 
     @staticmethod
     def _row_to_workflow(row) -> dict[str, Any]:
+        keys = row.keys() if hasattr(row, "keys") else []
         return {
             "id": row["id"],
             "name": row["name"],
             "definition": json.loads(row["definition_json"] or "{}"),
             "status": row["status"],
             "owner_id": row["owner_id"],
+            "workspace_id": row["workspace_id"] if "workspace_id" in keys else None,
             "source_template_id": row["source_template_id"],
             "webhook_token": row["webhook_token"],
             "created_at": row["created_at"],

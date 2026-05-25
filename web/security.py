@@ -24,6 +24,7 @@ PUBLIC_PREFIXES = (
     "/api/workflows/webhook/",
     "/api/integrations/telegram/webhook",
     "/api/integrations/google/callback",
+    "/api/auth/google",
 )
 
 # Prefixes accessible without authentication for GET only (marketplace preview).

@@ -151,10 +151,12 @@ docker-compose down
 - [ ] Database (PostgreSQL) for agent registry
 
 ### Monitoring
-- [ ] Application logs (structured JSON)
-- [ ] Error tracking (Sentry)
-- [ ] Metrics (Prometheus + Grafana)
-- [ ] Health checks
+- [x] Application logs (structured, rotating — `core/logging_setup.py`)
+- [x] Metrics endpoint (`GET /metrics` — Prometheus)
+- [x] Health checks (`GET /api/health`)
+- [x] Usage analytics UI (`/app/analytics` + `usage_events` table)
+- [ ] Error tracking (Sentry) — optional `SENTRY_DSN`
+- [ ] Grafana dashboards — scrape `/metrics` externally
 - [ ] Alerting (PagerDuty/Opsgenie)
 
 ### Backup

@@ -4,6 +4,7 @@ import os
 import json
 import uuid
 import logging
+import re
 from datetime import datetime, timezone
 
 import bcrypt
@@ -61,6 +62,12 @@ class UserManager:
                     created_at  DOUBLE PRECISION NOT NULL
                 );
             """)
+            await conn.execute(
+                "ALTER TABLE users ADD COLUMN IF NOT EXISTS email TEXT"
+            )
+            await conn.execute(
+                "ALTER TABLE users ADD COLUMN IF NOT EXISTS auth_provider TEXT DEFAULT 'local'"
+            )
 
     def _init_sqlite(self):
         self._sqlite_conn.execute("""
@@ -73,6 +80,11 @@ class UserManager:
                 created_at  REAL NOT NULL
             );
         """)
+        cols = {r[1] for r in self._sqlite_conn.execute("PRAGMA table_info(users)").fetchall()}
+        if "email" not in cols:
+            self._sqlite_conn.execute("ALTER TABLE users ADD COLUMN email TEXT")
+        if "auth_provider" not in cols:
+            self._sqlite_conn.execute("ALTER TABLE users ADD COLUMN auth_provider TEXT DEFAULT 'local'")
         self._sqlite_conn.commit()
 
     # --- User CRUD ---
@@ -114,20 +126,22 @@ class UserManager:
             async with self._pool.acquire() as conn:
                 row = await conn.fetchrow("SELECT * FROM users WHERE username = $1", username)
                 return dict(row) if row else None
-        else:
+        if self._sqlite_conn:
             cur = self._sqlite_conn.execute("SELECT * FROM users WHERE username = ?", (username,))
             row = cur.fetchone()
             return dict(row) if row else None
+        return None
 
     async def get_user_by_id(self, user_id: str) -> dict | None:
         if self._pool:
             async with self._pool.acquire() as conn:
                 row = await conn.fetchrow("SELECT * FROM users WHERE id = $1", user_id)
                 return dict(row) if row else None
-        else:
+        if self._sqlite_conn:
             cur = self._sqlite_conn.execute("SELECT * FROM users WHERE id = ?", (user_id,))
             row = cur.fetchone()
             return dict(row) if row else None
+        return None
 
     async def update_api_keys(self, user_id: str, keys: dict):
         payload = json.dumps(keys)
@@ -154,11 +168,70 @@ class UserManager:
             return admin
         return await self.create_user("admin", os.environ.get("AGENT_PASSWORD", "admin"), role="admin")
 
+    async def get_user_by_email(self, email: str) -> dict | None:
+        if self._pool:
+            async with self._pool.acquire() as conn:
+                row = await conn.fetchrow("SELECT * FROM users WHERE email = $1", email.lower())
+                return dict(row) if row else None
+        if self._sqlite_conn:
+            cur = self._sqlite_conn.execute("SELECT * FROM users WHERE email = ?", (email.lower(),))
+            row = cur.fetchone()
+            return dict(row) if row else None
+        return None
+
+    async def get_or_create_from_google(self, email: str, name: str | None = None) -> dict | None:
+        """Find or create a user from Google OAuth profile."""
+        existing = await self.get_user_by_email(email)
+        if existing:
+            if existing.get("auth_provider") == "local":
+                return None
+            return existing
+
+        base_username = re.sub(r"[^a-zA-Z0-9_]", "", (email.split("@")[0] or "user"))[:20]
+        username = base_username
+        suffix = 1
+        while await self.get_user_by_username(username):
+            username = f"{base_username}{suffix}"
+            suffix += 1
+
+        user_id = "u_" + uuid.uuid4().hex[:12]
+        pwd_hash = bcrypt.hashpw(uuid.uuid4().hex.encode(), bcrypt.gensalt()).decode()
+        now = datetime.now(timezone.utc).timestamp()
+
+        if self._pool:
+            async with self._pool.acquire() as conn:
+                await conn.execute(
+                    """INSERT INTO users
+                       (id, username, password, role, api_keys, created_at, email, auth_provider)
+                       VALUES ($1,$2,$3,$4,$5,$6,$7,$8)""",
+                    user_id, username, pwd_hash, "user", "{}", now, email.lower(), "google",
+                )
+        else:
+            self._sqlite_conn.execute(
+                """INSERT INTO users
+                   (id, username, password, role, api_keys, created_at, email, auth_provider)
+                   VALUES (?,?,?,?,?,?,?,?)""",
+                (user_id, username, pwd_hash, "user", "{}", now, email.lower(), "google"),
+            )
+            self._sqlite_conn.commit()
+
+        return {
+            "id": user_id,
+            "username": username,
+            "role": "user",
+            "email": email.lower(),
+            "auth_provider": "google",
+        }
+
     async def list_users(self) -> list[dict]:
         if self._pool:
             async with self._pool.acquire() as conn:
-                rows = await conn.fetch("SELECT id, username, role, created_at FROM users ORDER BY created_at")
+                rows = await conn.fetch(
+                    "SELECT id, username, role, email, auth_provider, created_at FROM users ORDER BY created_at"
+                )
                 return [dict(r) for r in rows]
         else:
-            cur = self._sqlite_conn.execute("SELECT id, username, role, created_at FROM users ORDER BY created_at")
+            cur = self._sqlite_conn.execute(
+                "SELECT id, username, role, email, auth_provider, created_at FROM users ORDER BY created_at"
+            )
             return [dict(r) for r in cur.fetchall()]

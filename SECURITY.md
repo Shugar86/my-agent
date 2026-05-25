@@ -9,6 +9,8 @@
 | Rate limiting на Web API | ✅ Исправлено | `slowapi` на эндпоинтах + Redis sliding window (`web/security.py`) для `/api/ask`, `/api/chat*`, workflow run/webhook |
 | Авторизация пользователей | ✅ Есть | JWT cookie + `AuthMiddleware`; публичны только landing и GET marketplace |
 | Self-modification в production | ✅ Заблокировано | `self_dev` не грузится при `ENV=production` без `ENABLE_SELF_DEV=true` |
+| Google Sign-in | ✅ Phase 3 | `/api/auth/google` — отдельные `GOOGLE_AUTH_*` env vars |
+| Teams / B2B workspaces | ✅ Phase 3 | Workspaces, invites, RBAC, Analytics UI |
 | Bus factor | 🟡 Документировано | Этот файл + `ARCHITECTURE.md` + `SERVER.md` |
 | Redis в production | ✅ В compose | `REDIS_URL` в `docker-compose.yml`; startup warning если недоступен |
 | `server.log` / `results.json` в git | ✅ Удалено | В `.gitignore`, не коммитить runtime-артефакты |

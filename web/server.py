@@ -23,7 +23,7 @@ from core.config import load_config, DEFAULT_CONFIG, resolve_env_vars
 from core.logging_setup import setup_logging, set_session_context
 from core.llm_gateway import LLMGateway
 from core.builder import AgentBuilder
-from core.auth import create_access_token, decode_access_token
+from core.auth import create_access_token, decode_access_token, set_auth_cookie
 from core.user_manager import UserManager
 from core.db_manager import db
 from tools.vector_tools import _get_db as get_vector_db
@@ -39,6 +39,9 @@ from web.a2a_server import router as a2a_router
 from web.workflow_router import router as workflow_router
 from web.security import is_public_path, resolve_rate_limit
 from web.sessions_router import router as sessions_router
+from web.teams_router import router as teams_router
+from web.auth_router import router as auth_router
+from web.usage_router import router as usage_router
 from core.db_migrate import run_migrations
 
 setup_logging(mode="web", log_level="INFO")
@@ -68,6 +71,9 @@ app.include_router(workflow_router)
 
 # Chat sessions API
 app.include_router(sessions_router)
+app.include_router(teams_router)
+app.include_router(auth_router)
+app.include_router(usage_router)
 
 # CORS — allow localhost origins
 app.add_middleware(
@@ -159,6 +165,18 @@ class AuthMiddleware(BaseHTTPMiddleware):
                 return RedirectResponse(url="/login")
             request.state.user_id = payload["user_id"]
             request.state.user_role = payload.get("role", "user")
+            from core.teams.store import team_store
+
+            user = await user_manager.get_user_by_id(payload["user_id"])
+            username = user["username"] if user else payload.get("sub", "user")
+            team_store.ensure_personal_team(payload["user_id"], username)
+            active_team = request.cookies.get("active_team")
+            try:
+                workspace_id, team_role = team_store.resolve_workspace(payload["user_id"], active_team)
+            except ValueError:
+                workspace_id, team_role = None, None
+            request.state.workspace_id = workspace_id
+            request.state.team_role = team_role
             ACTIVE_SESSIONS.inc()
             try:
                 if path == "/" and path != "/onboarding":
@@ -364,21 +382,15 @@ async def register(request: Request, body: RegisterRequest):
         raise HTTPException(status_code=409, detail="Username already exists")
 
     token = create_access_token({"sub": user["username"], "user_id": user["id"], "role": user["role"]})
+    from core.teams.store import team_store
+    team_store.ensure_personal_team(user["id"], user["username"])
     resp = JSONResponse({"success": True, "user": user})
-    _set_auth_cookie(resp, token)
+    set_auth_cookie(resp, token)
     return resp
 
 
 def _set_auth_cookie(response: JSONResponse, token: str):
-    secure = os.environ.get("ENV", "").lower() in ("production", "prod", "staging")
-    response.set_cookie(
-        key="access_token",
-        value=token,
-        httponly=True,
-        secure=secure,
-        samesite="lax",
-        max_age=86400,
-    )
+    set_auth_cookie(response, token)
 
 
 @app.post("/api/login")
@@ -389,8 +401,10 @@ async def login(request: Request, body: LoginRequest):
         raise HTTPException(status_code=401, detail="Invalid username or password")
 
     token = create_access_token({"sub": user["username"], "user_id": user["id"], "role": user["role"]})
+    from core.teams.store import team_store
+    team_store.ensure_personal_team(user["id"], user["username"])
     resp = JSONResponse({"success": True, "redirect": "/"})
-    _set_auth_cookie(resp, token)
+    set_auth_cookie(resp, token)
     return resp
 
 
@@ -403,7 +417,18 @@ async def get_me(request: Request):
     user = await user_manager.get_user_by_id(uid)
     if not user:
         raise HTTPException(status_code=404)
-    return {"id": user["id"], "username": user["username"], "role": user["role"]}
+    from core.teams.store import team_store
+    teams = team_store.list_teams_for_user(uid)
+    return {
+        "id": user["id"],
+        "username": user["username"],
+        "role": user["role"],
+        "email": user.get("email"),
+        "auth_provider": user.get("auth_provider", "local"),
+        "workspace_id": getattr(request.state, "workspace_id", None),
+        "team_role": getattr(request.state, "team_role", None),
+        "teams": teams,
+    }
 
 
 @app.get("/api/users")
@@ -692,7 +717,9 @@ async def ask_endpoint(request: Request, body: AskRequest):
 # ---------------------------------------------------------------------------
 
 
-def _user_session_id(user_id: str, raw_sid: str) -> str:
+def _user_session_id(user_id: str, raw_sid: str, workspace_id: str | None = None) -> str:
+    if workspace_id:
+        return f"{workspace_id}::{user_id}::{raw_sid}"
     return f"{user_id}::{raw_sid}"
 
 
@@ -716,10 +743,11 @@ async def chat_endpoint(request: Request, body: ChatRequest):
 @limiter.limit("10/minute")
 async def chat_stream(request: Request, body: ChatRequest):
     uid = getattr(request.state, "user_id", "anon")
+    workspace_id = getattr(request.state, "workspace_id", None)
 
     async def event_stream():
         raw_sid = body.session_id or f"stream_{uuid.uuid4().hex[:12]}"
-        sid = _user_session_id(uid, raw_sid)
+        sid = _user_session_id(uid, raw_sid, workspace_id)
         set_session_context(body.agent_id)
         from core.state_db import StateDB
         state_db = StateDB(os.environ.get("STATE_DB_PATH", "data/state.db"))
@@ -780,17 +808,16 @@ async def chat_stream(request: Request, body: ChatRequest):
                             yield f"data: {json.dumps({'type': 'tool_result', 'name': event['name'], 'content': f'Error: {exc}'})}\n\n"
                     elif event["type"] == "done":
                         estimated_cost = total_output_tokens * 0.15 / 1_000_000
-                        try:
-                            import httpx
-                            async with httpx.AsyncClient() as client:
-                                await client.post(
-                                    f"http://{request.url.hostname}:{request.url.port}/api/cost/track",
-                                    json={"tokens": total_output_tokens, "cost": estimated_cost},
-                                    cookies=request.cookies,
-                                )
-                        except Exception:
-                            pass
-                        # Prometheus metrics
+                        workspace_id = getattr(request.state, "workspace_id", None)
+                        from core.usage.tracker import usage_tracker
+                        usage_tracker.track(
+                            "chat_stream",
+                            team_id=workspace_id,
+                            user_id=uid,
+                            tokens=total_output_tokens,
+                            cost_usd=estimated_cost,
+                            metadata={"agent_id": body.agent_id},
+                        )
                         model_name = agent_config.get("model", {}).get("primary", "unknown").split("/")[-1]
                         LLM_TOKEN_COUNT.labels(model=model_name).inc(total_output_tokens)
                         break
@@ -829,47 +856,6 @@ async def update_config(request: Request):
     with open(config_path, "w", encoding="utf-8") as f:
         json.dump(body, f, indent=2, ensure_ascii=False)
     return {"status": "updated"}
-
-
-# ---------------------------------------------------------------------------
-# Cost / Usage API
-# ---------------------------------------------------------------------------
-
-_cost_store: dict = {}
-_cost_lock = asyncio.Lock()
-
-
-@app.get("/api/cost")
-@limiter.limit("30/minute")
-async def get_cost(request: Request):
-    uid = getattr(request.state, "user_id", "anon")
-    async with _cost_lock:
-        user_cost = _cost_store.get(uid, {"tokens": 0, "cost": 0.0})
-    return {"session_cost": user_cost}
-
-
-@app.post("/api/cost/track")
-@limiter.limit("60/minute")
-async def track_cost(request: Request):
-    uid = getattr(request.state, "user_id", "anon")
-    body = await request.json()
-    tokens = body.get("tokens", 0)
-    cost = body.get("cost", 0.0)
-    async with _cost_lock:
-        if uid not in _cost_store:
-            _cost_store[uid] = {"tokens": 0, "cost": 0.0}
-        _cost_store[uid]["tokens"] += tokens
-        _cost_store[uid]["cost"] += cost
-    return {"status": "tracked"}
-
-
-@app.post("/api/cost/reset")
-@limiter.limit("10/minute")
-async def reset_cost(request: Request):
-    uid = getattr(request.state, "user_id", "anon")
-    async with _cost_lock:
-        _cost_store.pop(uid, None)
-    return {"status": "reset"}
 
 
 # ---------------------------------------------------------------------------
@@ -959,7 +945,8 @@ async def marketplace_install(request: Request, item_name: str):
 
     template = workflow_store.get_template(item_name)
     if template:
-        wf = workflow_store.clone_template(item_name, owner_id=user_id)
+        workspace_id = getattr(request.state, "workspace_id", None)
+        wf = workflow_store.clone_template(item_name, owner_id=user_id, workspace_id=workspace_id)
         if not wf:
             raise HTTPException(status_code=404, detail="Template not found")
         return {"status": "installed", "type": "workflow", "workflow": wf}

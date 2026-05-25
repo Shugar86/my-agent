@@ -77,9 +77,13 @@ class TemplatePublishRequest(BaseModel):
 
 @router.get("/api/workflows")
 async def list_workflows(request: Request):
-    """List workflows for current user."""
+    """List workflows for current workspace."""
     user_id = getattr(request.state, "user_id", None)
-    workflows = workflow_store.list_workflows(owner_id=user_id)
+    workspace_id = getattr(request.state, "workspace_id", None)
+    if workspace_id:
+        workflows = workflow_store.list_workflows(workspace_id=workspace_id)
+    else:
+        workflows = workflow_store.list_workflows(owner_id=user_id)
     return {"workflows": workflows, "total": len(workflows)}
 
 
@@ -87,11 +91,18 @@ async def list_workflows(request: Request):
 async def create_workflow(request: Request, body: WorkflowCreateRequest):
     """Create a new workflow."""
     user_id = getattr(request.state, "user_id", None)
+    workspace_id = getattr(request.state, "workspace_id", None)
+    from core.teams.permissions import has_min_role
+
+    team_role = getattr(request.state, "team_role", "member")
+    if not has_min_role(team_role, "admin"):
+        raise HTTPException(status_code=403, detail="Admin role required to create workflows")
     wf = workflow_store.create_workflow(
         name=body.name,
         definition=body.definition,
         owner_id=user_id,
         status=body.status,
+        workspace_id=workspace_id,
     )
     if body.status == "active":
         await executor.sync_all_triggers(wf["id"])
@@ -101,15 +112,21 @@ async def create_workflow(request: Request, body: WorkflowCreateRequest):
 @router.get("/api/workflows/{workflow_id}")
 async def get_workflow(request: Request, workflow_id: str):
     """Get workflow by ID."""
+    user_id = getattr(request.state, "user_id", None)
     wf = workflow_store.get_workflow(workflow_id)
     if not wf:
         raise HTTPException(status_code=404, detail="Workflow not found")
+    if user_id and not workflow_store.user_can_access_workflow(workflow_id, user_id):
+        raise HTTPException(status_code=403, detail="Forbidden")
     return wf
 
 
 @router.put("/api/workflows/{workflow_id}")
 async def update_workflow(request: Request, workflow_id: str, body: WorkflowUpdateRequest):
     """Update workflow."""
+    user_id = getattr(request.state, "user_id", None)
+    if user_id and not workflow_store.user_can_access_workflow(workflow_id, user_id, min_role="admin"):
+        raise HTTPException(status_code=403, detail="Forbidden")
     wf = workflow_store.get_workflow(workflow_id)
     if not wf:
         raise HTTPException(status_code=404, detail="Workflow not found")
@@ -129,6 +146,9 @@ async def update_workflow(request: Request, workflow_id: str, body: WorkflowUpda
 @router.delete("/api/workflows/{workflow_id}")
 async def delete_workflow(request: Request, workflow_id: str):
     """Delete workflow."""
+    user_id = getattr(request.state, "user_id", None)
+    if user_id and not workflow_store.user_can_access_workflow(workflow_id, user_id, min_role="admin"):
+        raise HTTPException(status_code=403, detail="Forbidden")
     await executor.unregister_all_triggers(workflow_id)
     if not workflow_store.delete_workflow(workflow_id):
         raise HTTPException(status_code=404, detail="Workflow not found")
@@ -146,6 +166,8 @@ async def validate_workflow_endpoint(request: Request, body: WorkflowValidateReq
 async def run_workflow(request: Request, workflow_id: str):
     """Manually trigger workflow execution."""
     user_id = getattr(request.state, "user_id", None)
+    if user_id and not workflow_store.user_can_access_workflow(workflow_id, user_id, min_role="member"):
+        raise HTTPException(status_code=403, detail="Forbidden")
     body = {}
     try:
         body = await request.json()
@@ -234,7 +256,8 @@ async def rate_template(request: Request, template_id: str, body: TemplateRateRe
 async def install_template(request: Request, template_id: str):
     """Clone template into user's workspace."""
     user_id = getattr(request.state, "user_id", None)
-    wf = workflow_store.clone_template(template_id, owner_id=user_id)
+    workspace_id = getattr(request.state, "workspace_id", None)
+    wf = workflow_store.clone_template(template_id, owner_id=user_id, workspace_id=workspace_id)
     if not wf:
         raise HTTPException(status_code=404, detail="Template not found")
     return {"success": True, "workflow": wf}

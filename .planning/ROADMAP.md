@@ -60,10 +60,10 @@
 - [x] Marketing landing integration
 - [x] Docker frontend build
 
-### Phase 7.3 (Days 61–90)
-- [ ] Multi-user roles + team workspaces
-- [ ] Observability dashboard
-- [ ] Stripe / SaaS pricing
+### Phase 7.3 (Days 61–90) — ✅ COMPLETE (B2B scope)
+- [x] Multi-user roles + team workspaces
+- [x] Observability dashboard (Analytics UI + usage ledger)
+- [ ] Stripe / SaaS pricing (deferred post-v3.0)
 
 ## Milestone Tracking
 
@@ -75,7 +75,7 @@
 | v1.5 MCP + TUI | 2026-05-25 | ✅ Complete |
 | v2.0 Workflow MVP | 2026-06-25 | ✅ Complete |
 | v2.5 Marketplace | 2026-07-25 | ✅ Complete |
-| v3.0 SaaS Ready | 2026-08-25 | 📋 Planned |
+| v3.0 SaaS Ready | 2026-08-25 | ✅ Complete (B2B, no Stripe) |
 
 ## Decision Log
 

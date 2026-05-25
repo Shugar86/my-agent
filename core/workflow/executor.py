@@ -115,6 +115,15 @@ class WorkflowExecutor:
 
             self.store.finish_run(run["id"], "success", ctx.logs)
             save_state(workflow_id, ctx.state)
+            ws_id = workflow.get("workspace_id")
+            if ws_id:
+                from core.usage.tracker import usage_tracker
+                usage_tracker.track(
+                    "workflow_run",
+                    team_id=ws_id,
+                    user_id=user_id or workflow.get("owner_id"),
+                    metadata={"workflow_id": workflow_id, "run_id": run["id"]},
+                )
             return {
                 "success": True,
                 "run_id": run["id"],

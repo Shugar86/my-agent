@@ -78,8 +78,101 @@ export async function getHealth(): Promise<Record<string, unknown>> {
 
 export { listWorkflows } from './workflowClient';
 
-export async function getMe(): Promise<{ id: string; username: string; role: string }> {
+export async function getMe(): Promise<MeUser> {
   return fetchJson('/api/me');
+}
+
+export interface MeUser {
+  id: string;
+  username: string;
+  role: string;
+  email?: string;
+  auth_provider?: string;
+  workspace_id?: string;
+  team_role?: string;
+  teams?: Team[];
+}
+
+export interface Team {
+  id: string;
+  name: string;
+  slug: string;
+  plan: string;
+  member_role?: string;
+}
+
+export interface UsageSummary {
+  team_id: string;
+  period_days: number;
+  total_tokens: number;
+  total_cost_usd: number;
+  event_count: number;
+  workflow_runs: number;
+  daily: Array<{ day: string; tokens: number; events: number }>;
+  top_workflows: Array<{ workflow_id: string; runs: number }>;
+}
+
+export async function listTeams(): Promise<{ teams: Team[]; active_team_id?: string }> {
+  return fetchJson('/api/teams');
+}
+
+export async function createTeam(name: string): Promise<{ team: Team }> {
+  return fetchJson('/api/teams', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name }),
+  });
+}
+
+export async function setActiveTeam(teamId: string): Promise<void> {
+  await fetchJson('/api/teams/active', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ team_id: teamId }),
+  });
+}
+
+export async function listTeamMembers(teamId: string): Promise<Array<{ user_id: string; role: string }>> {
+  const data = await fetchJson<{ members: Array<{ user_id: string; role: string }> }>(`/api/teams/${teamId}/members`);
+  return data.members;
+}
+
+export async function inviteTeamMember(teamId: string, email: string): Promise<{ accept_url: string }> {
+  const data = await fetchJson<{ accept_url: string }>(`/api/teams/${teamId}/invite`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, role: 'member' }),
+  });
+  return data;
+}
+
+export async function acceptInvite(token: string): Promise<void> {
+  await fetchJson('/api/teams/accept-invite', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token }),
+  });
+}
+
+export async function getUsageSummary(period: '7d' | '30d' = '7d'): Promise<UsageSummary> {
+  return fetchJson(`/api/usage/summary?period=${period}`);
+}
+
+export async function listUsers(): Promise<Array<{ id: string; username: string; role: string; email?: string }>> {
+  const data = await fetchJson<{ users: Array<{ id: string; username: string; role: string; email?: string }> }>('/api/users');
+  return data.users;
+}
+
+export async function completeOnboarding(): Promise<void> {
+  await fetchJson('/api/onboarding/complete', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ complete: true }),
+  });
+}
+
+export async function getIntegrationAuthUrl(provider: string): Promise<{ auth_url: string }> {
+  return fetchJson(`/api/integrations/${provider}/auth`);
 }
 
 export async function publishTemplate(body: {

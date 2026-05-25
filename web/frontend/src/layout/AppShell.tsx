@@ -1,5 +1,7 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
+import TeamSwitcher from '../components/TeamSwitcher';
+import { getMe, type MeUser } from '../api/appClient';
 import './theme.css';
 
 const NAV = [
@@ -7,12 +9,20 @@ const NAV = [
   { to: '/chat', label: 'Chat', icon: '💬' },
   { to: '/workflows', label: 'Workflows', icon: '⚡' },
   { to: '/marketplace', label: 'Marketplace', icon: '🛒' },
+  { to: '/analytics', label: 'Analytics', icon: '📈' },
   { to: '/builder', label: 'Agent Builder', icon: '🏗️' },
   { to: '/settings', label: 'Settings', icon: '⚙️' },
 ];
 
 export default function AppShell() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [me, setMe] = useState<MeUser | null>(null);
+
+  useEffect(() => {
+    getMe().then(setMe).catch(() => {});
+  }, []);
+
+  const showAdmin = me?.role === 'admin' || me?.team_role === 'owner' || me?.team_role === 'admin';
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh' }}>
@@ -47,6 +57,7 @@ export default function AppShell() {
         <h1 style={{ padding: '0 20px 20px', fontSize: '1.1rem', color: 'var(--accent)', borderBottom: '1px solid var(--border)', marginBottom: 10 }}>
           🤖 My Agent
         </h1>
+        <TeamSwitcher />
         {NAV.map((item) => (
           <NavLink
             key={item.to}
@@ -63,6 +74,20 @@ export default function AppShell() {
             <span>{item.icon}</span> {item.label}
           </NavLink>
         ))}
+        {showAdmin && (
+          <NavLink
+            to="/admin"
+            onClick={() => setSidebarOpen(false)}
+            style={({ isActive }) => ({
+              display: 'flex', alignItems: 'center', gap: 10,
+              padding: '12px 20px', color: isActive ? 'var(--text)' : 'var(--text-muted)',
+              background: isActive ? 'var(--bg-tertiary)' : 'transparent',
+              textDecoration: 'none',
+            })}
+          >
+            <span>🛡️</span> Admin
+          </NavLink>
+        )}
       </aside>
 
       <main style={{ marginLeft: 'var(--sidebar-width)', flex: 1, minHeight: '100vh' }}>

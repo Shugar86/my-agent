@@ -23,7 +23,7 @@ jobs:
           pip install -e ".[dev]" || pip install -e .
           pip install pytest pytest-asyncio httpx
       - name: Run tests
-        run: pytest tests/test_workflow_engine.py tests/test_marketplace.py tests/test_dod_closure.py -v
+        run: pytest tests/test_workflow_engine.py tests/test_marketplace.py tests/test_dod_closure.py tests/test_teams.py tests/test_usage.py tests/test_google_auth.py tests/test_security.py -v
         env:
           ENV: test
 

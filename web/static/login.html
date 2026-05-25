@@ -27,6 +27,16 @@
     </style>
 </head>
 <body>
+    <script>
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('error') === 'email_exists_use_password') {
+            document.addEventListener('DOMContentLoaded', () => {
+                const err = document.getElementById('login-error');
+                err.textContent = 'Email уже зарегистрирован. Войдите с паролем.';
+                err.style.display = 'block';
+            });
+        }
+    </script>
     <div class="login-box">
         <h1>🤖 My Agent</h1>
         <p>Войдите или создайте аккаунт</p>
@@ -46,6 +56,10 @@
             <button type="submit" class="btn" id="login-btn">🔐 Войти</button>
             <div class="error" id="login-error">Неверный логин или пароль</div>
         </form>
+        <div style="margin: 16px 0; text-align: center; color: #484f58; font-size: 0.85rem;">или</div>
+        <a href="/api/auth/google" class="btn btn-secondary" style="display: block; text-align: center; text-decoration: none; margin-bottom: 8px;">
+            🔵 Войти через Google
+        </a>
         <form id="register-form" onsubmit="return handleRegister(event)" style="display:none">
             <div class="form-group">
                 <label>Имя пользователя</label>

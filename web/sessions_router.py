@@ -14,14 +14,23 @@ router = APIRouter(tags=["sessions"])
 state_db = StateDB(os.environ.get("STATE_DB_PATH", "data/state.db"))
 
 
-def _full_session_id(user_id: str, raw_id: str) -> str:
-    """Build scoped session id for a user."""
+def _full_session_id(user_id: str, workspace_id: str | None, raw_id: str) -> str:
+    """Build scoped session id for a user within a workspace."""
+    if workspace_id:
+        return f"{workspace_id}::{user_id}::{raw_id}"
     return f"{user_id}::{raw_id}"
 
 
-def _assert_session_owner(user_id: str, full_id: str) -> None:
-    """Ensure session belongs to the authenticated user."""
-    if not full_id.startswith(f"{user_id}::"):
+def _raw_session_id(full_id: str) -> str:
+    """Extract client-facing session id from stored full id."""
+    parts = full_id.split("::")
+    return parts[-1] if parts else full_id
+
+
+def _assert_session_owner(user_id: str, workspace_id: str | None, full_id: str) -> None:
+    """Ensure session belongs to the authenticated user in workspace."""
+    expected = _full_session_id(user_id, workspace_id, _raw_session_id(full_id))
+    if full_id != expected and not full_id.startswith(f"{user_id}::"):
         raise HTTPException(status_code=403, detail="Forbidden")
 
 
@@ -38,19 +47,22 @@ async def list_sessions(request: Request):
     user_id = getattr(request.state, "user_id", None)
     if not user_id:
         raise HTTPException(status_code=401, detail="Not authenticated")
+    workspace_id = getattr(request.state, "workspace_id", None)
     sessions = state_db.list_sessions_for_user(user_id)
+    prefix = f"{workspace_id}::{user_id}::" if workspace_id else f"{user_id}::"
+    scoped = [s for s in sessions if s["id"].startswith(prefix)]
     return {
         "sessions": [
             {
-                "id": s["id"].split("::", 1)[-1] if "::" in s["id"] else s["id"],
+                "id": _raw_session_id(s["id"]),
                 "full_id": s["id"],
                 "title": s.get("title") or "New chat",
                 "message_count": s.get("message_count", 0),
                 "started_at": s.get("started_at"),
             }
-            for s in sessions
+            for s in scoped
         ],
-        "total": len(sessions),
+        "total": len(scoped),
     }
 
 
@@ -60,8 +72,9 @@ async def create_session(request: Request, body: SessionCreateRequest):
     user_id = getattr(request.state, "user_id", None)
     if not user_id:
         raise HTTPException(status_code=401, detail="Not authenticated")
+    workspace_id = getattr(request.state, "workspace_id", None)
     raw_id = f"s_{uuid.uuid4().hex[:12]}"
-    full_id = _full_session_id(user_id, raw_id)
+    full_id = _full_session_id(user_id, workspace_id, raw_id)
     state_db.create_session(full_id, source="web", user_id=user_id, model=body.agent_id)
     if body.title:
         state_db.set_session_title(full_id, body.title)
@@ -74,8 +87,9 @@ async def get_session_messages(request: Request, session_id: str):
     user_id = getattr(request.state, "user_id", None)
     if not user_id:
         raise HTTPException(status_code=401, detail="Not authenticated")
-    full_id = _full_session_id(user_id, session_id)
-    _assert_session_owner(user_id, full_id)
+    workspace_id = getattr(request.state, "workspace_id", None)
+    full_id = _full_session_id(user_id, workspace_id, session_id)
+    _assert_session_owner(user_id, workspace_id, full_id)
     if not state_db.get_session(full_id):
         raise HTTPException(status_code=404, detail="Session not found")
     rows = state_db.get_messages(full_id)
@@ -93,8 +107,9 @@ async def delete_session(request: Request, session_id: str):
     user_id = getattr(request.state, "user_id", None)
     if not user_id:
         raise HTTPException(status_code=401, detail="Not authenticated")
-    full_id = _full_session_id(user_id, session_id)
-    _assert_session_owner(user_id, full_id)
+    workspace_id = getattr(request.state, "workspace_id", None)
+    full_id = _full_session_id(user_id, workspace_id, session_id)
+    _assert_session_owner(user_id, workspace_id, full_id)
     if not state_db.get_session(full_id):
         raise HTTPException(status_code=404, detail="Session not found")
     state_db.delete_session(full_id)
