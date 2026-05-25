@@ -1,0 +1,98 @@
+# Production compose for My Agent.
+#
+#   1. cp deploy/.env.example .env  (and fill in secrets)
+#   2. docker compose -f deploy/docker-compose.prod.yml up -d --build
+#
+# Differences vs root docker-compose.yml:
+#   - 4 uvicorn workers, gunicorn-style supervision via uvicorn --workers
+#   - Healthcheck on the agent container (HTTP 200 from /api/health)
+#   - No host port for Postgres/Redis (only the app needs them)
+#   - Caddy reverse proxy with auto HTTPS (set DOMAIN env var)
+#
+version: "3.8"
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: agent
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?must be set}
+      POSTGRES_DB: agent_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U agent"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks:
+      - internal
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    volumes:
+      - redis_data:/data
+    networks:
+      - internal
+
+  agent:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    env_file:
+      - ../.env
+    environment:
+      - DATABASE_URL=postgresql://agent:${POSTGRES_PASSWORD}@db:5432/agent_db
+      - REDIS_URL=redis://redis:6379/0
+      - ENV=production
+      - PYTHONUNBUFFERED=1
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; urllib.request.urlopen('http://127.0.0.1:8020/api/health', timeout=3)"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+    command:
+      [
+        "python", "-m", "uvicorn", "web.server:app",
+        "--host", "0.0.0.0", "--port", "8020",
+        "--workers", "4", "--proxy-headers", "--forwarded-allow-ips=*"
+      ]
+    networks:
+      - internal
+      - public
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      DOMAIN: ${DOMAIN:-localhost}
+    volumes:
+      - ./Caddyfile.prod:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - agent
+    networks:
+      - public
+
+volumes:
+  postgres_data:
+  redis_data:
+  caddy_data:
+  caddy_config:
+
+networks:
+  internal:
+    internal: true
+  public:

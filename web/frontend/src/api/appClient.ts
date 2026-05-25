@@ -25,6 +25,7 @@ export interface Template {
   installs: number;
   rating_avg: number;
   rating_count: number;
+  definition?: { nodes: Array<{ id: string; type: string; position?: { x: number; y: number } }>; edges: Array<{ from: string; to: string; label?: string }> };
 }
 
 export async function listAgents(): Promise<Agent[]> {
@@ -52,12 +53,21 @@ export async function saveAgent(config: Record<string, unknown>): Promise<{ id: 
   });
 }
 
-export async function listTemplates(category?: string, sort = 'popular'): Promise<Template[]> {
+export async function listTemplates(
+  category?: string,
+  sort = 'popular',
+  search?: string,
+): Promise<Template[]> {
   const params = new URLSearchParams();
   if (category) params.set('category', category);
   params.set('sort', sort);
+  if (search) params.set('q', search);
   const data = await fetchJson<{ templates: Template[] }>(`/api/workflow-templates?${params}`);
   return data.templates;
+}
+
+export async function getTemplate(id: string): Promise<Template> {
+  return fetchJson<Template>(`/api/workflow-templates/${id}`);
 }
 
 export async function installTemplate(id: string): Promise<{ workflow: { id: string } }> {
@@ -173,6 +183,47 @@ export async function completeOnboarding(): Promise<void> {
 
 export async function getIntegrationAuthUrl(provider: string): Promise<{ auth_url: string }> {
   return fetchJson(`/api/integrations/${provider}/auth`);
+}
+
+export interface IntegrationField {
+  name: string;
+  label: string;
+  type: string;
+  required: boolean;
+  help?: string;
+}
+
+export interface Integration {
+  provider: string;
+  name: string;
+  category: string;
+  description: string;
+  auth_method: string;
+  actions: string[];
+  fields: IntegrationField[];
+  docs_url?: string;
+  configured: boolean;
+}
+
+export async function listIntegrations(): Promise<Integration[]> {
+  const data = await fetchJson<{ integrations: Integration[] }>('/api/integrations');
+  return data.integrations;
+}
+
+export async function saveIntegrationCredentials(provider: string, credentials: Record<string, string>): Promise<void> {
+  await fetchJson('/api/integrations/credentials', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ provider, credentials }),
+  });
+}
+
+export async function testIntegration(provider: string): Promise<{ success: boolean; info?: unknown; error?: string }> {
+  return fetchJson(`/api/integrations/${provider}/test`, { method: 'POST' });
+}
+
+export async function deleteIntegration(provider: string): Promise<void> {
+  await fetchJson(`/api/integrations/credentials/${provider}`, { method: 'DELETE' });
 }
 
 export async function publishTemplate(body: {

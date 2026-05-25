@@ -1,27 +1,76 @@
+/* My Agent design tokens.
+   Trade-off: we keep CSS variables (no Tailwind) to avoid a heavy build step
+   while still giving the whole app a single source of truth for colors and
+   spacing. Components stay framework-agnostic. */
 :root {
   --bg: #0d1117;
   --bg-secondary: #161b22;
   --bg-tertiary: #21262d;
+  --bg-elevated: #1c2129;
   --border: #30363d;
+  --border-strong: #3f4651;
   --text: #c9d1d9;
   --text-muted: #8b949e;
+  --text-subtle: #6e7681;
   --accent: #58a6ff;
+  --accent-strong: #1f6feb;
   --success: #238636;
   --success-hover: #2ea043;
+  --success-soft: rgba(35, 134, 54, 0.15);
+  --warning: #d29922;
+  --danger: #f85149;
+  --danger-soft: rgba(248, 81, 73, 0.15);
   --sidebar-width: 240px;
   --header-height: 56px;
+  --radius-sm: 4px;
+  --radius: 6px;
+  --radius-lg: 10px;
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow: 0 4px 14px rgba(0, 0, 0, 0.45);
+  --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.55);
+  --transition: 0.18s ease;
+  color-scheme: dark;
+}
+
+[data-theme="light"] {
+  --bg: #ffffff;
+  --bg-secondary: #f6f8fa;
+  --bg-tertiary: #eaeef2;
+  --bg-elevated: #ffffff;
+  --border: #d0d7de;
+  --border-strong: #afb8c1;
+  --text: #1f2328;
+  --text-muted: #57606a;
+  --text-subtle: #6e7781;
+  --accent: #0969da;
+  --accent-strong: #0550ae;
+  --success: #1a7f37;
+  --success-hover: #1f883d;
+  --success-soft: rgba(26, 127, 55, 0.12);
+  --warning: #9a6700;
+  --danger: #cf222e;
+  --danger-soft: rgba(207, 34, 46, 0.1);
+  --shadow-sm: 0 1px 2px rgba(31, 35, 40, 0.06);
+  --shadow: 0 4px 14px rgba(31, 35, 40, 0.1);
+  --shadow-lg: 0 10px 30px rgba(31, 35, 40, 0.12);
+  color-scheme: light;
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
 body {
-  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
   background: var(--bg);
   color: var(--text);
   min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
 }
 
 a { color: inherit; text-decoration: none; }
+
+h1 { font-size: 1.6rem; font-weight: 600; letter-spacing: -0.01em; }
+h2 { font-size: 1.15rem; font-weight: 600; letter-spacing: -0.005em; }
+h3 { font-weight: 600; }
 
 .btn {
   display: inline-flex;
@@ -31,37 +80,67 @@ a { color: inherit; text-decoration: none; }
   background: var(--bg-tertiary);
   border: 1px solid var(--border);
   color: var(--text);
-  border-radius: 6px;
+  border-radius: var(--radius);
   cursor: pointer;
   font-size: 13px;
-  transition: background 0.15s;
+  font-weight: 500;
+  transition: background var(--transition), border-color var(--transition), transform 0.08s;
 }
-.btn:hover { background: var(--border); }
-.btn-primary { background: var(--success); border-color: var(--success); color: #fff; }
-.btn-primary:hover { background: var(--success-hover); }
+.btn:hover { background: var(--border); border-color: var(--border-strong); }
+.btn:active { transform: translateY(1px); }
+.btn:disabled { opacity: 0.55; cursor: not-allowed; }
+.btn-primary {
+  background: var(--success);
+  border-color: var(--success);
+  color: #fff;
+  box-shadow: 0 0 0 1px transparent, 0 1px 0 rgba(0, 0, 0, 0.15);
+}
+.btn-primary:hover { background: var(--success-hover); border-color: var(--success-hover); }
+.btn-danger {
+  background: var(--danger);
+  border-color: var(--danger);
+  color: #fff;
+}
+.btn-ghost {
+  background: transparent;
+  border-color: transparent;
+}
+.btn-ghost:hover { background: var(--bg-tertiary); }
 
 .input {
   background: var(--bg);
   border: 1px solid var(--border);
   color: var(--text);
   padding: 8px 12px;
-  border-radius: 6px;
+  border-radius: var(--radius);
   font-size: 13px;
   width: 100%;
+  font-family: inherit;
+  transition: border-color var(--transition), box-shadow var(--transition);
 }
+.input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.18);
+}
+
+textarea.input { line-height: 1.5; resize: vertical; }
 
 .card {
   background: var(--bg-secondary);
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius-lg);
   padding: 16px;
+  box-shadow: var(--shadow-sm);
+  transition: border-color var(--transition), box-shadow var(--transition), transform var(--transition);
 }
+.card:hover { border-color: var(--border-strong); box-shadow: var(--shadow); }
 
 .skeleton {
   background: linear-gradient(90deg, var(--bg-tertiary) 25%, var(--border) 50%, var(--bg-tertiary) 75%);
   background-size: 200% 100%;
   animation: shimmer 1.2s infinite;
-  border-radius: 6px;
+  border-radius: var(--radius);
   height: 20px;
 }
 @keyframes shimmer {
@@ -77,11 +156,42 @@ a { color: inherit; text-decoration: none; }
   border: 1px solid var(--success);
   color: var(--text);
   padding: 12px 20px;
-  border-radius: 8px;
+  border-radius: var(--radius-lg);
   z-index: 9999;
-  animation: fadeIn 0.2s;
+  box-shadow: var(--shadow-lg);
+  animation: fadeIn 0.2s ease;
 }
 @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; } }
+
+@keyframes pulseRing {
+  0% { box-shadow: 0 0 0 0 rgba(35, 134, 54, 0.4); }
+  70% { box-shadow: 0 0 0 12px rgba(35, 134, 54, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(35, 134, 54, 0); }
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 500;
+  background: var(--bg-tertiary);
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+}
+.badge-success { background: var(--success-soft); color: var(--success); border-color: var(--success); }
+.badge-danger { background: var(--danger-soft); color: var(--danger); border-color: var(--danger); }
+
+/* React Flow theme tweaks for parity with the rest of the UI */
+.react-flow__edge.animated path {
+  stroke-dasharray: 6 4;
+  animation: edgeFlow 0.6s linear infinite;
+}
+@keyframes edgeFlow {
+  from { stroke-dashoffset: 10; }
+  to { stroke-dashoffset: 0; }
+}
 
 @media (max-width: 768px) {
   :root { --sidebar-width: 0px; }

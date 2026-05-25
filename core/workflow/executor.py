@@ -2,11 +2,12 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from collections import defaultdict, deque
 from typing import Any
 
-from core.workflow.models import RunContext, WorkflowDefinition, WorkflowNode
+from core.workflow.models import RetryPolicy, RunContext, WorkflowDefinition, WorkflowNode
 from core.workflow.nodes import register_all_handlers
 from core.workflow.registry import get_node_handler
 from core.workflow.store import workflow_store
@@ -92,24 +93,41 @@ class WorkflowExecutor:
                     continue
 
                 self._log(run["id"], ctx, node_id, "started", node.type)
-                try:
-                    output = await handler(ctx, node.config)
-                    ctx.node_outputs[node_id] = output
-                    last_output = output
-                    self._log(run["id"], ctx, node_id, "completed", output)
-                except Exception as exc:
-                    logger.exception("Node %s failed", node_id)
-                    self._log(run["id"], ctx, node_id, "error", str(exc))
+                policy = node.retry
+                output, error = await self._run_with_retry(handler, ctx, node, policy, run["id"])
+                if error is not None:
+                    error_edges = [
+                        e for e in definition.edges
+                        if e.from_node == node_id and (e.label or "").lower() == "error"
+                    ]
+                    if error_edges or node.continue_on_error:
+                        ctx.node_outputs[node_id] = {"output": "", "success": False, "error": error}
+                        self._log(run["id"], ctx, node_id, "error", error)
+                        executed.add(node_id)
+                        for edge in error_edges:
+                            if edge.to_node not in executed:
+                                queue.append(edge.to_node)
+                        if not error_edges:
+                            for edge in self._outgoing_edges(node, definition, ctx):
+                                if edge.to_node not in executed:
+                                    queue.append(edge.to_node)
+                        continue
+                    self._log(run["id"], ctx, node_id, "error", error)
                     self.store.finish_run(run["id"], "failed", ctx.logs)
                     return {
                         "success": False,
                         "run_id": run["id"],
-                        "error": str(exc),
+                        "error": error,
                         "logs": ctx.logs,
                     }
 
+                ctx.node_outputs[node_id] = output
+                last_output = output
+                self._log(run["id"], ctx, node_id, "completed", output)
                 executed.add(node_id)
                 for edge in self._outgoing_edges(node, definition, ctx):
+                    if (edge.label or "").lower() == "error":
+                        continue
                     if edge.to_node not in executed:
                         queue.append(edge.to_node)
 
@@ -134,6 +152,43 @@ class WorkflowExecutor:
             self.store.finish_run(run["id"], "failed", ctx.logs + [{"event": "error", "detail": str(exc)}])
             return {"success": False, "run_id": run["id"], "error": str(exc)}
 
+    async def _run_with_retry(
+        self,
+        handler,
+        ctx: RunContext,
+        node: WorkflowNode,
+        policy: RetryPolicy,
+        run_id: str,
+    ) -> tuple[dict[str, Any] | None, str | None]:
+        """Execute handler with retry policy. Returns ``(output, error)``.
+
+        Trade-off: retries are sequential (sleep between attempts). For workflows
+        with many parallel nodes, this is acceptable because each node is
+        independent; concurrency is not the main bottleneck.
+        """
+        attempt = 0
+        last_error: str | None = None
+        while attempt < policy.max_attempts:
+            attempt += 1
+            try:
+                output = await handler(ctx, node.config)
+                if attempt > 1:
+                    self._log(run_id, ctx, node.id, "retry_success", {"attempt": attempt})
+                return output, None
+            except Exception as exc:  # noqa: BLE001 — handlers raise diverse types
+                last_error = str(exc)
+                logger.warning(
+                    "Node %s failed (attempt %s/%s): %s",
+                    node.id,
+                    attempt,
+                    policy.max_attempts,
+                    exc,
+                )
+                if attempt < policy.max_attempts:
+                    self._log(run_id, ctx, node.id, "retry", {"attempt": attempt, "error": last_error})
+                    await asyncio.sleep(policy.backoff_seconds * attempt)
+        return None, last_error
+
     def _entry_nodes(self, definition: WorkflowDefinition) -> list[str]:
         """Nodes with no incoming edges."""
         has_incoming = {e.to_node for e in definition.edges}
@@ -146,11 +201,27 @@ class WorkflowExecutor:
         ctx: RunContext,
         executed: set[str],
     ) -> bool:
-        """Check if all incoming condition edges allow execution."""
+        """Check if all incoming condition/error edges allow execution.
+
+        Returns True if at least one incoming edge resolves to "this node should run".
+        For nodes connected only by error edges, we run them only when the parent
+        actually errored.
+        """
         incoming = [e for e in definition.edges if e.to_node == node_id]
         if not incoming:
             return True
+
+        only_error_edges = all((e.label or "").lower() == "error" for e in incoming)
+        if only_error_edges:
+            for edge in incoming:
+                parent_out = ctx.node_outputs.get(edge.from_node) or {}
+                if edge.from_node in executed and parent_out.get("success") is False:
+                    return True
+            return False
+
         for edge in incoming:
+            if (edge.label or "").lower() == "error":
+                continue
             parent_out = ctx.node_outputs.get(edge.from_node)
             if parent_out is None and edge.from_node not in executed:
                 return False

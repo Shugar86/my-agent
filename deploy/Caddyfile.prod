@@ -1,0 +1,17 @@
+{$DOMAIN} {
+    encode zstd gzip
+
+    # Forward everything to the FastAPI app
+    reverse_proxy agent:8020 {
+        header_up X-Real-IP {remote_host}
+        header_up X-Forwarded-For {remote_host}
+        header_up X-Forwarded-Proto {scheme}
+    }
+
+    header {
+        Strict-Transport-Security "max-age=31536000;"
+        X-Content-Type-Options nosniff
+        X-Frame-Options DENY
+        Referrer-Policy strict-origin-when-cross-origin
+    }
+}

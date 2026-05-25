@@ -26,6 +26,35 @@ class NodeType(str, Enum):
     ACTION_NOTION_PAGE = "action.notion_page"
     ACTION_NOTION_DB = "action.notion_db_update"
     ACTION_WEBHOOK = "action.webhook"
+    ACTION_HTTP = "action.http"
+    UTIL_SET = "util.set"
+    UTIL_MERGE = "util.merge"
+    UTIL_WAIT = "util.wait"
+    UTIL_CODE = "util.code"
+
+
+@dataclass
+class RetryPolicy:
+    """Per-node retry configuration."""
+
+    max_attempts: int = 1
+    backoff_seconds: float = 1.0
+
+    @classmethod
+    def from_config(cls, config: dict[str, Any]) -> RetryPolicy:
+        """Parse retry policy from node config (``retry`` key)."""
+        raw = config.get("retry") or {}
+        if isinstance(raw, dict):
+            try:
+                attempts = max(1, int(raw.get("max_attempts", 1)))
+            except (TypeError, ValueError):
+                attempts = 1
+            try:
+                backoff = max(0.0, float(raw.get("backoff_seconds", 1.0)))
+            except (TypeError, ValueError):
+                backoff = 1.0
+            return cls(max_attempts=attempts, backoff_seconds=backoff)
+        return cls()
 
 
 @dataclass
@@ -36,6 +65,16 @@ class WorkflowNode:
     type: str
     config: dict[str, Any] = field(default_factory=dict)
     position: dict[str, float] | None = None
+
+    @property
+    def retry(self) -> RetryPolicy:
+        """Retry policy parsed from config."""
+        return RetryPolicy.from_config(self.config)
+
+    @property
+    def continue_on_error(self) -> bool:
+        """If True, downstream error edges are routed instead of failing run."""
+        return bool(self.config.get("continue_on_error"))
 
 
 @dataclass
@@ -120,40 +159,45 @@ class RunContext:
     state: dict[str, Any] = field(default_factory=dict)
     logs: list[dict[str, Any]] = field(default_factory=list)
 
-    def resolve_template(self, value: str) -> str:
-        """Replace {{node_id.field}} placeholders in strings."""
-        if not isinstance(value, str) or "{{" not in value:
+    def _scope(self) -> dict[str, Any]:
+        """Build evaluation scope for expression engine.
+
+        Trade-off: rebuilt per call (small cost, always reflects current
+        ``node_outputs`` snapshot). Callers typically resolve a node's
+        config once before execution.
+        """
+        scope: dict[str, Any] = dict(self.node_outputs)
+        trigger_scope: dict[str, Any] = {}
+        if isinstance(self.trigger_payload, dict):
+            trigger_scope.update(self.trigger_payload)
+        trigger_scope["payload"] = self.trigger_payload
+        trigger_node_out = self.node_outputs.get("trigger")
+        if isinstance(trigger_node_out, dict):
+            trigger_scope.update(trigger_node_out)
+        scope["trigger"] = trigger_scope
+        scope["state"] = self.state
+        scope["env"] = {}
+        return scope
+
+    def resolve_template(self, value: Any) -> Any:
+        """Render ``{{ ... }}`` expressions in a string (or pass-through).
+
+        Backward compatible: simple ``{{node.field}}`` works as before.
+        New: helpers like ``{{ now() }}``, indexing ``a1.items[0]``, and
+        type-preserving single-expression returns (for objects/lists).
+        """
+        from core.workflow.expressions import render_template
+
+        if not isinstance(value, str):
             return value
-        result = value
-        for node_id, output in self.node_outputs.items():
-            if isinstance(output, dict):
-                for key, val in output.items():
-                    result = result.replace(f"{{{{{node_id}.{key}}}}}", str(val))
-                if "output" in output:
-                    result = result.replace(f"{{{{{node_id}.output}}}}", str(output["output"]))
-            else:
-                result = result.replace(f"{{{{{node_id}.output}}}}", str(output))
-        if "trigger" in self.node_outputs:
-            trigger = self.node_outputs["trigger"]
-            if isinstance(trigger, dict):
-                for key, val in trigger.items():
-                    result = result.replace(f"{{{{trigger.{key}}}}}", str(val))
-        if self.trigger_payload:
-            for key, val in self.trigger_payload.items():
-                result = result.replace(f"{{{{trigger.{key}}}}}", str(val))
-        for key, val in self.state.items():
-            result = result.replace(f"{{{{state.{key}}}}}", str(val))
-        return result
+        return render_template(value, self._scope())
 
     def resolve_config(self, config: dict[str, Any]) -> dict[str, Any]:
-        """Resolve templates in node config values."""
-        resolved: dict[str, Any] = {}
-        for key, val in config.items():
-            if isinstance(val, str):
-                resolved[key] = self.resolve_template(val)
-            else:
-                resolved[key] = val
-        return resolved
+        """Resolve templates recursively in node config (strings, dicts, lists)."""
+        from core.workflow.expressions import render_template
+
+        scope = self._scope()
+        return {key: render_template(val, scope) for key, val in config.items()}
 
     def log(self, node_id: str, event: str, detail: Any = None) -> None:
         """Append execution log entry."""

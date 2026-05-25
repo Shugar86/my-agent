@@ -40,6 +40,14 @@ def validate_workflow(definition: WorkflowDefinition) -> dict[str, Any]:
             parts = cron.split()
             if len(parts) != 5:
                 errors.append(f"Invalid cron expression on node {node.id}: '{cron}'")
+        if node.type == "action.http":
+            if not node.config.get("url"):
+                errors.append(f"HTTP node {node.id} requires 'url'")
+        if node.type == "util.code":
+            script = str(node.config.get("script") or node.config.get("code") or "")
+            forbidden = ("import ", "__import__", "open(", "exec(", "subprocess")
+            if any(token in script.lower() for token in forbidden):
+                errors.append(f"Code node {node.id} uses forbidden token (import/exec/subprocess)")
 
     orphans = _orphan_nodes(definition)
     for oid in orphans:

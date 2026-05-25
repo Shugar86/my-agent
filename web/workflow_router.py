@@ -11,6 +11,7 @@ from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel
 
 from core.integration_credentials import delete_credentials, get_credentials, save_credentials
+from core.integrations_registry import list_integrations
 from core.workflow.executor import WorkflowExecutor
 from core.workflow.models import WorkflowDefinition
 from core.workflow.store import workflow_store
@@ -215,11 +216,53 @@ async def webhook_trigger(request: Request, workflow_id: str):
 
 @router.get("/api/workflow-templates")
 async def list_templates(
-    request: Request, category: str | None = None, sort: str = "popular"
+    request: Request,
+    category: str | None = None,
+    sort: str = "popular",
+    q: str | None = None,
 ):
-    """List marketplace workflow templates."""
+    """List marketplace workflow templates with optional search and category filters."""
     templates = workflow_store.list_templates(category=category, sort=sort)
+    if q:
+        needle = q.strip().lower()
+        templates = [
+            t for t in templates
+            if needle in t["name"].lower()
+            or needle in (t.get("description") or "").lower()
+            or any(needle in str(tag).lower() for tag in t.get("tags") or [])
+        ]
     return {"templates": templates, "total": len(templates)}
+
+
+@router.get("/api/workflow-templates/{template_id}")
+async def get_template_endpoint(request: Request, template_id: str):
+    """Fetch a single template with full definition (for preview)."""
+    tpl = workflow_store.get_template(template_id)
+    if not tpl:
+        raise HTTPException(status_code=404, detail="Template not found")
+    return tpl
+
+
+@router.get("/api/public/templates/{template_id}")
+async def public_template(template_id: str):
+    """Anonymous read-only template view. Used for shareable links.
+
+    Returns a sanitized payload (no author IDs, no internal flags).
+    """
+    tpl = workflow_store.get_template(template_id)
+    if not tpl or not tpl.get("published", True):
+        raise HTTPException(status_code=404, detail="Template not found")
+    return {
+        "id": tpl["id"],
+        "name": tpl["name"],
+        "description": tpl["description"],
+        "category": tpl["category"],
+        "definition": tpl["definition"],
+        "tags": tpl.get("tags") or [],
+        "installs": tpl.get("installs", 0),
+        "rating_avg": tpl.get("rating_avg", 0),
+        "rating_count": tpl.get("rating_count", 0),
+    }
 
 
 @router.post("/api/workflow-templates")
@@ -275,6 +318,73 @@ async def node_types(request: Request):
 # ---------------------------------------------------------------------------
 # Integrations API
 # ---------------------------------------------------------------------------
+
+@router.get("/api/integrations")
+async def list_all_integrations(request: Request):
+    """List supported integrations with per-user connection status."""
+    user_id = getattr(request.state, "user_id", None)
+    return {"integrations": list_integrations(user_id)}
+
+
+@router.post("/api/integrations/{provider}/test")
+async def test_integration(request: Request, provider: str):
+    """Run a non-destructive sanity check on configured credentials."""
+    user_id = getattr(request.state, "user_id", None)
+    creds = get_credentials(user_id, provider)
+    if not creds or not any(creds.values()):
+        raise HTTPException(status_code=400, detail="Integration not configured")
+
+    if provider == "telegram":
+        token = creds.get("bot_token", "")
+        if not token:
+            return {"success": False, "error": "bot_token missing"}
+        try:
+            import httpx
+            async with httpx.AsyncClient(timeout=10) as client:
+                resp = await client.get(f"https://api.telegram.org/bot{token}/getMe")
+                data = resp.json()
+            ok = bool(data.get("ok"))
+            return {"success": ok, "info": data.get("result") if ok else data.get("description")}
+        except Exception as exc:  # noqa: BLE001 — network surface
+            return {"success": False, "error": str(exc)}
+    if provider == "slack":
+        token = creds.get("bot_token", "")
+        if not token:
+            return {"success": False, "error": "bot_token missing"}
+        try:
+            import httpx
+            async with httpx.AsyncClient(timeout=10) as client:
+                resp = await client.get(
+                    "https://slack.com/api/auth.test",
+                    headers={"Authorization": f"Bearer {token}"},
+                )
+                data = resp.json()
+            return {"success": bool(data.get("ok")), "info": data}
+        except Exception as exc:  # noqa: BLE001
+            return {"success": False, "error": str(exc)}
+    if provider == "notion":
+        key = creds.get("api_key", "")
+        if not key:
+            return {"success": False, "error": "api_key missing"}
+        try:
+            import httpx
+            async with httpx.AsyncClient(timeout=10) as client:
+                resp = await client.get(
+                    "https://api.notion.com/v1/users/me",
+                    headers={"Authorization": f"Bearer {key}", "Notion-Version": "2022-06-28"},
+                )
+            return {"success": resp.is_success, "info": resp.json() if resp.is_success else resp.text[:500]}
+        except Exception as exc:  # noqa: BLE001
+            return {"success": False, "error": str(exc)}
+    if provider == "google":
+        # We mark as configured if refresh_token is present; full sanity test
+        # requires a real Gmail/Sheets call which we leave to the user's first run.
+        return {
+            "success": bool(creds.get("refresh_token")),
+            "info": "OAuth credentials present" if creds.get("refresh_token") else "Re-run OAuth",
+        }
+    return {"success": True, "info": "No-op test"}
+
 
 @router.post("/api/integrations/credentials")
 async def save_integration_credentials(request: Request, body: IntegrationCredentialsRequest):

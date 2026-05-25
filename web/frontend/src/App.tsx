@@ -11,6 +11,7 @@ import WorkflowBuilder from './pages/WorkflowBuilder';
 import AnalyticsPage from './pages/AnalyticsPage';
 import AdminPage from './pages/AdminPage';
 import OnboardingPage from './pages/OnboardingPage';
+import PublicTemplatePage from './pages/PublicTemplatePage';
 
 export default function App() {
   return (
@@ -28,6 +29,7 @@ export default function App() {
           <Route path="admin" element={<AdminPage />} />
         </Route>
         <Route path="onboarding" element={<OnboardingPage />} />
+        <Route path="share/templates/:templateId" element={<PublicTemplatePage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>

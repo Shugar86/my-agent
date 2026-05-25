@@ -5,18 +5,33 @@ import { getMe, type MeUser } from '../api/appClient';
 import './theme.css';
 
 const NAV = [
-  { to: '/', label: 'Dashboard', icon: '📊' },
-  { to: '/chat', label: 'Chat', icon: '💬' },
-  { to: '/workflows', label: 'Workflows', icon: '⚡' },
-  { to: '/marketplace', label: 'Marketplace', icon: '🛒' },
-  { to: '/analytics', label: 'Analytics', icon: '📈' },
-  { to: '/builder', label: 'Agent Builder', icon: '🏗️' },
-  { to: '/settings', label: 'Settings', icon: '⚙️' },
+  { to: '/', label: 'Dashboard' },
+  { to: '/chat', label: 'Chat' },
+  { to: '/workflows', label: 'Workflows' },
+  { to: '/marketplace', label: 'Marketplace' },
+  { to: '/analytics', label: 'Analytics' },
+  { to: '/builder', label: 'Agent Builder' },
+  { to: '/settings', label: 'Settings' },
 ];
+
+const THEME_STORAGE_KEY = 'my-agent.theme';
+
+function applyTheme(theme: 'dark' | 'light') {
+  document.documentElement.dataset.theme = theme;
+}
 
 export default function AppShell() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [me, setMe] = useState<MeUser | null>(null);
+  const [theme, setTheme] = useState<'dark' | 'light'>(() => {
+    const stored = typeof window !== 'undefined' ? localStorage.getItem(THEME_STORAGE_KEY) : null;
+    return stored === 'light' ? 'light' : 'dark';
+  });
+
+  useEffect(() => {
+    applyTheme(theme);
+    if (typeof window !== 'undefined') localStorage.setItem(THEME_STORAGE_KEY, theme);
+  }, [theme]);
 
   useEffect(() => {
     getMe().then(setMe).catch(() => {});
@@ -27,17 +42,15 @@ export default function AppShell() {
   return (
     <div style={{ display: 'flex', minHeight: '100vh' }}>
       <button
-        className="mobile-toggle"
+        className="mobile-toggle btn"
         onClick={() => setSidebarOpen(!sidebarOpen)}
         aria-label="Toggle menu"
         style={{
           display: 'none',
           position: 'fixed', top: 12, left: 12, zIndex: 1001,
-          background: 'var(--bg-tertiary)', border: '1px solid var(--border)',
-          color: 'var(--text)', padding: '8px 12px', borderRadius: 6, cursor: 'pointer',
         }}
       >
-        ☰
+        Menu
       </button>
 
       <aside
@@ -47,47 +60,71 @@ export default function AppShell() {
           minWidth: 'var(--sidebar-width)',
           background: 'var(--bg-secondary)',
           borderRight: '1px solid var(--border)',
-          padding: '20px 0',
+          padding: '16px 0',
           position: 'fixed',
           top: 0, bottom: 0, left: 0,
           zIndex: 1000,
           transition: 'transform 0.2s',
+          display: 'flex',
+          flexDirection: 'column',
         }}
       >
-        <h1 style={{ padding: '0 20px 20px', fontSize: '1.1rem', color: 'var(--accent)', borderBottom: '1px solid var(--border)', marginBottom: 10 }}>
-          🤖 My Agent
-        </h1>
+        <div style={{ padding: '0 18px 14px', borderBottom: '1px solid var(--border)', marginBottom: 8 }}>
+          <h1 style={{ fontSize: '1.05rem', color: 'var(--accent)', letterSpacing: '-0.01em' }}>My Agent</h1>
+          <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>Visual workflows for AI</p>
+        </div>
         <TeamSwitcher />
-        {NAV.map((item) => (
-          <NavLink
-            key={item.to}
-            to={item.to}
-            end={item.to === '/'}
-            onClick={() => setSidebarOpen(false)}
-            style={({ isActive }) => ({
-              display: 'flex', alignItems: 'center', gap: 10,
-              padding: '12px 20px', color: isActive ? 'var(--text)' : 'var(--text-muted)',
-              background: isActive ? 'var(--bg-tertiary)' : 'transparent',
-              textDecoration: 'none', transition: 'all 0.15s',
-            })}
+        <nav style={{ flex: 1 }}>
+          {NAV.map((item) => (
+            <NavLink
+              key={item.to}
+              to={item.to}
+              end={item.to === '/'}
+              onClick={() => setSidebarOpen(false)}
+              style={({ isActive }) => ({
+                display: 'flex', alignItems: 'center', gap: 10,
+                padding: '10px 18px',
+                color: isActive ? 'var(--text)' : 'var(--text-muted)',
+                background: isActive ? 'var(--bg-tertiary)' : 'transparent',
+                borderLeft: isActive ? '2px solid var(--accent)' : '2px solid transparent',
+                textDecoration: 'none',
+                fontSize: 13,
+                fontWeight: isActive ? 500 : 400,
+                transition: 'all 0.15s',
+              })}
+            >
+              {item.label}
+            </NavLink>
+          ))}
+          {showAdmin && (
+            <NavLink
+              to="/admin"
+              onClick={() => setSidebarOpen(false)}
+              style={({ isActive }) => ({
+                display: 'flex', alignItems: 'center', gap: 10,
+                padding: '10px 18px',
+                color: isActive ? 'var(--text)' : 'var(--text-muted)',
+                background: isActive ? 'var(--bg-tertiary)' : 'transparent',
+                borderLeft: isActive ? '2px solid var(--accent)' : '2px solid transparent',
+                textDecoration: 'none',
+                fontSize: 13,
+              })}
+            >
+              Admin
+            </NavLink>
+          )}
+        </nav>
+        <div style={{ padding: '12px 18px', borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>Theme</span>
+          <button
+            type="button"
+            className="btn btn-ghost"
+            onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+            style={{ padding: '4px 8px', fontSize: 11 }}
           >
-            <span>{item.icon}</span> {item.label}
-          </NavLink>
-        ))}
-        {showAdmin && (
-          <NavLink
-            to="/admin"
-            onClick={() => setSidebarOpen(false)}
-            style={({ isActive }) => ({
-              display: 'flex', alignItems: 'center', gap: 10,
-              padding: '12px 20px', color: isActive ? 'var(--text)' : 'var(--text-muted)',
-              background: isActive ? 'var(--bg-tertiary)' : 'transparent',
-              textDecoration: 'none',
-            })}
-          >
-            <span>🛡️</span> Admin
-          </NavLink>
-        )}
+            {theme === 'dark' ? 'Light' : 'Dark'}
+          </button>
+        </div>
       </aside>
 
       <main style={{ marginLeft: 'var(--sidebar-width)', flex: 1, minHeight: '100vh' }}>
@@ -96,10 +133,10 @@ export default function AppShell() {
 
       <style>{`
         @media (max-width: 768px) {
-          .mobile-toggle { display: block !important; }
+          .mobile-toggle { display: inline-flex !important; }
           .sidebar { transform: translateX(-100%); width: 240px !important; min-width: 240px !important; }
           .sidebar.open { transform: translateX(0); }
-          main { margin-left: 0 !important; padding-top: 48px; }
+          main { margin-left: 0 !important; padding-top: 56px; }
         }
       `}</style>
     </div>

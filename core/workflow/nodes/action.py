@@ -124,6 +124,58 @@ async def handle_action_webhook(ctx: RunContext, config: dict[str, Any]) -> dict
         return {"output": {"error": str(exc)}, "success": False}
 
 
+async def handle_action_http(ctx: RunContext, config: dict[str, Any]) -> dict[str, Any]:
+    """Generic HTTP request node (GET/POST/PUT/DELETE/PATCH).
+
+    Config keys: ``url``, ``method`` (default GET), ``headers``, ``query``,
+    ``json`` (body), ``body`` (raw text), ``timeout`` (seconds, default 30).
+    """
+    resolved = ctx.resolve_config(config)
+    url = str(resolved.get("url", "")).strip()
+    if not url:
+        return {"output": {"error": "url is required"}, "success": False}
+
+    method = str(resolved.get("method", "GET")).upper()
+    headers = resolved.get("headers") or {}
+    query = resolved.get("query") or resolved.get("params") or None
+    json_body = resolved.get("json")
+    raw_body = resolved.get("body")
+    try:
+        timeout = float(resolved.get("timeout", 30))
+    except (TypeError, ValueError):
+        timeout = 30.0
+    timeout = max(1.0, min(timeout, 120.0))
+
+    if not isinstance(headers, dict):
+        headers = {}
+
+    try:
+        async with httpx.AsyncClient(timeout=timeout, follow_redirects=True) as client:
+            kwargs: dict[str, Any] = {"headers": headers}
+            if query:
+                kwargs["params"] = query
+            if json_body is not None:
+                kwargs["json"] = json_body
+            elif raw_body is not None:
+                kwargs["content"] = raw_body
+            resp = await client.request(method, url, **kwargs)
+            try:
+                parsed: Any = resp.json()
+            except ValueError:
+                parsed = resp.text[:4000]
+            return {
+                "output": {
+                    "status_code": resp.status_code,
+                    "headers": dict(resp.headers),
+                    "body": parsed,
+                },
+                "success": resp.is_success,
+            }
+    except httpx.HTTPError as exc:
+        logger.warning("HTTP action failed: %s", exc)
+        return {"output": {"error": str(exc)}, "success": False}
+
+
 def register_action_handlers() -> None:
     """Register all action node handlers."""
     register_node_handler("action.telegram", handle_action_telegram)
@@ -134,3 +186,4 @@ def register_action_handlers() -> None:
     register_node_handler("action.notion_page", handle_action_notion_page)
     register_node_handler("action.notion_db_update", handle_action_notion_db)
     register_node_handler("action.webhook", handle_action_webhook)
+    register_node_handler("action.http", handle_action_http)
