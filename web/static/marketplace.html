@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Маркетплейс скиллов — My Agent</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', system-ui, sans-serif; background: #0d1117; color: #c9d1d9; min-height: 100vh; }
+        .sidebar { position: fixed; left: 0; top: 0; bottom: 0; width: 240px; background: #161b22; border-right: 1px solid #30363d; padding: 20px 0; }
+        .sidebar h1 { padding: 0 20px 20px; font-size: 1.2rem; color: #58a6ff; border-bottom: 1px solid #30363d; margin-bottom: 10px; }
+        .sidebar a { display: flex; align-items: center; gap: 10px; padding: 12px 20px; color: #8b949e; text-decoration: none; transition: all 0.2s; }
+        .sidebar a:hover, .sidebar a.active { background: #21262d; color: #c9d1d9; }
+        .main { margin-left: 240px; padding: 30px; }
+        .header { margin-bottom: 24px; }
+        .header h2 { font-size: 1.5rem; margin-bottom: 8px; }
+        .header p { color: #8b949e; }
+        .skills-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
+        .skill-card { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 20px; transition: all 0.2s; }
+        .skill-card:hover { border-color: #58a6ff; }
+        .skill-card h3 { font-size: 1rem; margin-bottom: 6px; display: flex; align-items: center; gap: 8px; }
+        .skill-card p { font-size: 0.85rem; color: #8b949e; margin-bottom: 12px; }
+        .skill-card .tags { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+        .skill-card .tags span { background: #21262d; border: 1px solid #30363d; padding: 2px 8px; border-radius: 12px; font-size: 0.75rem; }
+        .skill-card .meta { display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem; color: #8b949e; }
+        .skill-card .btn { padding: 6px 14px; font-size: 0.85rem; }
+        .btn { display: inline-flex; align-items: center; gap: 6px; padding: 10px 20px; background: #238636; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 0.95rem; text-decoration: none; }
+        .btn:hover { background: #2ea043; }
+        .btn:disabled { background: #30363d; cursor: not-allowed; }
+        .search-bar { margin-bottom: 20px; display: flex; gap: 12px; }
+        .search-bar input { flex: 1; background: #0d1117; color: #c9d1d9; border: 1px solid #30363d; border-radius: 8px; padding: 10px 14px; font-size: 0.95rem; }
+        .search-bar input:focus { outline: none; border-color: #58a6ff; }
+        .filter-tags { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
+        .filter-tag { background: #21262d; border: 1px solid #30363d; padding: 4px 12px; border-radius: 16px; font-size: 0.8rem; cursor: pointer; transition: all 0.2s; }
+        .filter-tag:hover, .filter-tag.active { border-color: #58a6ff; color: #58a6ff; }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <h1>🤖 My Agent</h1>
+        <a href="/">📊 Dashboard</a>
+        <a href="/chat">💬 Чат</a>
+        <a href="/agents">👥 Агенты</a>
+        <a href="/marketplace" class="active">🛒 Маркетплейс</a>
+        <a href="/builder">🏗️ Конструктор</a>
+        <a href="/knowledge">📚 База знаний</a>
+        <a href="/mcp">🔌 MCP Серверы</a>
+        <a href="/settings">⚙️ Настройки</a>
+    </div>
+    <div class="main">
+        <div class="header">
+            <h2>🛒 Маркетплейс скиллов</h2>
+            <p>Устанавливайте и управляйте расширениями для ваших агентов</p>
+        </div>
+        <div class="search-bar">
+            <input type="text" id="search" placeholder="Поиск скиллов..." oninput="filterSkills()">
+        </div>
+        <div class="filter-tags" id="filter-tags"></div>
+        <div class="skills-grid" id="skills-grid"></div>
+    </div>
+    <script>
+        let allSkills = [];
+
+        async function loadSkills() {
+            try {
+                const res = await fetch('/api/marketplace');
+                const data = await res.json();
+                allSkills = data.skills || [];
+                renderTags();
+                renderSkills(allSkills);
+            } catch (e) {
+                document.getElementById('skills-grid').innerHTML = '<p style="color:#8b949e">Ошибка загрузки маркетплейса</p>';
+            }
+        }
+
+        function renderTags() {
+            const tags = new Set();
+            allSkills.forEach(s => s.tags.forEach(t => tags.add(t)));
+            const container = document.getElementById('filter-tags');
+            container.innerHTML = '<span class="filter-tag active" onclick="filterByTag(this, \'\')">Все</span>' +
+                Array.from(tags).map(t => `<span class="filter-tag" onclick="filterByTag(this, '${t}')">${t}</span>`).join('');
+        }
+
+        function filterByTag(el, tag) {
+            document.querySelectorAll('.filter-tag').forEach(t => t.classList.remove('active'));
+            el.classList.add('active');
+            if (!tag) {
+                renderSkills(allSkills);
+            } else {
+                renderSkills(allSkills.filter(s => s.tags.includes(tag)));
+            }
+        }
+
+        function filterSkills() {
+            const q = document.getElementById('search').value.toLowerCase();
+            renderSkills(allSkills.filter(s =>
+                s.name.toLowerCase().includes(q) ||
+                s.description.toLowerCase().includes(q) ||
+                s.tags.some(t => t.toLowerCase().includes(q))
+            ));
+        }
+
+        function renderSkills(skills) {
+            const grid = document.getElementById('skills-grid');
+            if (skills.length === 0) {
+                grid.innerHTML = '<p style="color:#8b949e">Ничего не найдено</p>';
+                return;
+            }
+            grid.innerHTML = skills.map(s => `
+                <div class="skill-card">
+                    <h3>📦 ${s.name} <span style="font-size:0.75rem;color:#8b949e">v${s.version}</span></h3>
+                    <p>${s.description}</p>
+                    <div class="tags">${s.tags.map(t => `<span>${t}</span>`).join('')}</div>
+                    <div class="meta">
+                        <span>⬇️ ${s.installs} установок</span>
+                        <button class="btn" onclick="installSkill('${s.name}', this)">Установить</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        async function installSkill(name, btn) {
+            btn.disabled = true;
+            btn.textContent = '⏳ Установка...';
+            try {
+                const res = await fetch(`/api/marketplace/install/${name}`, {method: 'POST'});
+                const data = await res.json();
+                if (data.status === 'installed') {
+                    btn.textContent = '✅ Установлено';
+                    btn.style.background = '#2ea043';
+                } else {
+                    btn.textContent = '❌ Ошибка';
+                }
+            } catch (e) {
+                btn.textContent = '❌ Ошибка';
+            }
+        }
+
+        loadSkills();
+    </script>
+</body>
+</html>

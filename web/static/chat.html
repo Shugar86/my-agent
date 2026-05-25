@@ -1,0 +1,752 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Чат — My Agent</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/styles/github-dark.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/marked@12.0.0/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/lib/highlight.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', system-ui, sans-serif; background: #0d1117; color: #c9d1d9; height: 100vh; display: flex; }
+        .sidebar { width: 240px; background: #161b22; border-right: 1px solid #30363d; padding: 20px 0; flex-shrink: 0; }
+        .sidebar h1 { padding: 0 20px 20px; font-size: 1.2rem; color: #58a6ff; border-bottom: 1px solid #30363d; margin-bottom: 10px; }
+        .sidebar a { display: flex; align-items: center; gap: 10px; padding: 12px 20px; color: #8b949e; text-decoration: none; transition: all 0.2s; }
+        .sidebar a:hover, .sidebar a.active { background: #21262d; color: #c9d1d9; }
+        .chat-container { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+        .chat-header { padding: 16px 20px; border-bottom: 1px solid #30363d; display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+        .chat-header .agent-info { display: flex; align-items: center; gap: 10px; }
+        .chat-header .agent-info .avatar { width: 36px; height: 36px; border-radius: 50%; background: #238636; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; }
+        .chat-header .agent-info .name { font-weight: 600; color: #c9d1d9; }
+        .chat-header .agent-info .status { font-size: 0.8rem; color: #8b949e; }
+        .chat-header .skills { display: flex; gap: 6px; flex-wrap: wrap; }
+        .chat-header .skills .skill-tag { background: #21262d; color: #8b949e; padding: 2px 8px; border-radius: 12px; font-size: 0.75rem; border: 1px solid #30363d; }
+        .messages { flex: 1; overflow-y: auto; padding: 20px; }
+        .message { margin-bottom: 16px; max-width: 85%; }
+        .message.user { margin-left: auto; }
+        .message .bubble { padding: 12px 16px; border-radius: 12px; line-height: 1.5; white-space: pre-wrap; word-wrap: break-word; }
+        .message.user .bubble { background: #238636; color: white; border-bottom-right-radius: 4px; }
+        .message.assistant .bubble { background: #161b22; border: 1px solid #30363d; border-bottom-left-radius: 4px; }
+        .message.assistant .bubble pre { background: #0d1117; border-radius: 6px; padding: 12px; overflow-x: auto; margin: 8px 0; }
+        .message.assistant .bubble code { font-family: 'Consolas', monospace; font-size: 0.9em; }
+        .message.assistant .bubble p { margin-bottom: 8px; }
+        .message.assistant .bubble ul, .message.assistant .bubble ol { margin-left: 20px; margin-bottom: 8px; }
+        .message.tool-call .bubble { background: #1c2333; border: 1px solid #30363d; border-left: 3px solid #d29922; font-size: 0.85rem; color: #8b949e; }
+        .message.tool-result .bubble { background: #1c2333; border: 1px solid #30363d; border-left: 3px solid #58a6ff; font-size: 0.85rem; color: #8b949e; max-height: 200px; overflow-y: auto; }
+        .input-area { padding: 16px 20px; border-top: 1px solid #30363d; display: flex; gap: 10px; }
+        .input-area textarea { flex: 1; background: #0d1117; color: #c9d1d9; border: 1px solid #30363d; border-radius: 8px; padding: 12px; resize: none; font-family: inherit; min-height: 50px; }
+        .input-area textarea:focus { outline: none; border-color: #58a6ff; }
+        .input-area button { background: #238636; color: white; border: none; border-radius: 8px; padding: 0 20px; cursor: pointer; font-size: 1rem; min-width: 50px; }
+        .input-area button:hover { background: #2ea043; }
+        .input-area button:disabled { background: #30363d; cursor: not-allowed; }
+        .typing { color: #8b949e; font-style: italic; padding: 8px 0; }
+        .streaming-cursor::after { content: '▊'; animation: blink 0.8s infinite; color: #58a6ff; }
+        @keyframes blink { 50% { opacity: 0; } }
+        .welcome { text-align: center; padding: 40px; color: #8b949e; }
+        .welcome h2 { color: #c9d1d9; margin-bottom: 12px; }
+        .welcome .examples { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-top: 20px; }
+        .welcome .examples .chip { background: #21262d; border: 1px solid #30363d; padding: 8px 16px; border-radius: 20px; font-size: 0.85rem; cursor: pointer; transition: all 0.2s; }
+        .welcome .examples .chip:hover { background: #30363d; border-color: #58a6ff; }
+        .controls { display: flex; align-items: center; gap: 12px; margin-left: auto; }
+        .controls label { font-size: 0.85rem; color: #8b949e; display: flex; align-items: center; gap: 6px; cursor: pointer; }
+        .controls input[type="checkbox"] { accent-color: #58a6ff; }
+        .controls .mode-btn { font-size: 0.8rem; padding: 4px 10px; border-radius: 12px; border: 1px solid #30363d; background: #21262d; color: #8b949e; cursor: pointer; }
+        .controls .mode-btn.active { border-color: #58a6ff; color: #58a6ff; }
+        .room-input { background: #0d1117; color: #c9d1d9; border: 1px solid #30363d; border-radius: 8px; padding: 4px 10px; font-size: 0.8rem; width: 120px; }
+        .mic-btn { background: #21262d; color: #8b949e; border: 1px solid #30363d; border-radius: 8px; padding: 0 12px; cursor: pointer; font-size: 1.2rem; min-width: 40px; }
+        .mic-btn:hover { background: #30363d; }
+        .mic-btn.recording { background: #da3633; color: white; border-color: #da3633; animation: pulse 1s infinite; }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+        .feedback-bar { display: flex; gap: 8px; margin-top: 6px; padding-left: 16px; }
+        .feedback-bar button { background: transparent; border: 1px solid #30363d; color: #8b949e; border-radius: 4px; padding: 2px 8px; font-size: 0.75rem; cursor: pointer; }
+        .feedback-bar button:hover { border-color: #58a6ff; color: #58a6ff; }
+        .feedback-bar button.voted { border-color: #238636; color: #238636; }
+        .feedback-bar button.voted-down { border-color: #da3633; color: #da3633; }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <h1>🤖 My Agent</h1>
+        <a href="/">📊 Dashboard</a>
+        <a href="/chat" class="active">💬 Чат</a>
+        <a href="/agents">👥 Агенты</a>
+        <a href="/marketplace">🛒 Маркетплейс</a>
+        <a href="/builder">🏗️ Конструктор</a>
+        <a href="/knowledge">📚 База знаний</a>
+        <a href="/mcp">🔌 MCP Серверы</a>
+        <a href="/settings">⚙️ Настройки</a>
+    </div>
+    <div class="chat-container">
+        <div class="chat-header">
+            <div class="agent-info">
+                <div class="avatar">🤖</div>
+                <div>
+                    <div class="name">Universal Assistant</div>
+                    <div class="status" id="status-indicator">Авто-выбор инструментов под задачу</div>
+                </div>
+            </div>
+            <div class="skills">
+                <span class="skill-tag">🔍 Поиск</span>
+                <span class="skill-tag">📊 Данные</span>
+                <span class="skill-tag">💻 Код</span>
+                <span class="skill-tag">🎨 Слайды</span>
+                <span class="skill-tag">📄 Документы</span>
+                <span class="skill-tag">📚 RAG</span>
+            </div>
+            <div class="controls">
+                <input type="text" class="room-input" id="room-id" placeholder="Room ID" title="Room ID для совместной работы">
+                <button class="mode-btn" id="btn-join-room" onclick="toggleRoom()">🤝 Join</button>
+                <span class="mode-btn active" id="mode-stream" onclick="setMode('stream')">⚡ Поток</span>
+                <span class="mode-btn" id="mode-normal" onclick="setMode('normal')">📦 Целиком</span>
+                <span class="mode-btn" id="mode-websocket" onclick="setMode('websocket')">🔌 WebSocket</span>
+                <label><input type="checkbox" id="auto-agents" checked> Расширенный режим</label>
+            </div>
+        </div>
+        <div class="messages" id="messages">
+            <div class="welcome" id="welcome">
+                <h2>👋 Привет! Я Universal Assistant</h2>
+                <p>Просто напиши что нужно — я сам выберу подходящие инструменты. <span style="color:#d29922">📋 /help — список команд</span></p>
+                <div class="examples">
+                    <span class="chip" onclick="setInput('Проанализируй CSV с продажами и построй график')">📊 Анализ данных</span>
+                    <span class="chip" onclick="setInput('Создай презентацию о нашем продукте')">🎨 Презентация</span>
+                    <span class="chip" onclick="setInput('Найди последние новости об ИИ')">🔍 Исследование</span>
+                    <span class="chip" onclick="setInput('Напиши отчёт в Word по этому тексту')">📄 Документ</span>
+                    <span class="chip" onclick="setInput('Проверь этот код на ошибки')">💻 Код</span>
+                    <span class="chip" onclick="setInput('Что у тебя в базе знаний?')">📚 Знания</span>
+                </div>
+            </div>
+        </div>
+        <div class="input-area">
+            <textarea id="input" placeholder="Напиши что нужно сделать..." rows="1"></textarea>
+            <button class="mic-btn" id="mic-btn" onclick="toggleRecording()" title="Голосовой ввод">🎤</button>
+            <button id="send" onclick="sendMessage()">➤</button>
+        </div>
+    </div>
+    <script>
+        const DEFAULT_AGENT = 'universal';
+        let currentMode = 'stream';
+        let currentAbort = null;
+        let streamBubble = null;
+
+        function setMode(mode) {
+            currentMode = mode;
+            document.getElementById('mode-stream').className = 'mode-btn' + (mode === 'stream' ? ' active' : '');
+            document.getElementById('mode-normal').className = 'mode-btn' + (mode === 'normal' ? ' active' : '');
+            document.getElementById('mode-websocket').className = 'mode-btn' + (mode === 'websocket' ? ' active' : '');
+        }
+
+        function setInput(text) {
+            document.getElementById('input').value = text;
+            document.getElementById('input').focus();
+        }
+
+        // Configure marked for safe rendering
+        marked.setOptions({
+            gfm: true,
+            breaks: true,
+            headerIds: false,
+            mangle: false,
+        });
+
+        function renderMarkdown(text) {
+            // Escape HTML first, then render markdown
+            const raw = marked.parse(text);
+            // Post-process: highlight code blocks
+            setTimeout(() => {
+                document.querySelectorAll('pre code').forEach((block) => {
+                    if (window.hljs) hljs.highlightElement(block);
+                });
+            }, 10);
+            return raw;
+        }
+
+        const SLASH_COMMANDS = {
+            '/help': {
+                desc: 'Показать список команд',
+                action: () => showSlashHelp()
+            },
+            '/clear': {
+                desc: 'Очистить историю чата',
+                action: () => {
+                    document.getElementById('messages').innerHTML = '';
+                    document.getElementById('messages').appendChild(createWelcome());
+                    addSystemMessage('Чат очищен');
+                }
+            },
+            '/cost': {
+                desc: 'Показать расход токенов',
+                action: async () => {
+                    addSystemMessage('⏳ Загружаю статистику...');
+                    try {
+                        const res = await fetch('/api/cost');
+                        const data = await res.json();
+                        const c = data.session_cost || {tokens: 0, cost: 0};
+                        addSystemMessage('💰 Расход сессии:\n  Токенов: ' + c.tokens + '\n  Стоимость: $' + c.cost.toFixed(6));
+                    } catch (e) {
+                        addSystemMessage('❌ Ошибка загрузки статистики');
+                    }
+                }
+            },
+            '/mode': {
+                desc: '/mode stream|normal — переключить режим',
+                action: (args) => {
+                    const mode = args[0];
+                    if (mode === 'stream' || mode === 'normal') {
+                        setMode(mode);
+                        addSystemMessage('⚡ Режим: ' + (mode === 'stream' ? 'потоковый' : 'пакетный'));
+                    } else {
+                        addSystemMessage('❌ Использование: /mode stream|normal');
+                    }
+                }
+            },
+            '/agents': {
+                desc: 'Показать список агентов',
+                action: async () => {
+                    addSystemMessage('⏳ Загружаю агентов...');
+                    try {
+                        const res = await fetch('/api/agents');
+                        const agents = await res.json();
+                        let text = '👥 Доступные агенты (' + agents.length + '):\n';
+                        for (const a of agents) {
+                            text += '  - ' + (a.name || a.id) + ' (' + (a.skills || []).length + ' навыков)\n';
+                        }
+                        addSystemMessage(text);
+                    } catch (e) {
+                        addSystemMessage('❌ Ошибка загрузки агентов');
+                    }
+                }
+            },
+            '/reset-cost': {
+                desc: 'Сбросить статистику стоимости',
+                action: async () => {
+                    try {
+                        await fetch('/api/cost/reset', {method: 'POST'});
+                        addSystemMessage('📊 Статистика стоимости сброшена');
+                    } catch (e) {
+                        addSystemMessage('❌ Ошибка сброса');
+                    }
+                }
+            },
+        };
+
+        function showSlashHelp() {
+            let text = '📋 Доступные команды:\n';
+            for (const [cmd, info] of Object.entries(SLASH_COMMANDS)) {
+                text += '  ' + cmd + ' — ' + info.desc + '\n';
+            }
+            addSystemMessage(text);
+        }
+
+        function addSystemMessage(text) {
+            const welcome = document.getElementById('welcome');
+            if (welcome) welcome.remove();
+            const div = document.createElement('div');
+            div.className = 'message assistant';
+            div.innerHTML = '<div class="bubble" style="border-left: 3px solid #d29922;">' + escapeHtml(text) + '</div>';
+            document.getElementById('messages').appendChild(div);
+            div.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function createWelcome() {
+            const w = document.createElement('div');
+            w.className = 'welcome';
+            w.id = 'welcome';
+            w.innerHTML = '<h2>👋 Привет! Я Universal Assistant</h2>' +
+                '<p>Просто напиши что нужно — я сам выберу подходящие инструменты.</p>' +
+                '<p style="margin-top:8px;color:#d29922;font-size:0.85rem">📋 /help — список команд</p>' +
+                '<div class="examples">' +
+                    '<span class="chip" onclick="setInput(\'Проанализируй CSV с продажами и построй график\')">📊 Анализ данных</span>' +
+                    '<span class="chip" onclick="setInput(\'Создай презентацию о нашем продукте\')">🎨 Презентация</span>' +
+                    '<span class="chip" onclick="setInput(\'Найди последние новости об ИИ\')">🔍 Исследование</span>' +
+                    '<span class="chip" onclick="setInput(\'Напиши отчёт в Word по этому тексту\')">📄 Документ</span>' +
+                    '<span class="chip" onclick="setInput(\'Проверь этот код на ошибки\')">💻 Код</span>' +
+                    '<span class="chip" onclick="setInput(\'Что у тебя в базе знаний?\')">📚 Знания</span>' +
+                '</div>';
+            return w;
+        }
+
+        function addMessage(role, text, extraClass) {
+            const welcome = document.getElementById('welcome');
+            if (welcome) welcome.remove();
+
+            const div = document.createElement('div');
+            div.className = `message ${role}`;
+            if (extraClass) div.classList.add(extraClass);
+            const bubble = document.createElement('div');
+            bubble.className = 'bubble';
+            // Render markdown for assistant messages
+            if (role === 'assistant') {
+                bubble.innerHTML = renderMarkdown(text);
+            } else {
+                bubble.textContent = text;
+            }
+            div.appendChild(bubble);
+            document.getElementById('messages').appendChild(div);
+            div.scrollIntoView({ behavior: 'smooth' });
+            return div;
+        }
+
+        function _addFeedbackBar(div, query, response) {
+            if (div.querySelector('.feedback-bar')) return;
+            const msgId = 'msg-' + Math.random().toString(36).slice(2, 10);
+            div.dataset.messageId = msgId;
+            div.dataset.query = query || '';
+            div.dataset.response = response || '';
+            const bar = document.createElement('div');
+            bar.className = 'feedback-bar';
+            bar.innerHTML =
+                '<button onclick="_vote(this, 1)">👍</button>' +
+                '<button onclick="_vote(this, -1)">👎</button>';
+            div.appendChild(bar);
+        }
+
+        window._vote = function(btn, rating) {
+            const div = btn.closest('.message');
+            const msgId = div.dataset.messageId || 'unknown';
+            const query = div.dataset.query || '';
+            const response = div.dataset.response || '';
+            submitFeedback(msgId, query, response, rating);
+            // Visual feedback
+            const buttons = div.querySelectorAll('.feedback-bar button');
+            buttons.forEach(b => { b.classList.remove('voted', 'voted-down'); b.disabled = true; });
+            if (rating === 1) btn.classList.add('voted');
+            else btn.classList.add('voted-down');
+        };
+
+        function updateBubble(div, text) {
+            const bubble = div.querySelector('.bubble');
+            if (bubble) {
+                // Streaming text: escape HTML to prevent XSS during stream
+                bubble.innerHTML = escapeHtml(text) + '<span class="streaming-cursor"></span>';
+            }
+            div.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function finalizeBubble(div, text) {
+            const bubble = div.querySelector('.bubble');
+            if (bubble) {
+                bubble.innerHTML = renderMarkdown(text);
+            }
+            // Add feedback bar to assistant messages
+            if (div.classList.contains('assistant')) {
+                const lastUserMsg = [...document.querySelectorAll('.message.user')].pop();
+                const query = lastUserMsg ? lastUserMsg.textContent : '';
+                _addFeedbackBar(div, query, text);
+            }
+            div.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function escapeHtml(text) {
+            const d = document.createElement('div');
+            d.textContent = text;
+            return d.innerHTML;
+        }
+
+        // ---- Streaming mode ----
+        function sendStreamMessage(msg, autoAgents) {
+            const messagesDiv = document.getElementById('messages');
+            const typing = document.createElement('div');
+            typing.className = 'typing';
+            typing.textContent = '⚡ Подключаюсь...';
+            messagesDiv.appendChild(typing);
+
+            const url = '/api/chat/stream';
+            const controller = new AbortController();
+            currentAbort = controller;
+
+            fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message: msg, agent_id: DEFAULT_AGENT, auto_agents: autoAgents }),
+                signal: controller.signal,
+            }).then(async (response) => {
+                typing.remove();
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                let buffer = '';
+                let assistantDiv = null;
+                let assistantText = '';
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+
+                    buffer += decoder.decode(value, { stream: true });
+                    const lines = buffer.split('\n');
+                    buffer = lines.pop();
+
+                    for (const line of lines) {
+                        if (!line.startsWith('data: ')) continue;
+                        let data;
+                        try {
+                            data = JSON.parse(line.slice(6));
+                        } catch (e) { continue; }
+
+                        switch (data.type) {
+                            case 'token':
+                                if (!assistantDiv) {
+                                    assistantDiv = addMessage('assistant', '', true);
+                                    streamBubble = assistantDiv;
+                                }
+                                assistantText += data.content;
+                                updateBubble(assistantDiv, assistantText);
+                                break;
+
+                            case 'tool_call':
+                                addMessage('tool-call', `🔧 Инструмент: ${escapeHtml(data.name)}(${escapeHtml(data.args)})`);
+                                document.getElementById('status-indicator').textContent = `🔧 ${data.name}...`;
+                                break;
+
+                            case 'tool_result':
+                                addMessage('tool-result', `📥 Результат ${escapeHtml(data.name)}:\n${escapeHtml(data.content.substring(0, 300))}`);
+                                document.getElementById('status-indicator').textContent = 'Авто-выбор инструментов под задачу';
+                                break;
+
+                            case 'done':
+                                if (assistantDiv) {
+                                    finalizeBubble(assistantDiv, assistantText);
+                                }
+                                document.getElementById('status-indicator').textContent = 'Авто-выбор инструментов под задачу';
+                                break;
+
+                            case 'error':
+                                typing.remove();
+                                addMessage('assistant', '❌ Ошибка: ' + escapeHtml(data.content));
+                                break;
+                        }
+                    }
+                }
+                if (assistantDiv) {
+                    finalizeBubble(assistantDiv, assistantText);
+                }
+            }).catch(err => {
+                typing.remove();
+                if (err.name !== 'AbortError') {
+                    addMessage('assistant', '❌ Ошибка: ' + escapeHtml(err.message));
+                }
+            }).finally(() => {
+                currentAbort = null;
+                document.getElementById('send').disabled = false;
+                document.getElementById('status-indicator').textContent = 'Авто-выбор инструментов под задачу';
+            });
+        }
+
+        // ---- Normal mode ----
+        async function sendNormalMessage(msg, autoAgents) {
+            const typing = document.createElement('div');
+            typing.className = 'typing';
+            typing.textContent = 'Думаю...';
+            document.getElementById('messages').appendChild(typing);
+
+            try {
+                const res = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: msg, agent_id: DEFAULT_AGENT, auto_agents: autoAgents })
+                });
+                typing.remove();
+                const contentType = res.headers.get('content-type') || '';
+                if (!contentType.includes('application/json')) {
+                    const text = await res.text();
+                    addMessage('assistant', 'Ошибка сервера: ' + escapeHtml(text.substring(0, 200)));
+                    return;
+                }
+                const data = await res.json();
+                addMessage('assistant', data.response || data.error || 'Нет ответа');
+            } catch (e) {
+                typing.remove();
+                addMessage('assistant', '❌ Ошибка: ' + escapeHtml(e.message));
+            }
+        }
+
+        // ---- WebSocket mode ----
+        let ws = null;
+        let wsReconnectTimer = null;
+
+        function connectWebSocket() {
+            if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) return;
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            ws = new WebSocket(protocol + '//' + window.location.host + '/ws/chat');
+            ws.onopen = () => { console.log('WebSocket connected'); };
+            ws.onclose = () => {
+                console.log('WebSocket disconnected');
+                ws = null;
+            };
+            ws.onerror = (err) => { console.error('WebSocket error:', err); };
+        }
+
+        function sendWebSocketMessage(msg, autoAgents) {
+            if (!ws || ws.readyState !== WebSocket.OPEN) {
+                connectWebSocket();
+                // Wait for connection
+                setTimeout(() => {
+                    if (ws && ws.readyState === WebSocket.OPEN) {
+                        _sendViaWebSocket(msg, autoAgents);
+                    } else {
+                        addMessage('assistant', '❌ WebSocket не подключен. Пробую через HTTP...');
+                        sendNormalMessage(msg, autoAgents);
+                    }
+                }, 500);
+            } else {
+                _sendViaWebSocket(msg, autoAgents);
+            }
+        }
+
+        function _sendViaWebSocket(msg, autoAgents) {
+            const messagesDiv = document.getElementById('messages');
+            const typing = document.createElement('div');
+            typing.className = 'typing';
+            typing.textContent = '🔌 WebSocket...';
+            messagesDiv.appendChild(typing);
+
+            let assistantDiv = null;
+            let assistantText = '';
+            let thinkingSent = false;
+
+            ws.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                switch (data.type) {
+                    case 'thinking':
+                        typing.textContent = '⚡ ' + (data.model || 'Думаю...');
+                        thinkingSent = true;
+                        break;
+                    case 'chunk':
+                        typing.remove();
+                        if (!assistantDiv) {
+                            assistantDiv = addMessage('assistant', '', true);
+                            streamBubble = assistantDiv;
+                        }
+                        assistantText += data.text;
+                        updateBubble(assistantDiv, assistantText);
+                        break;
+                    case 'done':
+                        typing.remove();
+                        if (assistantDiv) {
+                            finalizeBubble(assistantDiv, data.text || assistantText);
+                        } else {
+                            addMessage('assistant', data.text || 'Готово');
+                        }
+                        document.getElementById('status-indicator').textContent = 'Авто-выбор инструментов под задачу';
+                        document.getElementById('send').disabled = false;
+                        break;
+                    case 'error':
+                        typing.remove();
+                        addMessage('assistant', '❌ ' + escapeHtml(data.message));
+                        document.getElementById('send').disabled = false;
+                        break;
+                    case 'cancelled':
+                        typing.remove();
+                        addSystemMessage('Отменено');
+                        document.getElementById('send').disabled = false;
+                        break;
+                }
+            };
+
+            ws.send(JSON.stringify({
+                type: 'ask',
+                message: msg,
+                agent_id: DEFAULT_AGENT,
+                model: 'fast'
+            }));
+        }
+
+        // ---- Voice Recording ----
+        let mediaRecorder = null;
+        let audioChunks = [];
+        let isRecording = false;
+
+        async function toggleRecording() {
+            const btn = document.getElementById('mic-btn');
+            if (!isRecording) {
+                // Start recording
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    mediaRecorder = new MediaRecorder(stream);
+                    audioChunks = [];
+                    mediaRecorder.ondataavailable = (e) => audioChunks.push(e.data);
+                    mediaRecorder.onstop = () => sendAudio();
+                    mediaRecorder.start();
+                    isRecording = true;
+                    btn.classList.add('recording');
+                    btn.textContent = '⏹️';
+                } catch (err) {
+                    addSystemMessage('❌ Нет доступа к микрофону: ' + err.message);
+                }
+            } else {
+                // Stop recording
+                if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                    mediaRecorder.stop();
+                    mediaRecorder.stream.getTracks().forEach(t => t.stop());
+                }
+                isRecording = false;
+                btn.classList.remove('recording');
+                btn.textContent = '🎤';
+            }
+        }
+
+        async function sendAudio() {
+            const blob = new Blob(audioChunks, { type: 'audio/webm' });
+            const formData = new FormData();
+            formData.append('file', blob, 'recording.webm');
+
+            addSystemMessage('🎤 Распознаю речь...');
+            try {
+                const res = await fetch('/api/transcribe', { method: 'POST', body: formData });
+                const data = await res.json();
+                if (data.text) {
+                    document.getElementById('input').value = data.text;
+                    addSystemMessage('✅ Распознано: ' + escapeHtml(data.text.substring(0, 100)));
+                } else if (data.error) {
+                    addSystemMessage('❌ Ошибка распознавания: ' + escapeHtml(data.error));
+                }
+            } catch (e) {
+                addSystemMessage('❌ Ошибка отправки аудио: ' + escapeHtml(e.message));
+            }
+        }
+
+        // ---- Feedback ----
+        async function submitFeedback(messageId, query, response, rating) {
+            try {
+                await fetch('/api/feedback', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        session_id: 'web-' + DEFAULT_AGENT,
+                        message_id: messageId,
+                        query: query,
+                        response: response,
+                        rating: rating,
+                        agent_id: DEFAULT_AGENT,
+                    })
+                });
+            } catch (e) {
+                console.error('Feedback error:', e);
+            }
+        }
+
+        // ---- Collaboration Rooms ----
+        let roomWs = null;
+        let currentRoom = null;
+
+        function toggleRoom() {
+            const input = document.getElementById('room-id');
+            const btn = document.getElementById('btn-join-room');
+            if (roomWs) {
+                // Leave room
+                roomWs.close();
+                roomWs = null;
+                currentRoom = null;
+                btn.textContent = '🤝 Join';
+                btn.classList.remove('active');
+                addSystemMessage('👋 Покинул комнату');
+            } else {
+                const roomId = input.value.trim();
+                if (!roomId) {
+                    addSystemMessage('❌ Введите Room ID');
+                    return;
+                }
+                joinRoom(roomId);
+            }
+        }
+
+        function joinRoom(roomId) {
+            const btn = document.getElementById('btn-join-room');
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            roomWs = new WebSocket(protocol + '//' + window.location.host + '/ws/room/' + encodeURIComponent(roomId));
+            currentRoom = roomId;
+
+            roomWs.onopen = () => {
+                btn.textContent = '🚪 Leave';
+                btn.classList.add('active');
+                roomWs.send(JSON.stringify({ type: 'join', username: 'User' }));
+                addSystemMessage('🤝 Присоединился к комнате: ' + escapeHtml(roomId));
+            };
+
+            roomWs.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                if (data.type === 'chat') {
+                    addMessage('assistant', `**${escapeHtml(data.username)}:** ${escapeHtml(data.message)}`);
+                } else if (data.type === 'agent_response') {
+                    addMessage('assistant', data.text || 'Готово');
+                } else if (data.type === 'system') {
+                    addSystemMessage(escapeHtml(data.message));
+                }
+            };
+
+            roomWs.onclose = () => {
+                roomWs = null;
+                currentRoom = null;
+                btn.textContent = '🤝 Join';
+                btn.classList.remove('active');
+            };
+
+            roomWs.onerror = (err) => {
+                addSystemMessage('❌ Ошибка комнаты');
+                console.error('Room WS error:', err);
+            };
+        }
+
+        // ---- Main send ----
+        async function sendMessage() {
+            const input = document.getElementById('input');
+            const msg = input.value.trim();
+            if (!msg) return;
+
+            // Collaboration room mode
+            if (currentRoom && roomWs && roomWs.readyState === WebSocket.OPEN) {
+                input.value = '';
+                addMessage('user', escapeHtml(msg));
+                roomWs.send(JSON.stringify({ type: 'chat', message: msg, agent_id: DEFAULT_AGENT, auto_agent: true }));
+                return;
+            }
+
+            input.value = '';
+
+            if (msg.startsWith('/')) {
+                const parts = msg.slice(1).split(/\s+/);
+                const cmd = '/' + parts[0];
+                const args = parts.slice(1);
+                const handler = SLASH_COMMANDS[cmd];
+                if (handler) {
+                    addMessage('user', escapeHtml(msg));
+                    await handler.action(args);
+                    document.getElementById('send').disabled = false;
+                    return;
+                } else {
+                    addMessage('user', escapeHtml(msg));
+                    addSystemMessage('❌ Неизвестная команда: ' + cmd + '\n  /help — список команд');
+                    document.getElementById('send').disabled = false;
+                    return;
+                }
+            }
+
+            addMessage('user', escapeHtml(msg));
+
+            const btn = document.getElementById('send');
+            btn.disabled = true;
+
+            const autoAgents = document.getElementById('auto-agents').checked;
+
+            if (currentMode === 'websocket') {
+                sendWebSocketMessage(msg, autoAgents);
+            } else if (currentMode === 'stream' && !autoAgents) {
+                sendStreamMessage(msg, false);
+            } else if (currentMode === 'stream' && autoAgents) {
+                sendNormalMessage(msg, true);
+            } else {
+                sendNormalMessage(msg, autoAgents);
+            }
+        }
+
+        document.getElementById('input').addEventListener('keydown', e => {
+            if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+        });
+
+        document.getElementById('input').addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = Math.min(this.scrollHeight, 200) + 'px';
+        });
+    </script>
+</body>
+</html>

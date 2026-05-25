@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>База знаний — My Agent</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', system-ui, sans-serif; background: #0d1117; color: #c9d1d9; height: 100vh; display: flex; }
+        .sidebar { width: 240px; background: #161b22; border-right: 1px solid #30363d; padding: 20px 0; flex-shrink: 0; }
+        .sidebar h1 { padding: 0 20px 20px; font-size: 1.2rem; color: #58a6ff; border-bottom: 1px solid #30363d; margin-bottom: 10px; }
+        .sidebar a { display: flex; align-items: center; gap: 10px; padding: 12px 20px; color: #8b949e; text-decoration: none; transition: all 0.2s; }
+        .sidebar a:hover, .sidebar a.active { background: #21262d; color: #c9d1d9; }
+        .content { flex: 1; display: flex; flex-direction: column; }
+        .header { padding: 16px 20px; border-bottom: 1px solid #30363d; }
+        .header h2 { color: #c9d1d9; font-size: 1.3rem; }
+        .header p { color: #8b949e; font-size: 0.85rem; margin-top: 4px; }
+        .main { flex: 1; overflow-y: auto; padding: 20px; display: flex; gap: 20px; }
+        .column { flex: 1; min-width: 0; }
+        .card { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 20px; margin-bottom: 16px; }
+        .card h3 { color: #58a6ff; margin-bottom: 12px; font-size: 1rem; }
+        .card textarea { width: 100%; background: #0d1117; color: #c9d1d9; border: 1px solid #30363d; border-radius: 6px; padding: 10px; font-family: inherit; resize: vertical; min-height: 120px; }
+        .card input { width: 100%; background: #0d1117; color: #c9d1d9; border: 1px solid #30363d; border-radius: 6px; padding: 8px 10px; font-family: inherit; margin-bottom: 8px; }
+        .card button { background: #238636; color: white; border: none; border-radius: 6px; padding: 8px 16px; cursor: pointer; font-size: 0.9rem; }
+        .card button:hover { background: #2ea043; }
+        .card button.danger { background: #da3633; }
+        .card button.danger:hover { background: #f85149; }
+        .card button:disabled { background: #30363d; cursor: not-allowed; }
+        .card .row { display: flex; gap: 8px; margin-top: 8px; }
+        .stat { display: flex; align-items: center; gap: 8px; padding: 8px 0; }
+        .stat .num { font-size: 2rem; font-weight: 700; color: #58a6ff; }
+        .stat .label { color: #8b949e; font-size: 0.85rem; }
+        .doc-item { padding: 12px; border: 1px solid #30363d; border-radius: 6px; margin-bottom: 8px; }
+        .doc-item .doc-header { display: flex; justify-content: space-between; align-items: start; }
+        .doc-item .doc-source { color: #58a6ff; font-size: 0.8rem; }
+        .doc-item .doc-preview { color: #8b949e; font-size: 0.85rem; margin-top: 6px; white-space: pre-wrap; }
+        .doc-item .doc-delete { background: none; border: none; color: #da3633; cursor: pointer; font-size: 0.8rem; padding: 2px 6px; }
+        .search-result { padding: 12px; border: 1px solid #30363d; border-radius: 6px; margin-bottom: 8px; }
+        .search-result .score { color: #58a6ff; font-size: 0.8rem; }
+        .search-result .src { color: #8b949e; font-size: 0.8rem; }
+        .search-result .content { color: #c9d1d9; margin-top: 4px; white-space: pre-wrap; }
+        .toast { position: fixed; bottom: 20px; right: 20px; background: #238636; color: white; padding: 12px 20px; border-radius: 8px; display: none; z-index: 100; }
+        .toast.error { background: #da3633; }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <h1>🤖 My Agent</h1>
+        <a href="/">📊 Dashboard</a>
+        <a href="/chat">💬 Чат</a>
+        <a href="/agents">👥 Агенты</a>
+        <a href="/knowledge" class="active">📚 База знаний</a>
+        <a href="/mcp">🔌 MCP Серверы</a>
+        <a href="/settings">⚙️ Настройки</a>
+    </div>
+    <div class="content">
+        <div class="header">
+            <h2>📚 База знаний (RAG)</h2>
+            <p>Загружай документы — агент найдёт их при ответе на вопросы</p>
+        </div>
+        <div class="main">
+            <div class="column">
+                <div class="card">
+                    <h3>📥 Добавить знание</h3>
+                    <input id="source-input" placeholder="Источник (URL, имя файла, тема)...">
+                    <textarea id="content-input" placeholder="Вставьте текст документа..."></textarea>
+                    <div class="row">
+                        <button onclick="addKnowledge()">➕ Добавить</button>
+                        <button class="danger" onclick="clearInputs()">✕ Очистить</button>
+                    </div>
+                </div>
+                <div class="card">
+                    <h3>🔍 Поиск по знаниям</h3>
+                    <input id="search-input" placeholder="Поисковой запрос...">
+                    <div class="row">
+                        <button onclick="searchKnowledge()">🔍 Искать</button>
+                    </div>
+                    <div id="search-results" style="margin-top: 12px;"></div>
+                </div>
+            </div>
+            <div class="column">
+                <div class="card">
+                    <h3>📊 Статистика</h3>
+                    <div id="stats">
+                        <div class="stat"><span class="num" id="doc-count">0</span><span class="label">документов</span></div>
+                    </div>
+                </div>
+                <div class="card">
+                    <h3>📋 Все документы <button onclick="loadDocs()" style="margin-left: 8px; padding: 2px 8px; font-size: 0.8rem;">🔄</button></h3>
+                    <div id="doc-list"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="toast" class="toast"></div>
+    <script>
+        async function addKnowledge() {
+            const content = document.getElementById('content-input').value.trim();
+            const source = document.getElementById('source-input').value.trim();
+            if (!content) { showToast('Введите текст документа', true); return; }
+
+            const btn = event.target;
+            btn.disabled = true;
+            try {
+                const res = await fetch('/api/knowledge/upload', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ content, source }),
+                });
+                const data = await res.json();
+                if (data.error) { showToast('Ошибка: ' + data.error, true); return; }
+                showToast('Документ добавлен (ID: ' + data.id.slice(0, 8) + '...)');
+                clearInputs();
+                loadStats();
+                loadDocs();
+            } catch (e) { showToast('Ошибка: ' + e.message, true); }
+            finally { btn.disabled = false; }
+        }
+
+        async function searchKnowledge() {
+            const query = document.getElementById('search-input').value.trim();
+            if (!query) return;
+            const resultsDiv = document.getElementById('search-results');
+
+            const btn = event.target;
+            btn.disabled = true;
+            resultsDiv.innerHTML = '<div style="color: #8b949e;">Поиск...</div>';
+            try {
+                const res = await fetch('/api/knowledge/search', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ query, n_results: 10 }),
+                });
+                const data = await res.json();
+                if (data.error) { resultsDiv.innerHTML = '<div style="color: #da3633;">Ошибка: ' + data.error + '</div>'; return; }
+                if (data.results.length === 0) { resultsDiv.innerHTML = '<div style="color: #8b949e;">Ничего не найдено</div>'; return; }
+                resultsDiv.innerHTML = data.results.map(r => `
+                    <div class="search-result">
+                        <div class="score">Score: ${(1 - r.score).toFixed(3)}</div>
+                        <div class="src">${r.source || 'без источника'}</div>
+                        <div class="content">${escapeHtml(r.content.substring(0, 300))}</div>
+                    </div>
+                `).join('');
+            } catch (e) { resultsDiv.innerHTML = '<div style="color: #da3633;">Ошибка: ' + e.message + '</div>'; }
+            finally { btn.disabled = false; }
+        }
+
+        async function deleteDoc(id) {
+            if (!confirm('Удалить документ?')) return;
+            try {
+                const res = await fetch('/api/knowledge/delete/' + encodeURIComponent(id), { method: 'DELETE' });
+                const data = await res.json();
+                if (data.error) { showToast('Ошибка: ' + data.error, true); return; }
+                showToast('Документ удалён');
+                loadStats();
+                loadDocs();
+            } catch (e) { showToast('Ошибка: ' + e.message, true); }
+        }
+
+        async function loadStats() {
+            try {
+                const res = await fetch('/api/knowledge/list');
+                const data = await res.json();
+                const count = data.count || 0;
+                document.getElementById('doc-count').textContent = count;
+            } catch (e) {}
+        }
+
+        async function loadDocs() {
+            try {
+                const res = await fetch('/api/knowledge/list');
+                const data = await res.json();
+                const list = document.getElementById('doc-list');
+                if (!data.documents || data.documents.length === 0) {
+                    list.innerHTML = '<div style="color: #8b949e;">База знаний пуста. Добавьте первый документ!</div>';
+                    return;
+                }
+                list.innerHTML = data.documents.map(d => `
+                    <div class="doc-item">
+                        <div class="doc-header">
+                            <div>
+                                <div class="doc-source">${escapeHtml(d.source || 'без источника')}</div>
+                                <div class="doc-preview">${escapeHtml(d.content_preview)}</div>
+                                <div style="font-size: 0.75rem; color: #484f58;">${d.content_length} символов • ID: ${d.id.slice(0, 8)}...</div>
+                            </div>
+                            <button class="doc-delete" onclick="deleteDoc('${d.id}')" title="Удалить">✕</button>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (e) {}
+        }
+
+        function clearInputs() {
+            document.getElementById('content-input').value = '';
+            document.getElementById('source-input').value = '';
+        }
+
+        function escapeHtml(text) {
+            const d = document.createElement('div');
+            d.textContent = text;
+            return d.innerHTML;
+        }
+
+        function showToast(msg, isError) {
+            const t = document.getElementById('toast');
+            t.textContent = msg;
+            t.className = 'toast' + (isError ? ' error' : '');
+            t.style.display = 'block';
+            setTimeout(() => t.style.display = 'none', 3000);
+        }
+
+        loadStats();
+        loadDocs();
+
+        document.getElementById('search-input').addEventListener('keydown', e => {
+            if (e.key === 'Enter') searchKnowledge();
+        });
+    </script>
+</body>
+</html>

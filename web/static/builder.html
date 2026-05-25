@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Конструктор агентов — My Agent</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', system-ui, sans-serif; background: #0d1117; color: #c9d1d9; min-height: 100vh; }
+        .sidebar { position: fixed; left: 0; top: 0; bottom: 0; width: 240px; background: #161b22; border-right: 1px solid #30363d; padding: 20px 0; }
+        .sidebar h1 { padding: 0 20px 20px; font-size: 1.2rem; color: #58a6ff; border-bottom: 1px solid #30363d; margin-bottom: 10px; }
+        .sidebar a { display: flex; align-items: center; gap: 10px; padding: 12px 20px; color: #8b949e; text-decoration: none; transition: all 0.2s; }
+        .sidebar a:hover, .sidebar a.active { background: #21262d; color: #c9d1d9; }
+        .main { margin-left: 240px; padding: 30px; }
+        .builder { display: grid; grid-template-columns: 1fr 320px; gap: 24px; }
+        .panel { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 20px; }
+        .panel h3 { font-size: 1rem; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid #30363d; }
+        .form-group { margin-bottom: 16px; }
+        .form-group label { display: block; font-size: 0.85rem; color: #8b949e; margin-bottom: 6px; }
+        .form-group input, .form-group textarea, .form-group select {
+            width: 100%; background: #0d1117; color: #c9d1d9; border: 1px solid #30363d; border-radius: 6px; padding: 8px 12px; font-size: 0.9rem;
+        }
+        .form-group input:focus, .form-group textarea:focus, .form-group select:focus { outline: none; border-color: #58a6ff; }
+        .form-group textarea { min-height: 80px; resize: vertical; }
+        .skill-list { display: flex; flex-direction: column; gap: 8px; }
+        .skill-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: #0d1117; border: 1px solid #30363d; border-radius: 6px; cursor: pointer; transition: all 0.2s; }
+        .skill-item:hover { border-color: #58a6ff; }
+        .skill-item.selected { border-color: #238636; background: #1c2b1f; }
+        .skill-item .check { width: 18px; height: 18px; border: 2px solid #30363d; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; }
+        .skill-item.selected .check { background: #238636; border-color: #238636; color: white; }
+        .preview { font-size: 0.85rem; }
+        .preview .field { margin-bottom: 10px; }
+        .preview .field strong { color: #58a6ff; }
+        .btn { display: inline-flex; align-items: center; gap: 6px; padding: 10px 20px; background: #238636; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 0.95rem; }
+        .btn:hover { background: #2ea043; }
+        .btn.secondary { background: #21262d; border: 1px solid #30363d; }
+        .btn.secondary:hover { background: #30363d; }
+        .actions { display: flex; gap: 10px; margin-top: 20px; }
+        .toast { position: fixed; bottom: 20px; right: 20px; background: #238636; color: white; padding: 12px 20px; border-radius: 6px; opacity: 0; transition: opacity 0.3s; }
+        .toast.show { opacity: 1; }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <h1>🤖 My Agent</h1>
+        <a href="/">📊 Dashboard</a>
+        <a href="/chat">💬 Чат</a>
+        <a href="/agents">👥 Агенты</a>
+        <a href="/marketplace">🛒 Маркетплейс</a>
+        <a href="/builder" class="active">🏗️ Конструктор</a>
+        <a href="/knowledge">📚 База знаний</a>
+        <a href="/mcp">🔌 MCP Серверы</a>
+        <a href="/settings">⚙️ Настройки</a>
+    </div>
+    <div class="main">
+        <div style="margin-bottom: 20px;">
+            <h2>🏗️ Конструктор агентов</h2>
+            <p style="color: #8b949e; margin-top: 4px;">Создайте нового агента выбором скиллов и настроек</p>
+        </div>
+        <div class="builder">
+            <div>
+                <div class="panel" style="margin-bottom: 20px;">
+                    <h3>📝 Основная информация</h3>
+                    <div class="form-group">
+                        <label>ID агента (латиницей, без пробелов)</label>
+                        <input type="text" id="agent-id" placeholder="my_custom_agent">
+                    </div>
+                    <div class="form-group">
+                        <label>Название</label>
+                        <input type="text" id="agent-name" placeholder="Мой агент">
+                    </div>
+                    <div class="form-group">
+                        <label>Описание</label>
+                        <input type="text" id="agent-desc" placeholder="Краткое описание назначения">
+                    </div>
+                    <div class="form-group">
+                        <label>Роль (системный промпт)</label>
+                        <textarea id="agent-role" placeholder="Вы — эксперт по анализу данных..."></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Иконка</label>
+                        <select id="agent-icon">
+                            <option value="🤖">🤖 Робот</option>
+                            <option value="🔍">🔍 Исследователь</option>
+                            <option value="💻">💻 Разработчик</option>
+                            <option value="📊">📊 Аналитик</option>
+                            <option value="🎨">🎨 Дизайнер</option>
+                            <option value="📄">📄 Писатель</option>
+                            <option value="🔧">🔧 Инженер</option>
+                            <option value="🌐">🌐 Web</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="actions">
+                    <button class="btn" onclick="createAgent()">💾 Создать агента</button>
+                    <button class="btn secondary" onclick="previewAgent()">👁️ Предпросмотр</button>
+                </div>
+            </div>
+            <div>
+                <div class="panel" style="margin-bottom: 20px;">
+                    <h3>🧩 Скиллы</h3>
+                    <div class="skill-list" id="skill-list"></div>
+                </div>
+                <div class="panel preview" id="preview-panel">
+                    <h3>👁️ Предпросмотр</h3>
+                    <div id="preview-content">
+                        <p style="color: #8b949e;">Заполните поля и нажмите "Предпросмотр"</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="toast" id="toast"></div>
+    <script>
+        const AVAILABLE_SKILLS = [
+            {id: 'deep_research', name: 'Глубокие исследования', icon: '🔍'},
+            {id: 'research', name: 'Web поиск', icon: '🌐'},
+            {id: 'code_analysis', name: 'Анализ кода', icon: '💻'},
+            {id: 'code_execution', name: 'Выполнение кода', icon: '▶️'},
+            {id: 'web_automation', name: 'Web автоматизация', icon: '🤖'},
+            {id: 'api_integration', name: 'API интеграция', icon: '🔌'},
+            {id: 'data_analyst', name: 'Анализ данных', icon: '📊'},
+            {id: 'slides', name: 'Презентации', icon: '🎨'},
+            {id: 'docs', name: 'Документы', icon: '📄'},
+            {id: 'rag', name: 'RAG база знаний', icon: '📚'},
+            {id: 'sql_db', name: 'SQL база данных', icon: '🗄️'},
+            {id: 'ocr', name: 'OCR распознавание', icon: '📷'},
+            {id: 'audio_transcription', name: 'Аудио транскрипция', icon: '🎙️'},
+            {id: 'rss_news', name: 'RSS новости', icon: '📰'},
+            {id: 'email', name: 'Email отправка', icon: '📧'},
+            {id: 'image_generation', name: 'Генерация изображений', icon: '🖼️'},
+            {id: 'translation', name: 'Перевод', icon: '🌐'},
+            {id: 'git_integration', name: 'Git интеграция', icon: '🔀'},
+            {id: 'social_media', name: 'Социальные сети', icon: '🐦'},
+            {id: 'auto_agents', name: 'Авто-агенты', icon: '🤖'},
+        ];
+
+        let selectedSkills = new Set();
+
+        function renderSkillList() {
+            const list = document.getElementById('skill-list');
+            list.innerHTML = AVAILABLE_SKILLS.map(s => `
+                <div class="skill-item ${selectedSkills.has(s.id) ? 'selected' : ''}" onclick="toggleSkill('${s.id}')">
+                    <div class="check">${selectedSkills.has(s.id) ? '✓' : ''}</div>
+                    <span>${s.icon} ${s.name}</span>
+                </div>
+            `).join('');
+        }
+
+        function toggleSkill(id) {
+            if (selectedSkills.has(id)) {
+                selectedSkills.delete(id);
+            } else {
+                selectedSkills.add(id);
+            }
+            renderSkillList();
+        }
+
+        function previewAgent() {
+            const id = document.getElementById('agent-id').value || 'preview';
+            const name = document.getElementById('agent-name').value || 'Без названия';
+            const desc = document.getElementById('agent-desc').value || '—';
+            const role = document.getElementById('agent-role').value || '—';
+            const icon = document.getElementById('agent-icon').value;
+            const skills = Array.from(selectedSkills);
+
+            document.getElementById('preview-content').innerHTML = `
+                <div class="field"><strong>ID:</strong> ${id}</div>
+                <div class="field"><strong>Название:</strong> ${icon} ${name}</div>
+                <div class="field"><strong>Описание:</strong> ${desc}</div>
+                <div class="field"><strong>Роль:</strong> <pre style="background:#0d1117;padding:8px;border-radius:4px;margin-top:4px;white-space:pre-wrap">${role}</pre></div>
+                <div class="field"><strong>Скиллы (${skills.length}):</strong></div>
+                <div style="display:flex;flex-wrap:wrap;gap:6px;">
+                    ${skills.map(s => {
+                        const skill = AVAILABLE_SKILLS.find(x => x.id === s);
+                        return `<span style="background:#21262d;border:1px solid #30363d;padding:2px 8px;border-radius:12px;font-size:0.8rem">${skill ? skill.icon : ''} ${skill ? skill.name : s}</span>`;
+                    }).join('')}
+                </div>
+            `;
+        }
+
+        async function createAgent() {
+            const id = document.getElementById('agent-id').value.trim();
+            const name = document.getElementById('agent-name').value.trim();
+            if (!id || !name) {
+                showToast('❌ Заполните ID и название');
+                return;
+            }
+
+            const payload = {
+                id: id,
+                name: name,
+                icon: document.getElementById('agent-icon').value,
+                description: document.getElementById('agent-desc').value,
+                role: document.getElementById('agent-role').value,
+                model: {},
+                skills: Array.from(selectedSkills),
+                tools: [],
+                sub_agents: [],
+                memory: {enabled: true},
+                output: {}
+            };
+
+            try {
+                const res = await fetch('/api/agents', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(payload)
+                });
+                if (res.ok) {
+                    showToast('✅ Агент создан!');
+                    setTimeout(() => location.href = '/agents', 1000);
+                } else {
+                    const data = await res.json();
+                    showToast('❌ ' + (data.error || 'Ошибка создания'));
+                }
+            } catch (e) {
+                showToast('❌ Ошибка сети');
+            }
+        }
+
+        function showToast(msg) {
+            const t = document.getElementById('toast');
+            t.textContent = msg;
+            t.classList.add('show');
+            setTimeout(() => t.classList.remove('show'), 3000);
+        }
+
+        renderSkillList();
+    </script>
+</body>
+</html>

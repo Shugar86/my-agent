@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Agent Dashboard</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', system-ui, sans-serif; background: #0d1117; color: #c9d1d9; min-height: 100vh; }
+        .sidebar { position: fixed; left: 0; top: 0; bottom: 0; width: 240px; background: #161b22; border-right: 1px solid #30363d; padding: 20px 0; }
+        .sidebar h1 { padding: 0 20px 20px; font-size: 1.2rem; color: #58a6ff; border-bottom: 1px solid #30363d; margin-bottom: 10px; }
+        .sidebar a { display: flex; align-items: center; gap: 10px; padding: 12px 20px; color: #8b949e; text-decoration: none; transition: all 0.2s; }
+        .sidebar a:hover, .sidebar a.active { background: #21262d; color: #c9d1d9; }
+        .main { margin-left: 240px; padding: 30px; }
+        .hero { background: #161b22; border: 1px solid #30363d; border-radius: 12px; padding: 30px; margin-bottom: 24px; display: flex; align-items: center; gap: 24px; }
+        .hero .avatar { width: 80px; height: 80px; border-radius: 50%; background: #238636; display: flex; align-items: center; justify-content: center; font-size: 2.5rem; }
+        .hero .info h2 { margin-bottom: 8px; font-size: 1.5rem; }
+        .hero .info p { color: #8b949e; margin-bottom: 12px; }
+        .hero .info .tags { display: flex; gap: 8px; flex-wrap: wrap; }
+        .hero .info .tags span { background: #21262d; border: 1px solid #30363d; padding: 4px 12px; border-radius: 16px; font-size: 0.8rem; }
+        .btn { display: inline-flex; align-items: center; gap: 6px; padding: 10px 20px; background: #238636; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 0.95rem; text-decoration: none; }
+        .btn:hover { background: #2ea043; }
+        .btn.secondary { background: #21262d; border: 1px solid #30363d; }
+        .btn.secondary:hover { background: #30363d; }
+        .section-title { margin-bottom: 16px; }
+        .section-title h2 { font-size: 1.2rem; }
+        .section-title p { color: #8b949e; font-size: 0.9rem; margin-top: 4px; }
+        .capabilities { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 16px; margin-bottom: 30px; }
+        .cap-card { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 20px; transition: all 0.2s; cursor: pointer; }
+        .cap-card:hover { border-color: #58a6ff; }
+        .cap-card .icon { font-size: 1.8rem; margin-bottom: 10px; }
+        .cap-card h3 { font-size: 1rem; margin-bottom: 6px; }
+        .cap-card p { font-size: 0.85rem; color: #8b949e; }
+        .agents-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
+        .agent-card { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 16px; cursor: pointer; transition: all 0.2s; }
+        .agent-card:hover { border-color: #58a6ff; transform: translateY(-2px); }
+        .agent-card .icon { font-size: 1.5rem; margin-bottom: 8px; }
+        .agent-card h3 { font-size: 0.95rem; margin-bottom: 4px; }
+        .agent-card p { font-size: 0.8rem; color: #8b949e; }
+        .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 24px; }
+        .stat-card { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 16px; }
+        .stat-card h3 { font-size: 0.8rem; color: #8b949e; margin-bottom: 8px; }
+        .stat-card .value { font-size: 1.5rem; font-weight: 600; color: #58a6ff; }
+        .quick-actions { display: flex; gap: 12px; margin-bottom: 24px; flex-wrap: wrap; }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <h1>🤖 My Agent</h1>
+        <a href="/" class="active">📊 Dashboard</a>
+        <a href="/chat">💬 Чат</a>
+        <a href="/agents">👥 Агенты</a>
+        <a href="/marketplace">🛒 Маркетплейс</a>
+        <a href="/builder">🏗️ Конструктор</a>
+        <a href="/knowledge">📚 База знаний</a>
+        <a href="/mcp">🔌 MCP Серверы</a>
+        <a href="/settings">⚙️ Настройки</a>
+    </div>
+    <div class="main">
+        <div class="stats" id="live-stats">
+            <div class="stat-card">
+                <h3>Агентов доступно</h3>
+                <div class="value" id="stat-agents">—</div>
+            </div>
+            <div class="stat-card">
+                <h3>Скиллов</h3>
+                <div class="value" id="stat-skills">—</div>
+            </div>
+            <div class="stat-card">
+                <h3>Инструментов</h3>
+                <div class="value" id="stat-tools">—</div>
+            </div>
+            <div class="stat-card">
+                <h3>Модель</h3>
+                <div class="value" id="stat-model" style="font-size:1rem">—</div>
+            </div>
+        </div>
+
+        <div class="hero">
+            <div class="avatar">🤖</div>
+            <div class="info">
+                <h2>Universal Assistant</h2>
+                <p>Один чат для всего — просто напиши задачу, а я сам выберу нужные инструменты</p>
+                <div class="tags" id="hero-tags">
+                    <span>🔍 Исследования</span>
+                    <span>📊 Анализ данных</span>
+                    <span>💻 Код</span>
+                    <span>🎨 Презентации</span>
+                    <span>📄 Документы</span>
+                </div>
+                <div class="quick-actions" style="margin-top: 16px;">
+                    <a href="/chat" class="btn">💬 Открыть чат</a>
+                    <a href="/builder" class="btn secondary">🏗️ Создать агента</a>
+                    <a href="/marketplace" class="btn secondary">🛒 Маркетплейс</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="section-title">
+            <h2>Возможности</h2>
+            <p>Universal Assistant автоматически использует нужные инструменты под вашу задачу</p>
+        </div>
+        <div class="capabilities" id="capabilities"></div>
+
+        <div class="section-title">
+            <h2>Все агенты</h2>
+            <p>Доступны через выбор в чате или напрямую</p>
+        </div>
+        <div class="agents-list" id="agents-list"></div>
+    </div>
+    <script>
+        const capabilities = [
+            { icon: '🔍', title: 'Глубокие исследования', desc: 'Web search, академический поиск, анализ источников' },
+            { icon: '📊', title: 'Анализ данных', desc: 'CSV/Excel, графики matplotlib, статистика pandas' },
+            { icon: '🎨', title: 'Презентации', desc: 'HTML слайды с темами, экспорт в PPTX' },
+            { icon: '📄', title: 'Документы', desc: 'Word и PDF из HTML, отчёты, контракты' },
+            { icon: '💻', title: 'Код и разработка', desc: 'Анализ, исполнение Python, рефакторинг' },
+            { icon: '🌐', title: 'Web автоматизация', desc: 'Парсинг, API запросы, интеграции' },
+            { icon: '📚', title: 'RAG база знаний', desc: 'Векторный поиск ChromaDB, добавление документов' },
+            { icon: '🔌', title: 'MCP интеграция', desc: '12 серверов, 70+ инструментов через Model Context Protocol' },
+            { icon: '🐳', title: 'Docker Sandbox', desc: 'Безопасное выполнение кода в изолированных контейнерах' },
+            { icon: '🗄️', title: 'PostgreSQL/SQLite', desc: 'Унифицированная БД с миграциями Alembic' },
+        ];
+
+        document.getElementById('capabilities').innerHTML = capabilities.map(c => `
+            <div class="cap-card" onclick="location.href='/chat'">
+                <div class="icon">${c.icon}</div>
+                <h3>${c.title}</h3>
+                <p>${c.desc}</p>
+            </div>
+        `).join('');
+
+        async function loadAgents() {
+            try {
+                const res = await fetch('/api/agents');
+                const agents = await res.json();
+                document.getElementById('agents-list').innerHTML = agents.map(a => `
+                    <div class="agent-card" onclick="location.href='/chat?agent=${a.id}'">
+                        <div class="icon">${a.icon || '🤖'}</div>
+                        <h3>${a.name}</h3>
+                        <p>${a.description}</p>
+                    </div>
+                `).join('');
+            } catch(e) {}
+        }
+
+        async function loadStats() {
+            try {
+                const res = await fetch('/api/stats');
+                const stats = await res.json();
+                document.getElementById('stat-agents').textContent = stats.agents;
+                document.getElementById('stat-skills').textContent = stats.skills;
+                document.getElementById('stat-tools').textContent = stats.tools;
+                document.getElementById('stat-model').textContent = stats.model.split('/').pop() || stats.model;
+            } catch(e) {
+                console.error('Failed to load stats:', e);
+            }
+        }
+
+        loadAgents();
+        loadStats();
+        setInterval(loadStats, 30000); // Refresh every 30s
+    </script>
+</body>
+</html>

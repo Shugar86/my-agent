@@ -1,0 +1,79 @@
+INFO:     Started server process [27596]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
+INFO:     127.0.0.1:52315 - "GET /api/agents HTTP/1.1" 401 Unauthorized
+INFO:     127.0.0.1:52316 - "POST /api/chat HTTP/1.1" 401 Unauthorized
+Starting server...
+Testing server...
+GET /api/agents: 401
+POST /api/chat: 401
+Error: {"error":"Not authenticated"}
+Press Enter to stop server...Traceback (most recent call last):
+  File "C:\Users\����\Desktop\moy agent\my-agent\start_server.py", line 31, in <module>
+    input('Press Enter to stop server...')
+    ~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+EOFError: EOF when reading a line
+INFO:     127.0.0.1:52322 - "POST /api/login HTTP/1.1" 200 OK
+[92m22:30:56 - LiteLLM:INFO[0m: utils.py:4007 - 
+LiteLLM completion() model= deepseek/deepseek-v4-flash:free; provider = openrouter
+[92m22:31:06 - LiteLLM:INFO[0m: utils.py:4007 - 
+LiteLLM completion() model= deepseek/deepseek-v4-flash:free; provider = openrouter
+[92m22:31:17 - LiteLLM:INFO[0m: utils.py:4007 - 
+LiteLLM completion() model= deepseek/deepseek-v4-flash:free; provider = openrouter
+[92m22:31:18 - LiteLLM:INFO[0m: utils.py:4007 - 
+LiteLLM completion() model= deepseek/deepseek-chat; provider = openrouter
+
+[1;31mGive Feedback / Get Help: https://github.com/BerriAI/litellm/issues/new[0m
+LiteLLM.Info: If you need to debug this error, use `litellm._turn_on_debug()'.
+
+
+[1;31mGive Feedback / Get Help: https://github.com/BerriAI/litellm/issues/new[0m
+LiteLLM.Info: If you need to debug this error, use `litellm._turn_on_debug()'.
+
+
+[1;31mGive Feedback / Get Help: https://github.com/BerriAI/litellm/issues/new[0m
+LiteLLM.Info: If you need to debug this error, use `litellm._turn_on_debug()'.
+
+INFO:     127.0.0.1:52322 - "POST /api/chat/stream HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59603 - "POST /api/login HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59603 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59603 - "GET /chat HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59603 - "GET /agents HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59603 - "GET /knowledge HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59603 - "GET /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59603 - "GET /settings HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59603 - "GET /login HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59603 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59603 - "GET /api/agents HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59603 - "GET /api/mcp/list HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59603 - "GET /api/knowledge/list HTTP/1.1" 200 OK
+┌─────────────────────────────────── Agent ───────────────────────────────────┐
+│ Задача: Hi                                                                  │
+└─────────────────────────────────────────────────────────────────────────────┘
+Вызов LLM...
+[92m22:31:28 - LiteLLM:INFO[0m: utils.py:4007 - 
+LiteLLM completion() model= deepseek/deepseek-v4-flash:free; provider = openrouter
+[92m22:31:40 - LiteLLM:INFO[0m: utils.py:4007 - 
+LiteLLM completion() model= deepseek/deepseek-v4-flash:free; provider = openrouter
+[92m22:31:51 - LiteLLM:INFO[0m: utils.py:4007 - 
+LiteLLM completion() model= deepseek/deepseek-v4-flash:free; provider = openrouter
+[92m22:31:52 - LiteLLM:INFO[0m: utils.py:4007 - 
+LiteLLM completion() model= deepseek/deepseek-chat; provider = openrouter
+[92m22:31:53 - LiteLLM:INFO[0m: utils.py:1650 - Wrapper: Completed Call, calling success_handler
+
+[1;31mGive Feedback / Get Help: https://github.com/BerriAI/litellm/issues/new[0m
+LiteLLM.Info: If you need to debug this error, use `litellm._turn_on_debug()'.
+
+
+[1;31mGive Feedback / Get Help: https://github.com/BerriAI/litellm/issues/new[0m
+LiteLLM.Info: If you need to debug this error, use `litellm._turn_on_debug()'.
+
+
+[1;31mGive Feedback / Get Help: https://github.com/BerriAI/litellm/issues/new[0m
+LiteLLM.Info: If you need to debug this error, use `litellm._turn_on_debug()'.
+
+┌─────────────────────────────── Ответ агента ────────────────────────────────┐
+│ Hello! 👋 How can I assist you today?                                       │
+└─────────────────────────────────────────────────────────────────────────────┘
+INFO:     127.0.0.1:59603 - "POST /api/chat HTTP/1.1" 200 OK

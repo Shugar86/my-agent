@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Настройки — My Agent</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', system-ui, sans-serif; background: #0d1117; color: #c9d1d9; min-height: 100vh; }
+        .sidebar { position: fixed; left: 0; top: 0; bottom: 0; width: 240px; background: #161b22; border-right: 1px solid #30363d; padding: 20px 0; }
+        .sidebar h1 { padding: 0 20px 20px; font-size: 1.2rem; color: #58a6ff; border-bottom: 1px solid #30363d; margin-bottom: 10px; }
+        .sidebar a { display: flex; align-items: center; gap: 10px; padding: 12px 20px; color: #8b949e; text-decoration: none; transition: all 0.2s; }
+        .sidebar a:hover, .sidebar a.active { background: #21262d; color: #c9d1d9; }
+        .main { margin-left: 240px; padding: 30px; max-width: 600px; }
+        h2 { margin-bottom: 20px; }
+        .card { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 20px; margin-bottom: 16px; }
+        .card h3 { margin-bottom: 12px; font-size: 1rem; }
+        .form-group { margin-bottom: 12px; }
+        .form-group label { display: block; margin-bottom: 4px; font-size: 0.9rem; color: #8b949e; }
+        .form-group input, .form-group select { width: 100%; background: #0d1117; color: #c9d1d9; border: 1px solid #30363d; border-radius: 6px; padding: 8px 12px; }
+        .btn { padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; font-size: 0.9rem; }
+        .btn-primary { background: #238636; color: white; }
+        .btn-primary:hover { background: #2ea043; }
+        .status { padding: 8px 12px; border-radius: 6px; margin-top: 8px; display: none; }
+        .status.success { display: block; background: #23863622; color: #3fb950; border: 1px solid #238636; }
+        .status.error { display: block; background: #da363322; color: #f85149; border: 1px solid #da3633; }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <h1>🤖 My Agent</h1>
+        <a href="/">📊 Dashboard</a>
+        <a href="/chat">💬 Чат</a>
+        <a href="/agents">👥 Агенты</a>
+        <a href="/knowledge">📚 База знаний</a>
+        <a href="/mcp">🔌 MCP Серверы</a>
+        <a href="/settings" class="active">⚙️ Настройки</a>
+    </div>
+    <div class="main">
+        <h2>Настройки</h2>
+        <div class="card">
+            <h3>API</h3>
+            <div class="form-group"><label>OpenRouter API Key</label><input type="password" id="api-key" placeholder="sk-or-..."></div>
+            <div class="form-group"><label>Основная модель</label>
+                <select id="model">
+                    <option value="openrouter/deepseek/deepseek-v4-flash:free">DeepSeek V4 Flash (Free)</option>
+                    <option value="openrouter/deepseek/deepseek-chat">DeepSeek Chat</option>
+                    <option value="openrouter/anthropic/claude-3.5-sonnet">Claude 3.5 Sonnet</option>
+                    <option value="openrouter/openai/gpt-4o">GPT-4o</option>
+                </select>
+            </div>
+            <button class="btn btn-primary" onclick="saveConfig()">Сохранить</button>
+            <div class="status" id="status"></div>
+        </div>
+        <div class="card">
+            <h3>Информация</h3>
+            <p style="color:#8b949e;font-size:0.9rem">Версия: 1.0.0</p>
+            <p style="color:#8b949e;font-size:0.9rem">Фреймворк: FastAPI</p>
+            <p style="color:#8b949e;font-size:0.9rem">Модель: DeepSeek V4 Flash (OpenRouter)</p>
+        </div>
+    </div>
+    <script>
+        async function loadConfig() {
+            try {
+                const res = await fetch('/api/config');
+                const cfg = await res.json();
+                document.getElementById('api-key').value = cfg.model?.api_key || '';
+                document.getElementById('model').value = cfg.model?.primary || 'openrouter/deepseek/deepseek-v4-flash:free';
+            } catch(e) {}
+        }
+        async function saveConfig() {
+            const status = document.getElementById('status');
+            try {
+                const body = { model: { primary: document.getElementById('model').value, api_key: document.getElementById('api-key').value } };
+                const res = await fetch('/api/config', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body) });
+                const data = await res.json();
+                status.className = 'status success';
+                status.textContent = 'Сохранено!';
+            } catch(e) {
+                status.className = 'status error';
+                status.textContent = 'Ошибка: ' + e.message;
+            }
+        }
+        loadConfig();
+    </script>
+</body>
+</html>

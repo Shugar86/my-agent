@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Агенты — My Agent</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', system-ui, sans-serif; background: #0d1117; color: #c9d1d9; min-height: 100vh; }
+        .sidebar { position: fixed; left: 0; top: 0; bottom: 0; width: 240px; background: #161b22; border-right: 1px solid #30363d; padding: 20px 0; }
+        .sidebar h1 { padding: 0 20px 20px; font-size: 1.2rem; color: #58a6ff; border-bottom: 1px solid #30363d; margin-bottom: 10px; }
+        .sidebar a { display: flex; align-items: center; gap: 10px; padding: 12px 20px; color: #8b949e; text-decoration: none; transition: all 0.2s; }
+        .sidebar a:hover, .sidebar a.active { background: #21262d; color: #c9d1d9; }
+        .main { margin-left: 240px; padding: 30px; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .header h2 { font-size: 1.5rem; }
+        .btn { padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; font-size: 0.9rem; }
+        .btn-primary { background: #238636; color: white; }
+        .btn-primary:hover { background: #2ea043; }
+        .btn-danger { background: #da3633; color: white; }
+        .btn-danger:hover { background: #f85149; }
+        .btn-secondary { background: #21262d; color: #c9d1d9; border: 1px solid #30363d; }
+        .agents-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
+        .agent-card { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 20px; }
+        .agent-card .top { display: flex; justify-content: space-between; align-items: flex-start; }
+        .agent-card .icon { font-size: 2rem; }
+        .agent-card h3 { margin: 8px 0 4px; }
+        .agent-card .desc { color: #8b949e; font-size: 0.9rem; margin-bottom: 12px; }
+        .agent-card .tags { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+        .agent-card .tag { background: #21262d; padding: 2px 8px; border-radius: 4px; font-size: 0.8rem; }
+        .agent-card .actions { display: flex; gap: 8px; }
+        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 100; align-items: center; justify-content: center; }
+        .modal.active { display: flex; }
+        .modal-content { background: #161b22; border: 1px solid #30363d; border-radius: 12px; padding: 24px; width: 500px; max-width: 90vw; max-height: 80vh; overflow-y: auto; }
+        .modal-content h3 { margin-bottom: 16px; }
+        .form-group { margin-bottom: 12px; }
+        .form-group label { display: block; margin-bottom: 4px; font-size: 0.9rem; color: #8b949e; }
+        .form-group input, .form-group textarea, .form-group select { width: 100%; background: #0d1117; color: #c9d1d9; border: 1px solid #30363d; border-radius: 6px; padding: 8px 12px; }
+        .form-group textarea { min-height: 80px; resize: vertical; }
+        .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <h1>🤖 My Agent</h1>
+        <a href="/">📊 Dashboard</a>
+        <a href="/chat">💬 Чат</a>
+        <a href="/agents" class="active">👥 Агенты</a>
+        <a href="/knowledge">📚 База знаний</a>
+        <a href="/mcp">🔌 MCP Серверы</a>
+        <a href="/settings">⚙️ Настройки</a>
+    </div>
+    <div class="main">
+        <div class="header">
+            <h2>Управление агентами</h2>
+            <button class="btn btn-primary" onclick="openModal()">+ Новый агент</button>
+        </div>
+        <div class="agents-grid" id="agents-list"></div>
+    </div>
+    <div class="modal" id="modal">
+        <div class="modal-content">
+            <h3 id="modal-title">Новый агент</h3>
+            <input type="hidden" id="edit-id">
+            <div class="form-group"><label>Имя</label><input id="f-name"></div>
+            <div class="form-group"><label>Иконка (emoji)</label><input id="f-icon"></div>
+            <div class="form-group"><label>Описание</label><input id="f-desc"></div>
+            <div class="form-group"><label>Роль (system prompt)</label><textarea id="f-role"></textarea></div>
+            <div class="form-group"><label>Скиллы (через запятую)</label><input id="f-skills"></div>
+            <div class="form-group"><label>Инструменты (через запятую)</label><input id="f-tools"></div>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" onclick="closeModal()">Отмена</button>
+                <button class="btn btn-primary" onclick="saveAgent()">Сохранить</button>
+            </div>
+        </div>
+    </div>
+    <script>
+        let agents = [];
+        async function loadAgents() {
+            const res = await fetch('/api/agents');
+            agents = await res.json();
+            renderAgents();
+        }
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        function renderAgents() {
+            document.getElementById('agents-list').innerHTML = agents.map(a => `
+                <div class="agent-card">
+                    <div class="top">
+                        <div class="icon">${escapeHtml(a.icon)}</div>
+                        <div class="actions">
+                            <button class="btn btn-secondary" onclick="editAgent('${escapeHtml(a.id)}')">✏️</button>
+                            <button class="btn btn-secondary" onclick="dupAgent('${escapeHtml(a.id)}')">📋</button>
+                            <button class="btn btn-danger" onclick="delAgent('${escapeHtml(a.id)}')">🗑️</button>
+                        </div>
+                    </div>
+                    <h3>${escapeHtml(a.name)}</h3>
+                    <p class="desc">${escapeHtml(a.description)}</p>
+                    <div class="tags">
+                        ${(a.skills||[]).map(s=>`<span class="tag">${escapeHtml(s)}</span>`).join('')}
+                    </div>
+                </div>
+            `).join('');
+        }
+        function openModal(id) {
+            document.getElementById('modal').classList.add('active');
+            document.getElementById('modal-title').textContent = id ? 'Редактировать' : 'Новый агент';
+            if (id) {
+                const a = agents.find(x => x.id === id);
+                document.getElementById('edit-id').value = a.id;
+                document.getElementById('f-name').value = a.name;
+                document.getElementById('f-icon').value = a.icon;
+                document.getElementById('f-desc').value = a.description;
+                document.getElementById('f-role').value = a.role;
+                document.getElementById('f-skills').value = (a.skills||[]).join(', ');
+                document.getElementById('f-tools').value = (a.tools||[]).join(', ');
+            } else {
+                document.getElementById('edit-id').value = '';
+                ['f-name','f-icon','f-desc','f-role','f-skills','f-tools'].forEach(id => document.getElementById(id).value = '');
+            }
+        }
+        function closeModal() { document.getElementById('modal').classList.remove('active'); }
+        async function saveAgent() {
+            const id = document.getElementById('edit-id').value;
+            const body = {
+                id: id || document.getElementById('f-name').value.toLowerCase().replace(/\s+/g, '-'),
+                name: document.getElementById('f-name').value,
+                icon: document.getElementById('f-icon').value || '🤖',
+                description: document.getElementById('f-desc').value,
+                role: document.getElementById('f-role').value,
+                model: { primary: 'openrouter/deepseek/deepseek-v4-flash:free', api_key: '${OPENROUTER_API_KEY}', fallback: 'openrouter/deepseek/deepseek-chat', params: { temperature: 0.5, max_tokens: 4096 } },
+                skills: document.getElementById('f-skills').value.split(',').map(s=>s.trim()).filter(Boolean),
+                tools: document.getElementById('f-tools').value.split(',').map(s=>s.trim()).filter(Boolean),
+                sub_agents: [], memory: { enabled: true, scope: 'agent' }, output: { format: 'markdown', path: '' }
+            };
+            const method = id ? 'PUT' : 'POST';
+            const url = id ? `/api/agents/${id}` : '/api/agents';
+            await fetch(url, { method, headers: {'Content-Type':'application/json'}, body: JSON.stringify(body) });
+            closeModal();
+            loadAgents();
+        }
+        function editAgent(id) { openModal(id); }
+        async function delAgent(id) { if (confirm('Удалить?')) { await fetch(`/api/agents/${id}`, {method:'DELETE'}); loadAgents(); } }
+        async function dupAgent(id) { await fetch(`/api/agents/${id}/duplicate`, {method:'POST'}); loadAgents(); }
+        loadAgents();
+    </script>
+</body>
+</html>

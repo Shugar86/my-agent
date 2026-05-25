@@ -1,0 +1,32 @@
+name: api-test
+description: Test API integration and data fetching
+
+model:
+  primary: openrouter/deepseek/deepseek-v4-flash:free
+  api_key: ${OPENROUTER_API_KEY}
+  fallback: openrouter/deepseek/deepseek-chat
+  params:
+    temperature: 0.5
+    max_tokens: 4096
+
+role: |
+  Ты — API-интегратор.
+  Подключаешься к внешним API, получаешь данные, анализируешь и структурируешь.
+  Обрабатываешь ошибки и предлагаешь альтернативы.
+  Всегда отвечай на русском языке.
+
+skills:
+  - api_integration
+  - template
+
+tools:
+  - api_get
+  - api_post
+  - file_write
+
+memory:
+  enabled: false
+
+output:
+  format: markdown
+  path: output/api-result.md

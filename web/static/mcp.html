@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MCP Серверы — My Agent</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', system-ui, sans-serif; background: #0d1117; color: #c9d1d9; height: 100vh; display: flex; }
+        .sidebar { width: 240px; background: #161b22; border-right: 1px solid #30363d; padding: 20px 0; flex-shrink: 0; }
+        .sidebar h1 { padding: 0 20px 20px; font-size: 1.2rem; color: #58a6ff; border-bottom: 1px solid #30363d; margin-bottom: 10px; }
+        .sidebar a { display: flex; align-items: center; gap: 10px; padding: 12px 20px; color: #8b949e; text-decoration: none; transition: all 0.2s; }
+        .sidebar a:hover, .sidebar a.active { background: #21262d; color: #c9d1d9; }
+        .content { flex: 1; display: flex; flex-direction: column; }
+        .header { padding: 16px 20px; border-bottom: 1px solid #30363d; display: flex; justify-content: space-between; align-items: center; }
+        .header h2 { color: #c9d1d9; font-size: 1.3rem; }
+        .header .actions { display: flex; gap: 8px; }
+        .header .actions button { background: #21262d; color: #c9d1d9; border: 1px solid #30363d; border-radius: 6px; padding: 8px 16px; cursor: pointer; }
+        .header .actions button:hover { background: #30363d; }
+        .main { flex: 1; overflow-y: auto; padding: 20px; }
+        .server-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; }
+        .server-card { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 20px; transition: all 0.2s; }
+        .server-card .header-row { display: flex; justify-content: space-between; align-items: start; margin-bottom: 12px; }
+        .server-card .name { font-size: 1.1rem; font-weight: 600; }
+        .server-card .status { font-size: 0.8rem; padding: 3px 8px; border-radius: 10px; }
+        .server-card .status.off { background: #da363322; color: #f85149; border: 1px solid #da3633; }
+        .server-card .status.on { background: #23863622; color: #3fb950; border: 1px solid #238636; }
+        .server-card .status.pending { background: #d2992222; color: #d29922; border: 1px solid #d29922; }
+        .server-card .details { color: #8b949e; font-size: 0.85rem; }
+        .server-card .details .row { padding: 4px 0; }
+        .server-card .actions { margin-top: 12px; display: flex; gap: 8px; }
+        .server-card .actions button { padding: 6px 14px; border: none; border-radius: 6px; cursor: pointer; font-size: 0.85rem; }
+        .server-card .actions .start { background: #238636; color: white; }
+        .server-card .actions .start:hover { background: #2ea043; }
+        .server-card .actions .stop { background: #da3633; color: white; }
+        .server-card .actions .stop:hover { background: #f85149; }
+        .server-card .actions button:disabled { background: #21262d; color: #484f58; cursor: not-allowed; }
+        .toast { position: fixed; bottom: 20px; right: 20px; background: #238636; color: white; padding: 12px 20px; border-radius: 8px; display: none; z-index: 100; }
+        .toast.error { background: #da3633; }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <h1>🤖 My Agent</h1>
+        <a href="/">📊 Dashboard</a>
+        <a href="/chat">💬 Чат</a>
+        <a href="/agents">👥 Агенты</a>
+        <a href="/knowledge">📚 База знаний</a>
+        <a href="/mcp" class="active">🔌 MCP Серверы</a>
+        <a href="/settings">⚙️ Настройки</a>
+    </div>
+    <div class="content">
+        <div class="header">
+            <div>
+                <h2>🔌 MCP Серверы</h2>
+                <p style="color:#8b949e; font-size:0.85rem;">Model Context Protocol — 70+ инструментов через 12 серверов</p>
+            </div>
+            <div class="actions">
+                <button onclick="startAll()">▶ Запустить все</button>
+                <button onclick="stopAll()">■ Остановить все</button>
+                <button onclick="loadServers()">🔄 Обновить</button>
+            </div>
+        </div>
+        <div class="main">
+            <div id="server-grid" class="server-grid">
+                <div style="color: #8b949e; text-align: center; padding: 40px; grid-column: 1/-1;">Загрузка...</div>
+            </div>
+        </div>
+    </div>
+    <div id="toast" class="toast"></div>
+    <script>
+        async function loadServers() {
+            const grid = document.getElementById('server-grid');
+            try {
+                const res = await fetch('/api/mcp/list');
+                const data = await res.json();
+                if (data.error) { grid.innerHTML = `<div style="color: #da3633; grid-column: 1/-1;">${data.error}</div>`; return; }
+                grid.innerHTML = data.servers.map(s => `
+                    <div class="server-card">
+                        <div class="header-row">
+                            <div class="name">${escapeHtml(s.name)}</div>
+                            <div class="status ${s.connected ? 'on' : s.enabled ? 'pending' : 'off'}">
+                                ${s.connected ? '✅ Подключен' : s.enabled ? '⏳ Ожидает' : '❌ Отключен'}
+                            </div>
+                        </div>
+                        <div class="details">
+                            <div class="row">📦 Инструментов: <strong>${s.tools_count}</strong></div>
+                            <div class="row">⚙️ Команда: <code>${escapeHtml(s.command || '—')}</code></div>
+                            <div class="row">🔌 Статус: ${s.enabled ? 'включен' : 'выключен'}</div>
+                        </div>
+                        <div class="actions">
+                            <button class="start" onclick="startServer('${s.name}')" ${s.connected ? 'disabled' : ''}>▶ Пуск</button>
+                            <button class="stop" onclick="stopServer('${s.name}')" ${!s.connected ? 'disabled' : ''}>■ Стоп</button>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (e) { grid.innerHTML = `<div style="color: #da3633; grid-column: 1/-1;">Ошибка: ${e.message}</div>`; }
+        }
+
+        async function startServer(name) {
+            const toast = document.getElementById('toast');
+            try {
+                const res = await fetch('/api/mcp/start/' + encodeURIComponent(name), { method: 'POST' });
+                const data = await res.json();
+                showToast(data.success ? `✅ ${name} запущен (${data.tools} инструментов)` : `❌ ${name}: ${data.error}`, !data.success);
+                loadServers();
+            } catch (e) { showToast('Ошибка: ' + e.message, true); }
+        }
+
+        async function stopServer(name) {
+            try {
+                const res = await fetch('/api/mcp/stop/' + encodeURIComponent(name), { method: 'POST' });
+                const data = await res.json();
+                showToast(data.success ? `⏹ ${name} остановлен` : `❌ ${data.error}`, !data.success);
+                loadServers();
+            } catch (e) { showToast('Ошибка: ' + e.message, true); }
+        }
+
+        async function startAll() {
+            const toast = document.getElementById('toast');
+            showToast('⏳ Запуск всех серверов...', false);
+            try {
+                const res = await fetch('/api/mcp/start-all', { method: 'POST' });
+                const data = await res.json();
+                const count = Object.values(data.results || {}).filter(v => v).length;
+                showToast(`✅ Запущено ${count} из ${Object.keys(data.results || {}).length} серверов`, false);
+                loadServers();
+            } catch (e) { showToast('Ошибка: ' + e.message, true); }
+        }
+
+        async function stopAll() {
+            try {
+                await fetch('/api/mcp/stop-all', { method: 'POST' });
+                showToast('⏹ Все серверы остановлены', false);
+                loadServers();
+            } catch (e) { showToast('Ошибка: ' + e.message, true); }
+        }
+
+        function escapeHtml(text) {
+            const d = document.createElement('div');
+            d.textContent = text;
+            return d.innerHTML;
+        }
+
+        function showToast(msg, isError) {
+            const t = document.getElementById('toast');
+            t.textContent = msg;
+            t.className = 'toast' + (isError ? ' error' : '');
+            t.style.display = 'block';
+            setTimeout(() => t.style.display = 'none', 3000);
+        }
+
+        loadServers();
+    </script>
+</body>
+</html>

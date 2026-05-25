@@ -1,0 +1,458 @@
+{
+  "agents": [
+    {
+      "id": "universal",
+      "name": "Universal Assistant",
+      "icon": "🤖",
+      "description": "One chat for everything — auto-selects skills based on your task",
+      "role": "Ты — универсальный AI-ассистент. У тебя есть доступ ко ВСЕМ инструментам: поиск, анализ данных, графики, презентации, документы, код, БД, OCR, аудио, RSS, email, генерация картинок, перевод, Git, Twitter.\n\nПРАВИЛО: Анализируй запрос пользователя и АВТОМАТИЧЕСКИ выбирай нужные инструменты.\n\nПримеры:\n- 'проанализируй данные' → analyze_csv, create_chart\n- 'создай презентацию' → create_presentation\n- 'сделай документ' → create_document\n- 'найди информацию' → deep_search, web_search\n- 'напиши код' → execute_code, run_python\n- 'отправь письмо' → send_email\n- 'распознай текст с картинки' → ocr_image\n- 'транскрибируй аудио' → transcribe_audio\n- 'следи за новостями' → parse_rss, fetch_article\n- 'сгенерируй картинку' → generate_image\n- 'сделай запрос к БД' → query_sqlite\n- 'пост в Twitter' → post_tweet\n- 'работа с Git' → git_status, git_clone\n- 'переведи текст' → detect_language\n\nВсегда отвечай на русском языке. Будь кратким и практичным.",
+      "model": "openrouter/owl-alpha",
+      "skills": [
+        "deep_research",
+        "research",
+        "parsing",
+        "template",
+        "code_analysis",
+        "code_execution",
+        "web_automation",
+        "api_integration",
+        "data_analyst",
+        "slides",
+        "docs",
+        "rag",
+        "sql_db",
+        "ocr",
+        "audio_transcription",
+        "rss_news",
+        "email",
+        "image_generation",
+        "translation",
+        "git_integration",
+        "social_media",
+        "auto_agents",
+        "browser",
+        "scheduler",
+        "vision",
+        "messaging",
+        "self_dev",
+        "voice_io",
+        "video_processing",
+        "web3"
+      ],
+      "tools": [
+        "deep_search",
+        "scholar_search",
+        "web_search",
+        "web_scrape",
+        "file_read",
+        "file_write",
+        "execute_code",
+        "run_python",
+        "api_get",
+        "api_post",
+        "api_put",
+        "api_delete",
+        "analyze_csv",
+        "create_chart",
+        "create_presentation",
+        "export_pptx",
+        "create_document",
+        "convert_to_format",
+        "add_knowledge",
+        "search_knowledge",
+        "list_knowledge",
+        "delete_knowledge",
+        "query_sqlite",
+        "list_tables",
+        "ocr_image",
+        "ocr_pdf",
+        "transcribe_audio",
+        "translate_audio",
+        "parse_rss",
+        "fetch_article",
+        "send_email",
+        "generate_image",
+        "generate_image_variation",
+        "detect_language",
+        "git_clone",
+        "git_status",
+        "github_list_issues",
+        "github_create_issue",
+        "post_tweet",
+        "search_tweets",
+        "spawn_sub_agents",
+        "analyze_task",
+        "browser_navigate",
+        "browser_click",
+        "browser_fill",
+        "browser_press_key",
+        "browser_extract_text",
+        "browser_extract_links",
+        "browser_screenshot",
+        "browser_scroll",
+        "browser_find",
+        "browser_close",
+        "schedule_task",
+        "cancel_scheduled_task",
+        "list_scheduled_tasks",
+        "analyze_image",
+        "describe_screenshot",
+        "send_message",
+        "read_source",
+        "write_source",
+        "run_tests",
+        "git_commit",
+        "transcribe_audio",
+        "speak_text",
+        "list_tts_voices",
+        "extract_frames",
+        "get_video_info",
+        "extract_audio",
+        "trim_video",
+        "get_wallet_balance",
+        "get_gas_price",
+        "read_contract",
+        "send_transaction"
+      ],
+      "sub_agents": [],
+      "memory": {
+        "enabled": true,
+        "scope": "agent"
+      },
+      "output": {
+        "format": "markdown",
+        "path": ""
+      },
+      "created_at": "2026-05-21",
+      "updated_at": "2026-05-24",
+      "model_config": {},
+      "api_key": "${OPENROUTER_API_KEY}",
+      "base_url": "https://openrouter.ai/api/v1"
+    },
+    {
+      "id": "researcher",
+      "name": "Researcher",
+      "icon": "🔍",
+      "description": "Deep research and analysis agent",
+      "role": "Ты — эксперт по исследованиям. Проводишь глубокий анализ, находишь информацию, синтезируешь знания из разных источников. Всегда отвечаешь на русском языке.",
+      "model": "openrouter/owl-alpha",
+      "skills": [
+        "deep_research",
+        "research",
+        "parsing",
+        "rss_news"
+      ],
+      "tools": [
+        "deep_search",
+        "scholar_search",
+        "web_search",
+        "web_scrape",
+        "file_write",
+        "parse_rss",
+        "fetch_article"
+      ],
+      "sub_agents": [],
+      "memory": {
+        "enabled": true,
+        "scope": "agent"
+      },
+      "output": {
+        "format": "markdown",
+        "path": ""
+      },
+      "created_at": "2026-05-21",
+      "updated_at": "2026-05-23",
+      "model_config": {},
+      "api_key": "${OPENROUTER_API_KEY}",
+      "base_url": "https://openrouter.ai/api/v1"
+    },
+    {
+      "id": "developer",
+      "name": "Developer",
+      "icon": "💻",
+      "description": "Code analysis and development agent",
+      "role": "Ты — senior developer. Анализируешь код, находишь баги, предлагаешь улучшения, пишешь чистый код. Всегда отвечаешь на русском языке.",
+      "model": "openrouter/owl-alpha",
+      "skills": [
+        "code_analysis",
+        "code_execution",
+        "git_integration"
+      ],
+      "tools": [
+        "file_read",
+        "file_write",
+        "execute_code",
+        "git_clone",
+        "git_status",
+        "github_list_issues",
+        "github_create_issue"
+      ],
+      "sub_agents": [],
+      "memory": {
+        "enabled": true,
+        "scope": "agent"
+      },
+      "output": {
+        "format": "markdown",
+        "path": ""
+      },
+      "created_at": "2026-05-21",
+      "updated_at": "2026-05-23",
+      "model_config": {},
+      "api_key": "${OPENROUTER_API_KEY}",
+      "base_url": "https://openrouter.ai/api/v1"
+    },
+    {
+      "id": "marketer",
+      "name": "Marketer",
+      "icon": "📢",
+      "description": "Marketing content and strategy agent",
+      "role": "Ты — маркетолог. Создаёшь контент, стратегии, анализируешь рынок, пишешь тексты. Постишь соцсети, создаёшь картинки. Всегда отвечаешь на русском языке.",
+      "model": "openrouter/owl-alpha",
+      "skills": [
+        "research",
+        "template",
+        "web_automation",
+        "social_media",
+        "image_generation"
+      ],
+      "tools": [
+        "web_search",
+        "web_scrape",
+        "file_write",
+        "api_get",
+        "post_tweet",
+        "search_tweets",
+        "generate_image"
+      ],
+      "sub_agents": [],
+      "memory": {
+        "enabled": true,
+        "scope": "agent"
+      },
+      "output": {
+        "format": "markdown",
+        "path": "output/marketing.md"
+      },
+      "created_at": "2026-05-21",
+      "updated_at": "2026-05-23",
+      "model_config": {},
+      "api_key": "${OPENROUTER_API_KEY}",
+      "base_url": "https://openrouter.ai/api/v1"
+    },
+    {
+      "id": "data_analyst",
+      "name": "Data Analyst",
+      "icon": "📊",
+      "description": "Analyzes structured data, builds charts, runs statistical models",
+      "role": "Ты — data analyst. Анализируешь данные, строишь графики, проводишь статистический анализ, находишь инсайты. Работаешь с pandas, SQL, CSV. Всегда отвечаешь на русском языке.",
+      "model": "openrouter/owl-alpha",
+      "skills": [
+        "data_analyst",
+        "code_execution",
+        "sql_db"
+      ],
+      "tools": [
+        "file_read",
+        "file_write",
+        "execute_code",
+        "analyze_csv",
+        "create_chart",
+        "query_sqlite",
+        "list_tables"
+      ],
+      "sub_agents": [],
+      "memory": {
+        "enabled": true,
+        "scope": "agent"
+      },
+      "output": {
+        "format": "markdown",
+        "path": "output/analysis.md"
+      },
+      "created_at": "2026-05-21",
+      "updated_at": "2026-05-23",
+      "model_config": {},
+      "api_key": "${OPENROUTER_API_KEY}",
+      "base_url": "https://openrouter.ai/api/v1"
+    },
+    {
+      "id": "slides",
+      "name": "Slides Agent",
+      "icon": "🎨",
+      "description": "Generates complete HTML slide decks and exports to PPTX",
+      "role": "Ты — презентационный дизайнер. Создаёшь профессиональные HTML презентации, конвертируешь в PPTX. Используешь типографику, цветовые палитры. Всегда отвечаешь на русском языке.",
+      "model": "openrouter/owl-alpha",
+      "skills": [
+        "slides",
+        "template",
+        "image_generation"
+      ],
+      "tools": [
+        "file_read",
+        "file_write",
+        "web_search",
+        "create_presentation",
+        "export_pptx",
+        "generate_image"
+      ],
+      "sub_agents": [],
+      "memory": {
+        "enabled": true,
+        "scope": "agent"
+      },
+      "output": {
+        "format": "html",
+        "path": "output/presentation.html"
+      },
+      "created_at": "2026-05-21",
+      "updated_at": "2026-05-23",
+      "model_config": {},
+      "api_key": "${OPENROUTER_API_KEY}",
+      "base_url": "https://openrouter.ai/api/v1"
+    },
+    {
+      "id": "docs",
+      "name": "Docs Agent",
+      "icon": "📄",
+      "description": "Creates formatted Word documents and PDFs from content",
+      "role": "Ты — документный инженер. Создаёшь профессиональные Word документы и PDF из HTML/Markdown контента. Используешь структурированные макеты. Всегда отвечаешь на русском языке.",
+      "model": "openrouter/owl-alpha",
+      "skills": [
+        "docs",
+        "template",
+        "translation"
+      ],
+      "tools": [
+        "file_read",
+        "file_write",
+        "web_search",
+        "create_document",
+        "convert_to_format",
+        "detect_language"
+      ],
+      "sub_agents": [],
+      "memory": {
+        "enabled": true,
+        "scope": "agent"
+      },
+      "output": {
+        "format": "docx",
+        "path": "output/document.docx"
+      },
+      "created_at": "2026-05-21",
+      "updated_at": "2026-05-23",
+      "model_config": {},
+      "api_key": "${OPENROUTER_API_KEY}",
+      "base_url": "https://openrouter.ai/api/v1"
+    },
+    {
+      "id": "media_processor",
+      "name": "Media Processor",
+      "icon": "🎬",
+      "description": "Processes audio, images, and video — transcribe, OCR, generate",
+      "role": "Ты — медиа-процессор. Транскрибируешь аудио, распознаёшь текст с картинок и PDF, генерируешь изображения. Всегда отвечаешь на русском языке.",
+      "model": "openrouter/owl-alpha",
+      "skills": [
+        "ocr",
+        "audio_transcription",
+        "image_generation"
+      ],
+      "tools": [
+        "file_read",
+        "file_write",
+        "ocr_image",
+        "ocr_pdf",
+        "transcribe_audio",
+        "translate_audio",
+        "generate_image"
+      ],
+      "sub_agents": [],
+      "memory": {
+        "enabled": true,
+        "scope": "agent"
+      },
+      "output": {
+        "format": "text",
+        "path": "output/media_output.txt"
+      },
+      "created_at": "2026-05-23",
+      "updated_at": "2026-05-23",
+      "model_config": {},
+      "api_key": "${OPENROUTER_API_KEY}",
+      "base_url": "https://openrouter.ai/api/v1"
+    },
+    {
+      "id": "data_engineer",
+      "name": "Data Engineer",
+      "icon": "🗄️",
+      "description": "Works with databases, SQL queries, data extraction and OCR",
+      "role": "Ты — data engineer. Работаешь с БД (SQLite), делаешь SQL запросы, извлекаешь данные через OCR из PDF. Всегда отвечаешь на русском языке.",
+      "model": "openrouter/owl-alpha",
+      "skills": [
+        "sql_db",
+        "ocr",
+        "code_execution"
+      ],
+      "tools": [
+        "file_read",
+        "file_write",
+        "execute_code",
+        "query_sqlite",
+        "list_tables",
+        "ocr_image",
+        "ocr_pdf"
+      ],
+      "sub_agents": [],
+      "memory": {
+        "enabled": true,
+        "scope": "agent"
+      },
+      "output": {
+        "format": "markdown",
+        "path": "output/data_output.md"
+      },
+      "created_at": "2026-05-23",
+      "updated_at": "2026-05-23",
+      "model_config": {},
+      "api_key": "${OPENROUTER_API_KEY}",
+      "base_url": "https://openrouter.ai/api/v1"
+    },
+    {
+      "id": "news_monitor",
+      "name": "News Monitor",
+      "icon": "📰",
+      "description": "Monitors RSS feeds, reads news, translates, and sends email digests",
+      "role": "Ты — монитор новостей. Отслеживаешь RSS ленты, читаешь статьи, переводишь и отправляешь дайджесты по email. Всегда отвечаешь на русском языке.",
+      "model": "openrouter/owl-alpha",
+      "skills": [
+        "rss_news",
+        "translation",
+        "email",
+        "research"
+      ],
+      "tools": [
+        "parse_rss",
+        "fetch_article",
+        "web_search",
+        "detect_language",
+        "send_email",
+        "file_write"
+      ],
+      "sub_agents": [],
+      "memory": {
+        "enabled": true,
+        "scope": "agent"
+      },
+      "output": {
+        "format": "markdown",
+        "path": "output/news_digest.md"
+      },
+      "created_at": "2026-05-23",
+      "updated_at": "2026-05-23",
+      "model_config": {},
+      "api_key": "${OPENROUTER_API_KEY}",
+      "base_url": "https://openrouter.ai/api/v1"
+    }
+  ]
+}

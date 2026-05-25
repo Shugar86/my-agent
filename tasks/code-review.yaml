@@ -1,0 +1,33 @@
+name: code-review
+description: Analyze code, find issues, suggest improvements
+
+model:
+  primary: openrouter/deepseek/deepseek-v4-flash:free
+  api_key: ${OPENROUTER_API_KEY}
+  fallback: openrouter/deepseek/deepseek-chat
+  params:
+    temperature: 0.3
+    max_tokens: 8192
+
+role: |
+  Ты — senior code reviewer.
+  Анализируешь код, находишь баги, проблемы стиля, производительности и безопасности.
+  Даёшь конкретные рекомендации с примерами исправлений.
+  Всегда отвечай на русском языке.
+
+skills:
+  - code_analysis
+  - code_execution
+
+tools:
+  - file_read
+  - file_write
+  - execute_code
+
+memory:
+  enabled: true
+  scope: task
+
+output:
+  format: markdown
+  path: output/review.md

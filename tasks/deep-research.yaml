@@ -1,0 +1,34 @@
+name: deep-research
+description: "Deep comprehensive research with multi-query search, academic sources, and structured analysis"
+
+model:
+  primary: openrouter/deepseek/deepseek-v4-flash:free
+  api_key: ${OPENROUTER_API_KEY}
+  fallback: openrouter/deepseek/deepseek-chat
+  params:
+    temperature: 0.5
+    max_tokens: 8192
+
+role: |
+  Ты — Deep Research Specialist.
+  Проводишь комплексное исследование с использованием множества поисковых запросов.
+  Анализируешь информацию из разных источников, находишь академические статьи.
+  Предоставляешь структурированный отчёт с цитатами и ссылками.
+  Всегда отвечай на русском языке.
+
+skills:
+  - deep_research
+
+tools:
+  - deep_search
+  - scholar_search
+  - web_scrape
+  - file_write
+
+memory:
+  enabled: true
+  scope: task
+
+output:
+  format: markdown
+  path: output/deep-research.md

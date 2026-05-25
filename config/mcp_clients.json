@@ -1,0 +1,24 @@
+{
+  "clients": [
+    {
+      "name": "filesystem",
+      "transport": "stdio",
+      "config": {
+        "command": "npx",
+        "args": ["-y", "@modelcontextprotocol/server-filesystem", "/tmp"],
+        "env": {}
+      }
+    },
+    {
+      "name": "github",
+      "transport": "stdio",
+      "config": {
+        "command": "npx",
+        "args": ["-y", "@modelcontextprotocol/server-github"],
+        "env": {
+          "GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_TOKEN}"
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Вход — My Agent</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', system-ui, sans-serif; background: #0d1117; color: #c9d1d9; height: 100vh; display: flex; align-items: center; justify-content: center; }
+        .login-box { background: #161b22; border: 1px solid #30363d; border-radius: 12px; padding: 40px; width: 360px; }
+        .login-box h1 { text-align: center; margin-bottom: 8px; font-size: 1.5rem; color: #58a6ff; }
+        .login-box p { text-align: center; color: #8b949e; margin-bottom: 24px; font-size: 0.9rem; }
+        .form-group { margin-bottom: 16px; }
+        .form-group label { display: block; margin-bottom: 6px; font-size: 0.85rem; color: #8b949e; }
+        .form-group input { width: 100%; background: #0d1117; color: #c9d1d9; border: 1px solid #30363d; border-radius: 6px; padding: 10px 12px; font-size: 1rem; }
+        .form-group input:focus { outline: none; border-color: #58a6ff; }
+        .btn { width: 100%; padding: 12px; background: #238636; color: white; border: none; border-radius: 6px; font-size: 1rem; cursor: pointer; margin-top: 8px; }
+        .btn:hover { background: #2ea043; }
+        .btn:disabled { background: #30363d; cursor: not-allowed; }
+        .btn-secondary { background: #21262d; }
+        .btn-secondary:hover { background: #30363d; }
+        .error { color: #f85149; text-align: center; margin-top: 12px; font-size: 0.85rem; display: none; }
+        .tabs { display: flex; margin-bottom: 20px; border-bottom: 1px solid #30363d; }
+        .tab { flex: 1; text-align: center; padding: 10px; cursor: pointer; color: #8b949e; font-size: 0.9rem; border-bottom: 2px solid transparent; }
+        .tab.active { color: #58a6ff; border-bottom-color: #58a6ff; }
+        .footer { text-align: center; margin-top: 20px; font-size: 0.8rem; color: #484f58; }
+    </style>
+</head>
+<body>
+    <div class="login-box">
+        <h1>🤖 My Agent</h1>
+        <p>Войдите или создайте аккаунт</p>
+        <div class="tabs">
+            <div class="tab active" onclick="switchTab('login')">Вход</div>
+            <div class="tab" onclick="switchTab('register')">Регистрация</div>
+        </div>
+        <form id="login-form" onsubmit="return handleLogin(event)">
+            <div class="form-group">
+                <label>Имя пользователя</label>
+                <input type="text" id="login-username" placeholder="admin" autofocus>
+            </div>
+            <div class="form-group">
+                <label>Пароль</label>
+                <input type="password" id="login-password" placeholder="••••••••">
+            </div>
+            <button type="submit" class="btn" id="login-btn">🔐 Войти</button>
+            <div class="error" id="login-error">Неверный логин или пароль</div>
+        </form>
+        <form id="register-form" onsubmit="return handleRegister(event)" style="display:none">
+            <div class="form-group">
+                <label>Имя пользователя</label>
+                <input type="text" id="reg-username" placeholder="Придумайте имя (мин. 3 символа)">
+            </div>
+            <div class="form-group">
+                <label>Пароль</label>
+                <input type="password" id="reg-password" placeholder="Минимум 4 символа">
+            </div>
+            <button type="submit" class="btn" id="reg-btn">✨ Создать аккаунт</button>
+            <div class="error" id="reg-error">Ошибка регистрации</div>
+        </form>
+        <div class="footer">Первый запуск: admin / admin</div>
+    </div>
+    <script>
+        function switchTab(tab) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('form').forEach(f => f.style.display = 'none');
+            if (tab === 'login') {
+                document.querySelector('.tabs').children[0].classList.add('active');
+                document.getElementById('login-form').style.display = '';
+            } else {
+                document.querySelector('.tabs').children[1].classList.add('active');
+                document.getElementById('register-form').style.display = '';
+            }
+        }
+
+        async function handleLogin(e) {
+            e.preventDefault();
+            const username = document.getElementById('login-username').value.trim();
+            const password = document.getElementById('login-password').value;
+            const btn = document.getElementById('login-btn');
+            const err = document.getElementById('login-error');
+
+            btn.disabled = true; btn.textContent = '⏳ Вход...'; err.style.display = 'none';
+            try {
+                const res = await fetch('/api/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password }),
+                });
+                const data = await res.json();
+                if (data.success) { window.location.href = data.redirect || '/'; }
+                else {
+                    err.textContent = data.detail || 'Неверный логин или пароль';
+                    err.style.display = 'block';
+                }
+            } catch (e) { err.textContent = 'Ошибка: ' + e.message; err.style.display = 'block'; }
+            finally { btn.disabled = false; btn.textContent = '🔐 Войти'; }
+            return false;
+        }
+
+        async function handleRegister(e) {
+            e.preventDefault();
+            const username = document.getElementById('reg-username').value.trim();
+            const password = document.getElementById('reg-password').value;
+            const btn = document.getElementById('reg-btn');
+            const err = document.getElementById('reg-error');
+
+            btn.disabled = true; btn.textContent = '⏳ Создание...'; err.style.display = 'none';
+            try {
+                const res = await fetch('/api/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password }),
+                });
+                const data = await res.json();
+                if (data.success) { window.location.href = '/'; }
+                else {
+                    err.textContent = data.detail || 'Ошибка регистрации';
+                    err.style.display = 'block';
+                }
+            } catch (e) { err.textContent = 'Ошибка: ' + e.message; err.style.display = 'block'; }
+            finally { btn.disabled = false; btn.textContent = '✨ Создать аккаунт'; }
+            return false;
+        }
+    </script>
+</body>
+</html>
