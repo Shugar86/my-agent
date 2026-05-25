@@ -37,6 +37,7 @@ from prometheus_client import Counter, Histogram, Gauge, generate_latest, CONTEN
 from web.mcp_server import router as mcp_router
 from web.a2a_server import router as a2a_router
 from web.workflow_router import router as workflow_router
+from web.security import is_public_path, resolve_rate_limit
 from web.sessions_router import router as sessions_router
 from core.db_migrate import run_migrations
 
@@ -88,11 +89,14 @@ async def limit_request_size(request: Request, call_next):
 
 @app.middleware("http")
 async def redis_rate_limit_middleware(request: Request, call_next):
-    """Redis sliding-window rate limiting for API endpoints."""
-    if request.url.path.startswith("/api/ask") and request.method == "POST":
+    """Redis sliding-window rate limiting for LLM-cost API endpoints."""
+    rule = resolve_rate_limit(request.url.path, request.method)
+    if rule:
         client_ip = request.client.host if request.client else "unknown"
+        user_id = getattr(request.state, "user_id", None)
+        identifier = f"user:{user_id}" if user_id else client_ip
         allowed, remaining, reset_after = await RateLimiter.check(
-            client_ip, "api_ask", limit=30, window=60
+            identifier, rule.action, limit=rule.limit, window=rule.window
         )
         if not allowed:
             return JSONResponse(
@@ -100,13 +104,13 @@ async def redis_rate_limit_middleware(request: Request, call_next):
                 content={
                     "error": "Too many requests",
                     "retry_after": reset_after,
-                    "limit": 30,
-                    "window": "1 minute"
+                    "limit": rule.limit,
+                    "window": f"{rule.window} seconds",
                 },
-                headers={"Retry-After": str(reset_after)}
+                headers={"Retry-After": str(reset_after)},
             )
         response = await call_next(request)
-        response.headers["X-RateLimit-Limit"] = "30"
+        response.headers["X-RateLimit-Limit"] = str(rule.limit)
         response.headers["X-RateLimit-Remaining"] = str(remaining)
         return response
     return await call_next(request)
@@ -136,18 +140,10 @@ user_manager = UserManager()
 # Absolute path to static files (works regardless of CWD)
 _STATIC_DIR = os.path.join(os.path.dirname(__file__), "static")
 
-PUBLIC_PATHS = {
-    "/login", "/api/login", "/api/register", "/api/health", "/static", "/welcome-assets",
-    "/welcome", "/api/marketplace", "/api/workflow-templates", "/metrics",
-    "/api/workflows/webhook", "/api/integrations/telegram/webhook",
-    "/api/integrations/google/callback",
-}
-
-
 class AuthMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         path = request.url.path
-        if any(path.startswith(p) for p in PUBLIC_PATHS):
+        if is_public_path(path, request.method):
             return await call_next(request)
 
         token = request.cookies.get("access_token")
@@ -201,6 +197,11 @@ mcp_manager = MCPServerManager()
 @app.on_event("startup")
 async def startup():
     await redis_client.connect()
+    if os.environ.get("ENV") == "production" and not await redis_client.ping():
+        logger.error(
+            "Redis unavailable in production — rate limits, session cache, "
+            "and token revocation will degrade. Set REDIS_URL correctly."
+        )
     run_migrations()
     await scheduler_manager.start()
     await user_manager.connect()

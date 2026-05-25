@@ -1,7 +1,8 @@
 """Self-Modification (Self-Dev) skill.
 
 Allows the agent to read and modify its own source code.
-CRITICAL: All writes require human approval unless explicitly disabled.
+CRITICAL: Disabled in production unless ENABLE_SELF_DEV=true.
+All writes require human approval unless SELF_DEV_APPROVAL_REQUIRED is false.
 """
 import os
 import subprocess
@@ -10,9 +11,21 @@ from pathlib import Path
 from core.tool_registry import registry
 from core.validation import validate_safe_path
 
-# Safety gate
+# Safety gates
+_IS_PRODUCTION = os.environ.get("ENV", "").lower() == "production"
+_SELF_DEV_ENABLED = os.environ.get("ENABLE_SELF_DEV", "false").lower() in ("true", "1", "yes")
 SELF_DEV_APPROVAL_REQUIRED = os.environ.get("SELF_DEV_APPROVAL_REQUIRED", "true").lower() in ("true", "1", "yes")
 _PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
+
+
+def _production_blocked() -> dict | None:
+    """Return error payload when self-modification is disabled."""
+    if _IS_PRODUCTION and not _SELF_DEV_ENABLED:
+        return {
+            "success": False,
+            "error": "Self-modification is disabled in production. Set ENABLE_SELF_DEV=true to override.",
+        }
+    return None
 
 
 def _is_inside_project(path: str) -> bool:
@@ -26,6 +39,9 @@ def _is_inside_project(path: str) -> bool:
 
 def read_source(file_path: str) -> dict:
     """Read a source file within the project."""
+    blocked = _production_blocked()
+    if blocked:
+        return blocked
     if not validate_safe_path(file_path):
         return {"success": False, "error": "Invalid path"}
     if not _is_inside_project(file_path):
@@ -42,6 +58,9 @@ def read_source(file_path: str) -> dict:
 
 def write_source(file_path: str, content: str, approved: bool = False) -> dict:
     """Write to a source file. Requires approval unless gate is disabled."""
+    blocked = _production_blocked()
+    if blocked:
+        return blocked
     if not validate_safe_path(file_path):
         return {"success": False, "error": "Invalid path"}
     if not _is_inside_project(file_path):
@@ -69,6 +88,9 @@ def write_source(file_path: str, content: str, approved: bool = False) -> dict:
 
 def run_tests() -> dict:
     """Run the project test suite."""
+    blocked = _production_blocked()
+    if blocked:
+        return blocked
     try:
         result = subprocess.run(
             ["python", "-m", "pytest", "tests/", "-v", "--tb=short"],
@@ -89,6 +111,9 @@ def run_tests() -> dict:
 
 def git_commit(message: str) -> dict:
     """Stage all changes and commit."""
+    blocked = _production_blocked()
+    if blocked:
+        return blocked
     try:
         add = subprocess.run(
             ["git", "add", "-A"],
@@ -114,6 +139,8 @@ def git_commit(message: str) -> dict:
 
 
 def register_tools():
+    if _IS_PRODUCTION and not _SELF_DEV_ENABLED:
+        return
     registry.register(
         name="read_source",
         description="Read a source file inside the project directory.",

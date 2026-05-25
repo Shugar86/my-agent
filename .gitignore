@@ -8,6 +8,9 @@
 data/
 logs/
 output/
+*.log
+server.log
+results.json
 *.db
 *.db-journal
 *.db-wal

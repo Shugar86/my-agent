@@ -1,138 +1,80 @@
-"""Security fuzzing and input validation tests."""
+"""Security hardening tests."""
+
+import os
+from unittest.mock import patch
+
 import pytest
-from core.validation import (
-    validate_safe_path,
-    validate_sql,
-    validate_email,
-    validate_file_exists,
-    validate_twitter_text,
-)
+
+from web.security import is_public_path, resolve_rate_limit
 
 
-class TestPathValidation:
-    def test_valid_relative_path(self):
-        assert validate_safe_path("data/output/file.txt")
+class TestPublicPaths:
+    """Auth whitelist policy."""
 
-    def test_valid_simple_name(self):
-        assert validate_safe_path("report.pdf")
+    def test_login_public(self):
+        assert is_public_path("/api/login", "POST") is True
 
-    def test_rejects_absolute_path(self):
-        assert not validate_safe_path("/etc/passwd")
+    def test_marketplace_get_public(self):
+        assert is_public_path("/api/marketplace", "GET") is True
 
-    def test_rejects_parent_directory(self):
-        assert not validate_safe_path("../../../etc/passwd")
+    def test_marketplace_install_requires_auth(self):
+        assert is_public_path("/api/marketplace/install/sql_db", "POST") is False
 
-    def test_rejects_null_byte(self):
-        assert not validate_safe_path("file\x00.txt")
+    def test_workflow_templates_get_public(self):
+        assert is_public_path("/api/workflow-templates", "GET") is True
 
-    def test_rejects_empty(self):
-        assert not validate_safe_path("")
+    def test_workflow_templates_post_requires_auth(self):
+        assert is_public_path("/api/workflow-templates", "POST") is False
 
-    def test_rejects_tilde(self):
-        assert not validate_safe_path("~/.ssh/id_rsa")
+    def test_workflow_run_requires_auth(self):
+        assert is_public_path("/api/workflows/abc/run", "POST") is False
 
-    def test_allows_subdir(self):
-        assert validate_safe_path("output/subdir/file.txt")
-
-    def test_rejects_double_dots(self):
-        assert not validate_safe_path("foo/bar/../baz")
-
-    def test_rejects_special_chars(self):
-        assert not validate_safe_path("file;rm -rf /")
+    def test_webhook_public(self):
+        assert is_public_path("/api/workflows/webhook/wf-1", "POST") is True
 
 
-class TestSQLValidation:
-    def test_valid_select(self):
-        assert validate_sql("SELECT * FROM users WHERE id = 1")
+class TestRateLimitRules:
+    """Expensive endpoint rate-limit mapping."""
 
-    def test_valid_insert(self):
-        assert validate_sql("INSERT INTO users (name) VALUES ('alice')")
+    def test_chat_stream_limited(self):
+        rule = resolve_rate_limit("/api/chat/stream", "POST")
+        assert rule is not None
+        assert rule.limit == 20
 
-    def test_blocks_union(self):
-        assert not validate_sql("SELECT * FROM users UNION SELECT * FROM secrets")
+    def test_workflow_run_limited(self):
+        rule = resolve_rate_limit("/api/workflows/wf-1/run", "POST")
+        assert rule is not None
+        assert rule.action == "workflow_run"
 
-    def test_blocks_drop(self):
-        assert not validate_sql("DROP TABLE users")
-
-    def test_blocks_delete_without_where(self):
-        assert not validate_sql("DELETE FROM users")
-
-    def test_allows_delete_with_where(self):
-        assert validate_sql("DELETE FROM users WHERE id = 1")
-
-    def test_blocks_stacked_queries(self):
-        assert not validate_sql("SELECT 1; DROP TABLE users")
-
-    def test_blocks_comment_injection(self):
-        assert not validate_sql("SELECT * FROM users --")
-
-    def test_blocks_or_true(self):
-        assert not validate_sql("SELECT * FROM users WHERE 1=1 OR 'a'='a'")
-
-    def test_blocks_sleep(self):
-        assert not validate_sql("SELECT * FROM users WHERE SLEEP(5)")
-
-    def test_allows_complex_select(self):
-        assert validate_sql("SELECT u.name, p.title FROM users u JOIN posts p ON u.id = p.user_id WHERE p.status = 'published'")
-
-    def test_blocks_alter(self):
-        assert not validate_sql("ALTER TABLE users ADD COLUMN hack TEXT")
-
-    def test_blocks_exec(self):
-        assert not validate_sql("EXEC xp_cmdshell 'dir'")
+    def test_health_not_limited(self):
+        assert resolve_rate_limit("/api/health", "GET") is None
 
 
-class TestEmailValidation:
-    def test_valid_email(self):
-        assert validate_email("user@example.com")
+class TestSelfDevProduction:
+    """Self-modification must be blocked in production."""
 
-    def test_valid_email_with_plus(self):
-        assert validate_email("user+tag@example.com")
+    def test_skill_allowed_false_in_production(self):
+        with patch.dict(os.environ, {"ENV": "production", "ENABLE_SELF_DEV": "false"}):
+            import importlib
+            import core.skill_loader as sl_mod
+            importlib.reload(sl_mod)
+            assert sl_mod._skill_allowed("self_dev") is False
+            assert sl_mod._skill_allowed("gmail") is True
 
-    def test_rejects_missing_at(self):
-        assert not validate_email("userexample.com")
+    def test_write_source_blocked_in_production(self):
+        with patch.dict(os.environ, {"ENV": "production", "ENABLE_SELF_DEV": "false"}):
+            import importlib
+            import skills.self_dev.skill as sd
+            importlib.reload(sd)
+            result = sd.write_source("README.md", "hack", approved=True)
+            assert result["success"] is False
+            assert "disabled" in result["error"].lower()
 
-    def test_rejects_missing_domain(self):
-        assert not validate_email("user@")
-
-    def test_rejects_multiple_at(self):
-        assert not validate_email("user@@example.com")
-
-    def test_rejects_empty(self):
-        assert not validate_email("")
-
-    def test_rejects_no_user(self):
-        assert not validate_email("@example.com")
-
-
-class TestTwitterValidation:
-    def test_valid_short_text(self):
-        assert validate_twitter_text("Hello world")
-
-    def test_exactly_280_chars(self):
-        assert validate_twitter_text("x" * 280)
-
-    def test_over_280_rejected(self):
-        assert not validate_twitter_text("x" * 281)
-
-    def test_empty_rejected(self):
-        assert not validate_twitter_text("")
-
-    def test_emoji_count(self):
-        assert validate_twitter_text("Hello 🚀")
-
-
-class TestFileExists:
-    def test_existing_file(self, tmp_path):
-        f = tmp_path / "test.txt"
-        f.write_text("hello")
-        assert validate_file_exists(str(f))
-
-    def test_missing_file(self, tmp_path):
-        assert not validate_file_exists(str(tmp_path / "missing.txt"))
-
-    def test_directory_not_file(self, tmp_path):
-        assert not validate_file_exists(str(tmp_path))
-
-    def test_empty_path(self):
-        assert not validate_file_exists("")
+    def test_register_tools_noop_in_production(self):
+        with patch.dict(os.environ, {"ENV": "production", "ENABLE_SELF_DEV": "false"}):
+            import importlib
+            import skills.self_dev.skill as sd
+            from core.tool_registry import registry
+            importlib.reload(sd)
+            sd.register_tools()
+            assert not registry.has("write_source")

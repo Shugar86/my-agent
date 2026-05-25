@@ -3,6 +3,20 @@ import yaml
 import importlib.util
 from pathlib import Path
 
+# Skills blocked in production unless explicitly enabled.
+PRODUCTION_BLOCKED_SKILLS = {"self_dev"}
+_IS_PRODUCTION = os.environ.get("ENV", "").lower() == "production"
+_SELF_DEV_ENABLED = os.environ.get("ENABLE_SELF_DEV", "false").lower() in ("true", "1", "yes")
+
+
+def _skill_allowed(name: str) -> bool:
+    """Return False if a skill must not load in the current environment."""
+    if name not in PRODUCTION_BLOCKED_SKILLS:
+        return True
+    if not _IS_PRODUCTION:
+        return True
+    return _SELF_DEV_ENABLED
+
 
 class SkillLoader:
     def __init__(self, skills_dirs=None):
@@ -21,6 +35,16 @@ class SkillLoader:
     def _load_skill(self, skill_dir):
         metadata = self._parse_skill_md(skill_dir / "SKILL.md")
         name = metadata["name"]
+
+        if not _skill_allowed(name):
+            self.skills[name] = {
+                "metadata": metadata,
+                "module": None,
+                "enabled": False,
+                "path": str(skill_dir),
+                "blocked": True,
+            }
+            return
 
         module = None
         skill_py = skill_dir / "skill.py"
@@ -52,6 +76,8 @@ class SkillLoader:
         return module
 
     def enable(self, name):
+        if name in self.skills and not _skill_allowed(name):
+            return
         if name in self.skills:
             self.skills[name]["enabled"] = True
             if self.skills[name]["module"] and hasattr(self.skills[name]["module"], "register_tools"):

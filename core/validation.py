@@ -5,6 +5,7 @@ SQL queries, email addresses, and API credentials.
 """
 import os
 import re
+from typing import Optional
 
 
 def validate_not_empty(value: str, name: str = "value") -> bool:
