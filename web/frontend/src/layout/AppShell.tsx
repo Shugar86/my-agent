@@ -15,6 +15,7 @@ const NAV_MAIN = [
 ];
 
 const NAV_SECONDARY = [
+  { to: '/showcase', labelKey: 'nav.showcase' as const },
   { to: '/analytics', labelKey: 'nav.analytics' as const },
   { to: '/settings', labelKey: 'nav.settings' as const },
 ];
@@ -127,8 +128,8 @@ export default function AppShell() {
           )}
         </nav>
         <div style={{ padding: '12px 18px', borderTop: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: 8 }}>
-          <a href="/showcase" className="btn btn-ghost" style={{ fontSize: 11, justifyContent: 'center' }} target="_blank" rel="noopener noreferrer">
-            {t('showcase.publicVersion')}
+          <a href="/showcase" className="btn btn-ghost" style={{ fontSize: 11, justifyContent: 'center' }} target="_blank" rel="noopener noreferrer" title={t('showcase.publicVersionHint')}>
+            {t('showcase.publicVersionShort')}
           </a>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{t('app.theme')}</span>

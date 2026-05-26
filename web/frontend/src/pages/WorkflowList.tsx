@@ -152,8 +152,8 @@ export default function WorkflowList() {
       {!loading && workflows.length === 0 && (
         <div style={{ textAlign: 'center', padding: 60, color: 'var(--text-muted)' }}>
           <p>{t('workflows.empty')}</p>
-          <button className="btn btn-primary" style={{ marginTop: 16 }} onClick={() => navigate('/workflows/new')}>
-            {t('workflows.emptyCta')}
+          <button className="btn btn-primary" style={{ marginTop: 16 }} onClick={() => navigate('/marketplace')}>
+            {t('workflows.emptyMarketplaceCta')}
           </button>
         </div>
       )}

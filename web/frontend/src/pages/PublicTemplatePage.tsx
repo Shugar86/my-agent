@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { installTemplate, ApiError, type Template } from '../api/appClient';
 import WorkflowThumbnail from '../components/WorkflowThumbnail';
+import FeatureTag from '../components/ui/FeatureTag';
 import { useToast } from '../components/ui/Toast';
 import { t } from '../i18n';
 
@@ -59,7 +60,10 @@ export default function PublicTemplatePage() {
 
   return (
     <div style={{ padding: 40, maxWidth: 720, margin: '40px auto' }}>
-      <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 8 }}>{t('publicTemplate.shared')}</p>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+        <p style={{ fontSize: 12, color: 'var(--text-muted)', margin: 0 }}>{t('publicTemplate.shared')}</p>
+        <FeatureTag status="mock" label={t('publicTemplate.previewOnly')} showDot={false} />
+      </div>
       <h1 style={{ marginBottom: 8 }}>{template.name}</h1>
       <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginBottom: 16 }}>
         <span className="badge">{template.category}</span>

@@ -62,6 +62,10 @@ Tavily keys are missing — the investor flow never breaks.
 
 Authenticated mirror: `/app/showcase` (same data from `website/data/showcase.json`).
 
+**In-app demo (logged in):** `/app/demo` — same PlaygroundDemo as showcase, with competitor/beauty/lead presets and optional real run (needs API keys).
+
+**Public template share:** `/app/share/templates/:id` — guest can preview; install redirects to `/login?next=...`.
+
 ---
 
 ## 3-minute investor script (in-app)
@@ -69,7 +73,7 @@ Authenticated mirror: `/app/showcase` (same data from `website/data/showcase.jso
 | Time  | Action | What the investor sees |
 |-------|--------|------------------------|
 | 0:00  | Open `http://localhost:8020/app` | Dashboard hero: "From a webhook to a competitive brief in 90 seconds." |
-| 0:10  | Click **"Try 90s demo"** | Modal: target = Notion, our_company = Linear |
+| 0:10  | Click **"Try 90s demo"** or open `/app/demo` | Modal or page: target = Notion, our_company = Linear |
 | 0:15  | Click **Run demo** | Redirect to Workflow Builder. Nodes start lighting up one by one (pulsing green glow). |
 | 0:30  | Inspector: 2 research agents run in parallel | Live SSE-style timeline with per-node durations: "r1 — 13.2s", "r2 — 12.5s" |
 | 1:00  | Merge → analyst node activates | SWOT + 3 actions appear in the timeline detail |

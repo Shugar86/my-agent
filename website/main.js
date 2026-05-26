@@ -154,7 +154,7 @@
     if (!grid) return;
     try {
       let templates = [];
-      const res = await fetch('/api/public/templates?featured=true&limit=3');
+      const res = await fetch('/api/public/templates?featured=true&limit=4');
       if (res.ok) {
         const data = await res.json();
         templates = data.templates || [];
@@ -168,7 +168,7 @@
       }
       if (templates.length === 0) throw new Error('no templates');
       grid.innerHTML = templates
-        .slice(0, 3)
+        .slice(0, 4)
         .map(
           (tpl) => `<article class="use-case-card reveal">
             <span class="use-case-badge">${escapeHtml(tpl.category || 'template')}</span>

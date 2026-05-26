@@ -11,6 +11,7 @@ import AdminPage from './pages/AdminPage';
 import OnboardingPage from './pages/OnboardingPage';
 import PublicTemplatePage from './pages/PublicTemplatePage';
 import ShowcasePage from './pages/ShowcasePage';
+import DemoPage from './pages/DemoPage';
 
 const WorkflowBuilder = lazy(() => import('./pages/WorkflowBuilder'));
 const MarketplacePage = lazy(() => import('./pages/MarketplacePage'));
@@ -38,6 +39,7 @@ export default function App() {
           <Route path="workflows/:workflowId" element={<LazyPage><WorkflowBuilder /></LazyPage>} />
           <Route path="marketplace" element={<LazyPage><MarketplacePage /></LazyPage>} />
           <Route path="showcase" element={<ShowcasePage />} />
+          <Route path="demo" element={<DemoPage />} />
           <Route path="chat" element={<ChatPage />} />
           <Route path="builder" element={<Navigate to="/settings?tab=agents" replace />} />
           <Route path="agents" element={<Navigate to="/settings?tab=agents" replace />} />

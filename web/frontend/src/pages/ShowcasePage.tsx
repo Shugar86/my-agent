@@ -5,7 +5,8 @@ import PlaygroundDemo from '../components/demo/PlaygroundDemo';
 import FeatureTag from '../components/ui/FeatureTag';
 import PageHeader from '../components/ui/PageHeader';
 import { useToast } from '../components/ui/Toast';
-import { OFFLINE_SHOWCASE, fetchWithDemoFallback } from '../lib/demoFallback';
+import { SHOWCASE_CARD_TEMPLATES, showcaseCardFeatureStatus } from '../config/showcaseCards';
+import { fetchWithDemoFallback } from '../lib/demoFallback';
 import { t } from '../i18n';
 
 interface PersonaSnippet {
@@ -59,7 +60,7 @@ export default function ShowcasePage() {
   useEffect(() => {
     setLoading(true);
     Promise.all([
-      fetchWithDemoFallback<ShowcaseData>('/welcome-assets/data/showcase.json', OFFLINE_SHOWCASE),
+      fetchWithDemoFallback<ShowcaseData>(),
       fetch('/api/public/templates?featured=true&limit=9')
         .then((r) => (r.ok ? r.json() : { templates: [] }))
         .catch(() => ({ templates: [] })),
@@ -175,7 +176,7 @@ export default function ShowcasePage() {
               </div>
             </div>
             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 10 }}>
-              <FeatureTag status={card.status === 'live' ? 'live' : 'beta'} />
+              <FeatureTag status={showcaseCardFeatureStatus(card)} label={card.status === 'lab' ? t('showcase.labBadge') : undefined} />
               <span className="badge">{card.platform}</span>
             </div>
             <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 8 }}>{card.one_liner}</p>
@@ -207,13 +208,20 @@ export default function ShowcasePage() {
               <a href="#playground" className="btn btn-primary" style={{ width: '100%', display: 'block', textAlign: 'center' }}>
                 {card.cta_label}
               </a>
+            ) : SHOWCASE_CARD_TEMPLATES[card.id] ? (
+              <button
+                type="button"
+                className="btn btn-primary"
+                style={{ width: '100%' }}
+                disabled={installingId === card.id}
+                onClick={() => handleInstall(SHOWCASE_CARD_TEMPLATES[card.id])}
+              >
+                {installingId === card.id ? t('common.loading') : t('showcase.installSimilar')}
+              </button>
             ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                <FeatureTag status="coming-soon" />
-                <button type="button" className="btn btn-secondary" style={{ width: '100%' }} disabled title={t('showcase.comingSoonHint')}>
-                  {card.cta_label}
-                </button>
-              </div>
+              <Link to="/marketplace" className="btn btn-secondary" style={{ width: '100%', display: 'block', textAlign: 'center' }}>
+                {t('showcase.browseMarketplace')}
+              </Link>
             )}
           </article>
         ))}

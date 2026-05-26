@@ -1,7 +1,7 @@
 # My Agent — Technical Documentation
 
 > Last updated: 2026-05-26
-> Version: 3.4.1 (UX sprint — investor funnel + FeatureTag)
+> Version: 3.4.2 (UX audit — honest badges, /app/demo, public share)
 > Author: AI Assistant
 
 ---
@@ -44,7 +44,9 @@ Mock fallback works without API keys — safe for live investor presentations.
 | `/app/marketplace` | Маркетплейс шаблонов |
 | `/app/settings` | Интеграции, модели, API keys, billing, agents/knowledge/MCP (tabs) |
 | `/app/onboarding` | 4-step wizard + PlaygroundDemo (90s) |
-| `/app/showcase` | Vertical cases + **embedded PlaygroundDemo** (auth) |
+| `/app/showcase` | Vertical cases + **embedded PlaygroundDemo** (в sidebar) |
+| `/app/demo` | In-app live demo (PlaygroundDemo + presets, без static HTML) |
+| `/app/share/templates/:id` | Публичный preview шаблона (**без auth**, install → login) |
 | `/` | Маркетинговый лендинг (`#problems`, `#live-demo`, marketplace preview) |
 | `/showcase` | Demo-MVP showcase (public, no auth) |
 | `/demo` | Public Competitor Intelligence demo |
@@ -53,6 +55,22 @@ Mock fallback works without API keys — safe for live investor presentations.
 Legacy redirects: `/app/agents`, `/app/knowledge`, `/app/mcp` → `/app/settings?tab=...`
 
 Дизайн-система: [`web/frontend/DESIGN.md`](web/frontend/DESIGN.md). Сборка: `cd web/frontend && bun run build`.
+
+### Changelog 3.4.2 (2026-05-26) — UX audit (investor + B2B)
+
+**Public share:** `GET /app/share/templates/:id` без JWT (`PUBLIC_PREFIXES` + `/api/public/templates`).
+
+**Honest status:** showcase cards — `FeatureTag` «Кейс» / «Preview», не ложный Live; marketplace demo-run всегда Preview.
+
+**Demo:** `/app/demo`; `PlaygroundDemo` — offline fallback (`lib/offlineDemo.ts`), presets + real-run в DemoModal; `fetchWithDemoFallback` → bundled `showcase.json`.
+
+**Showcase:** sidebar «Кейсы»; CTA «Установить похожий шаблон» (`config/showcaseCards.ts`); onboarding success messages.
+
+**IA:** Analytics empty → `/app/demo`; WorkflowList empty → marketplace; landing steps «Шаблон → Канал → Workflow».
+
+**Components:** `FeatureGate.tsx` для disabled CTAs.
+
+Build: `cd web/frontend && bun run build`. E2E: `bun run test:e2e` (сервер на `:8020`).
 
 ### Changelog 3.4.1 (2026-05-26) — UX sprint (investor funnel)
 
@@ -66,7 +84,7 @@ Legacy redirects: `/app/agents`, `/app/knowledge`, `/app/mcp` → `/app/settings
 
 **Landing:** `#problems`, iframe `/demo`, dynamic marketplace preview из API.
 
-**Polish:** Onboarding → PlaygroundDemo; Chat empty state + demo CTA; Analytics empty → `/demo`; billing Stripe `coming-soon`.
+**Polish:** Onboarding → PlaygroundDemo; Chat empty state + demo CTA; billing Stripe `coming-soon`.
 
 Build: `cd web/frontend && bun run build`. E2E: `bun run test:e2e` (сервер на `:8020`).
 

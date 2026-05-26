@@ -32,6 +32,9 @@ class TestPublicPaths:
     def test_webhook_public(self):
         assert is_public_path("/api/workflows/webhook/wf-1", "POST") is True
 
+    def test_public_template_share_spa(self):
+        assert is_public_path("/app/share/templates/tpl_competitor_intelligence", "GET") is True
+
 
 class TestRateLimitRules:
     """Expensive endpoint rate-limit mapping."""

@@ -1,8 +1,8 @@
 # My Agent — Audit Report (v3.3.0)
 
 > **Date:** 2026-05-26  
-> **Version:** 3.3.0  
-> **Scope:** Post CEO audit iteration — sales readiness + scale foundations
+> **Version:** 3.4.2  
+> **Scope:** Post CEO audit iteration — sales readiness + UX audit (2026-05-26)
 
 ---
 
@@ -18,7 +18,7 @@ My Agent is an **Autonomous Workflow OS**: React SPA (`/app`), FastAPI backend, 
 
 | Metric | Value |
 |--------|------:|
-| Version | 3.4.0 |
+| Version | 3.4.2 |
 | Marketplace templates | 52 (3 draft, 3 featured demo) |
 | Workflow node types | 21 |
 | Registered agents | 10 |
@@ -43,6 +43,13 @@ My Agent is an **Autonomous Workflow OS**: React SPA (`/app`), FastAPI backend, 
 - RU i18n for builder, marketplace, settings
 
 ---
+
+## Resolved in v3.4.2 (UX audit)
+
+- Public template share blocked by auth middleware → `/app/share` in `PUBLIC_PREFIXES`
+- Misleading Live badges on static showcase cards → `FeatureTag` story/preview
+- `fetchWithDemoFallback` noop (same URL twice) → bundled JSON fallback
+- Showcase orphan route → sidebar «Кейсы»; install-similar CTAs per vertical
 
 ## Known Gaps (next iteration)
 

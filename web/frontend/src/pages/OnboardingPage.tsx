@@ -55,6 +55,8 @@ export default function OnboardingPage() {
   const [drafts, setDrafts] = useState<Record<string, Record<string, string>>>({});
   const [testing, setTesting] = useState<string | null>(null);
   const [demoCompleted, setDemoCompleted] = useState(false);
+  const [demoSuccessMsg, setDemoSuccessMsg] = useState('');
+  const [usecaseSuccessMsg, setUsecaseSuccessMsg] = useState('');
 
   useEffect(() => {
     logUxEvent('onboarding_start');
@@ -123,6 +125,8 @@ export default function OnboardingPage() {
       if (templateId) {
         const result = await installTemplate(templateId);
         setInstalledWfId(result.workflow.id);
+        const cardTitle = usecaseCards.find((c) => c.id === cardId)?.title ?? templateId;
+        setUsecaseSuccessMsg(t('onboarding.workflowInstalled', { name: cardTitle }));
       }
       setStep(3);
     } catch (e) {
@@ -185,10 +189,14 @@ export default function OnboardingPage() {
             showContinue={demoCompleted}
             onComplete={() => {
               setDemoCompleted(true);
+              setDemoSuccessMsg(t('onboarding.demoSuccess'));
               logUxEvent('onboarding_demo_completed');
             }}
             onContinue={() => setStep(2)}
           />
+          {demoSuccessMsg && (
+            <p style={{ fontSize: 13, color: 'var(--success)', marginTop: 12 }}>{demoSuccessMsg}</p>
+          )}
           {!demoCompleted && (
             <button type="button" className="btn btn-ghost" style={{ marginTop: 12 }} onClick={() => setStep(2)}>
               {t('common.skip')}
@@ -202,6 +210,9 @@ export default function OnboardingPage() {
           <h2 style={{ fontSize: 16, marginBottom: 12 }}>{t('onboarding.usecaseTitle')}</h2>
           <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 8 }}>{t('onboarding.usecaseDesc')}</p>
           <p style={{ fontSize: 12, color: 'var(--accent)', marginBottom: 16 }}>{t('onboarding.usecaseHint')}</p>
+          {usecaseSuccessMsg && (
+            <p style={{ fontSize: 13, color: 'var(--success)', marginBottom: 12 }}>{usecaseSuccessMsg}</p>
+          )}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 12 }}>
             {usecaseCards.map((card) => (
               <button

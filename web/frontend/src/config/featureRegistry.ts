@@ -9,6 +9,7 @@ export const NAV_FEATURE_STATUS: Record<string, FeatureStatus> = {
   '/analytics': 'beta',
   '/settings': 'live',
   '/showcase': 'live',
+  '/demo': 'live',
   '/agents': 'live',
   '/knowledge': 'beta',
   '/mcp': 'beta',

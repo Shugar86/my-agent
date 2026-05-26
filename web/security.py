@@ -25,6 +25,7 @@ PUBLIC_EXACT_PATHS = {
 PUBLIC_PREFIXES = (
     "/static",
     "/welcome-assets",
+    "/app/share",
     "/api/workflows/webhook/",
     "/api/integrations/telegram/webhook",
     "/api/integrations/google/callback",

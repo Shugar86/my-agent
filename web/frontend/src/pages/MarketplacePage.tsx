@@ -55,6 +55,7 @@ export default function MarketplacePage() {
   const [pubTags, setPubTags] = useState('');
   const [pubDefinition, setPubDefinition] = useState('{"nodes":[],"edges":[]}');
   const [previewTemplate, setPreviewTemplate] = useState<Template | null>(null);
+  const [demoRunningId, setDemoRunningId] = useState<string | null>(null);
   const [demoPreview, setDemoPreview] = useState<{
     templateId: string;
     templateName: string;
@@ -132,6 +133,7 @@ export default function MarketplacePage() {
   };
 
   const handleDemoRun = async (id: string) => {
+    setDemoRunningId(id);
     try {
       const tpl = templates.find((t) => t.id === id);
       const result = await demoRunTemplate(id);
@@ -145,6 +147,8 @@ export default function MarketplacePage() {
       showToast(t('marketplace.demoRunDone'), 'success');
     } catch {
       showToast(t('common.error'), 'error');
+    } finally {
+      setDemoRunningId(null);
     }
   };
 
@@ -244,9 +248,12 @@ export default function MarketplacePage() {
                       <button type="button" className="btn btn-primary" onClick={() => handleInstall(tpl.id)} style={{ flex: 1 }}>
                         {t('marketplace.cloneEdit')}
                       </button>
-                      <button type="button" className="btn" onClick={() => handleDemoRun(tpl.id)}>{t('marketplace.demoRun')}</button>
+                      <button type="button" className="btn" onClick={() => handleDemoRun(tpl.id)} disabled={demoRunningId === tpl.id}>
+                        {demoRunningId === tpl.id ? t('common.loading') : t('marketplace.demoRun')}
+                      </button>
                       <button type="button" className="btn" onClick={() => handlePreview(tpl.id)}>{t('marketplace.preview')}</button>
                     </div>
+                    <FeatureTag status="mock" label={t('marketplace.demoPreviewTag')} showDot={false} className="marketplace-demo-tag" />
                   </div>
                 ))}
               </div>
@@ -274,9 +281,12 @@ export default function MarketplacePage() {
                   <button type="button" className="btn btn-primary" onClick={() => handleInstall(tpl.id)} style={{ flex: 1 }}>
                     {t('marketplace.cloneEdit')}
                   </button>
-                  <button type="button" className="btn" onClick={() => handleDemoRun(tpl.id)}>{t('marketplace.demoRun')}</button>
+                  <button type="button" className="btn" onClick={() => handleDemoRun(tpl.id)} disabled={demoRunningId === tpl.id}>
+                    {demoRunningId === tpl.id ? t('common.loading') : t('marketplace.demoRun')}
+                  </button>
                   <button type="button" className="btn" onClick={() => handlePreview(tpl.id)}>{t('marketplace.preview')}</button>
                 </div>
+                <FeatureTag status="mock" label={t('marketplace.demoPreviewTag')} showDot={false} className="marketplace-demo-tag" />
               </div>
             ))}
           </div>
@@ -301,8 +311,9 @@ export default function MarketplacePage() {
                 <h2 style={{ marginBottom: 4 }}>{t('marketplace.demoRunModalTitle')}</h2>
                 <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>{demoPreview.templateName}</p>
               </div>
-              <FeatureTag status={demoPreview.mode === 'mock' ? 'mock' : 'live'} />
+              <FeatureTag status="mock" label={t('marketplace.demoPreviewTag')} showDot={false} />
             </div>
+            <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 12 }}>{t('marketplace.demoPreviewHint')}</p>
             <ExecutionTimeline logs={demoPreview.logs} />
             <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
               <button type="button" className="btn btn-primary" style={{ flex: 1 }} onClick={() => handleInstall(demoPreview.templateId)}>

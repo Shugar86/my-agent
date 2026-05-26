@@ -234,6 +234,16 @@ textarea.input { line-height: 1.5; resize: vertical; }
 }
 .feature-tag--broken { color: var(--danger); background: rgba(248,81,73,0.12); }
 
+.feature-gate--soon {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.marketplace-demo-tag {
+  margin-top: 8px;
+  align-self: flex-start;
+}
+
 .breadcrumbs {
   display: flex;
   flex-wrap: wrap;

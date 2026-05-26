@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { getUsageSummary, type UsageSummary } from '../api/appClient';
 import { listWorkflows } from '../api/workflowClient';
 import { t } from '../i18n';
@@ -115,7 +116,7 @@ export default function AnalyticsPage() {
         <div className="card" style={{ textAlign: 'center', padding: 32 }}>
           <p style={{ color: 'var(--text-muted)', marginBottom: 16 }}>{t('analytics.noRunsYet')}</p>
           <p style={{ fontSize: 13, marginBottom: 16 }}>{t('analytics.emptyCta')}</p>
-          <a href="/demo" className="btn btn-primary">{t('analytics.emptyCtaLink')}</a>
+          <Link to="/demo" className="btn btn-primary">{t('analytics.emptyCtaLink')}</Link>
         </div>
       )}
     </div>
