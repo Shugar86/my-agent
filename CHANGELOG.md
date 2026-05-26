@@ -1,5 +1,27 @@
 # Changelog — My Agent
 
+## 3.4.0 — 2026-05-26 (CEO audit — Production readiness)
+
+### Ops
+- systemd unit: [deploy/my-agent.service](deploy/my-agent.service)
+- PostgreSQL mandatory when `ENV=production` (fail-fast, no SQLite)
+- Redis required in production startup; health `redis: true`
+- Daily backup script + restore runbook in SERVER.md
+
+### Execution
+- Durable workflow run queue via Redis RPOPLPUSH ([core/workflow/run_queue.py](core/workflow/run_queue.py))
+- Orphaned runs marked failed on restart; stale processing jobs recovered
+
+### Observability
+- Grafana dashboard + Prometheus alert rules (`--profile monitoring`)
+- Structured workflow run logging (`run_id`, `workflow_id`)
+
+### Migration
+- [scripts/migrate_sqlite_to_postgres.py](scripts/migrate_sqlite_to_postgres.py) for one-time VDS migration
+- [AUDIT_PRODUCTION_2026.md](AUDIT_PRODUCTION_2026.md)
+
+---
+
 ## 3.3.1 — 2026-05-26 (CEO audits — sales readiness + product depth)
 
 ### Sales & onboarding (CEO audit B0–B4)

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import os
 import logging
 from collections import defaultdict, deque
 from typing import Any
@@ -62,6 +63,12 @@ class WorkflowExecutor:
             user_id=user_id or workflow.get("owner_id"),
             trigger_payload=trigger_payload or {},
             state=dict(persisted_state),
+        )
+        logger.info(
+            "Workflow run started run_id=%s workflow_id=%s workspace_owner=%s",
+            run["id"],
+            workflow_id,
+            ctx.user_id,
         )
 
         try:
@@ -205,21 +212,32 @@ class WorkflowExecutor:
         run = self.store.create_run(workflow_id)
         run_id = run["id"]
 
+        from core.workflow import run_queue
+
+        enqueued = await run_queue.enqueue_run(
+            run_id, workflow_id, trigger_payload=trigger_payload, user_id=user_id
+        )
+        if enqueued:
+            return {
+                "success": True,
+                "run_id": run_id,
+                "status": "running",
+                "background": True,
+                "queued": True,
+            }
+
+        if os.environ.get("ENV") == "production":
+            self.store.finish_run(
+                run_id,
+                "failed",
+                [{"node_id": "", "event": "error", "detail": "Run queue unavailable"}],
+            )
+            return {"success": False, "error": "Run queue unavailable"}
+
         async def _execute() -> None:
-            try:
-                await self.run(
-                    workflow_id,
-                    trigger_payload=trigger_payload,
-                    user_id=user_id,
-                    existing_run_id=run_id,
-                )
-            except Exception as exc:
-                logger.exception("Background workflow %s failed: %s", workflow_id, exc)
-                self.store.finish_run(
-                    run_id,
-                    "failed",
-                    [{"node_id": "", "event": "error", "detail": str(exc)}],
-                )
+            await run_queue.run_inline_fallback(
+                run_id, workflow_id, trigger_payload, user_id
+            )
 
         asyncio.create_task(_execute())
         return {
@@ -227,6 +245,7 @@ class WorkflowExecutor:
             "run_id": run_id,
             "status": "running",
             "background": True,
+            "queued": False,
         }
 
     async def _run_with_retry(

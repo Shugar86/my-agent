@@ -1,0 +1,21 @@
+[Unit]
+Description=My Agent AI Platform (FastAPI + uvicorn)
+After=network.target docker.service
+Wants=docker.service
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/projects/my-agent
+EnvironmentFile=/opt/projects/my-agent/.env
+Environment=PYTHONUNBUFFERED=1
+Environment=PYTHONIOENCODING=utf-8
+ExecStartPre=/bin/bash -c 'docker compose -f /opt/projects/my-agent/docker-compose.yml up -d db redis'
+ExecStart=/opt/projects/my-agent/.venv/bin/python -m uvicorn web.server:app --host 127.0.0.1 --port 8020
+Restart=always
+RestartSec=5
+StandardOutput=append:/var/log/my-agent.log
+StandardError=append:/var/log/my-agent.log
+
+[Install]
+WantedBy=multi-user.target

@@ -21,8 +21,20 @@ class DBManager:
         self.database_url = database_url or os.getenv("DATABASE_URL", "sqlite:///data/agent.db")
         self._pool = None
         self._engine = None
+        self._validate_production_config()
         self.db_type = "sqlite" if self.database_url.startswith("sqlite") else "postgres"
         self._init_db()
+
+    def _validate_production_config(self) -> None:
+        """Refuse SQLite in production — data layer must be PostgreSQL."""
+        if os.getenv("ENV") != "production":
+            return
+        url = (self.database_url or "").strip()
+        if not url or url.startswith("sqlite"):
+            raise RuntimeError(
+                "ENV=production requires PostgreSQL DATABASE_URL; "
+                "SQLite fallback is disabled. Set DATABASE_URL=postgresql://..."
+            )
 
     def _init_db(self):
         if self.db_type == "postgres":
@@ -31,6 +43,10 @@ class DBManager:
                 import psycopg2
                 self._init_postgres()
             except ImportError as e:
+                if os.getenv("ENV") == "production":
+                    raise RuntimeError(
+                        "PostgreSQL driver required in production"
+                    ) from e
                 logger.warning("PostgreSQL driver not available (%s), falling back to SQLite", e)
                 self.database_url = "sqlite:///data/agent.db"
                 self.db_type = "sqlite"

@@ -227,9 +227,9 @@ mcp_manager = MCPServerManager()
 async def startup():
     await redis_client.connect()
     if os.environ.get("ENV") == "production" and not await redis_client.ping():
-        logger.error(
-            "Redis unavailable in production — rate limits, session cache, "
-            "and token revocation will degrade. Set REDIS_URL correctly."
+        raise RuntimeError(
+            "Redis unavailable in production. Set REDIS_URL=redis://127.0.0.1:6380/0 "
+            "and ensure my-agent-redis is running."
         )
     run_migrations()
     await scheduler_manager.start()
@@ -260,10 +260,17 @@ async def startup():
         """)
     from core.workflow.executor import rehydrate_all_triggers
     await rehydrate_all_triggers()
+    from core.workflow import run_queue
+
+    await run_queue.mark_orphaned_runs_failed()
+    await run_queue.start_consumer()
 
 
 @app.on_event("shutdown")
 async def shutdown():
+    from core.workflow import run_queue
+
+    await run_queue.stop_consumer()
     await scheduler_manager.shutdown()
     await user_manager.close()
     await redis_client.close()

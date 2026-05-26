@@ -1,28 +1,67 @@
 # My Agent — развёртывание на VDS
 
 > Сервер: `159.195.31.95` | Путь: `/opt/projects/my-agent/`  
-> Статус: **v3.3.1** (CEO audits — async runs, billing UI, schedule UI, monitoring profile)
+> Статус: **v3.4.0** (Production readiness — systemd, PostgreSQL, Redis queue, Grafana)
 
 ---
 
-## Prod runtime (важно)
+## Prod runtime (v3.4)
 
-На VDS сервис работает как **bare uvicorn** (не сервис в root `docker-compose.yml`):
+**Stack:** `systemd` → bare uvicorn `:8020` + Docker `db` + `redis` + optional `monitoring` profile.
 
 ```bash
 # Деплой кода
-vds-push   # из ~/dev/my-agent
+vds-push
 
-# Синхронизация work tree (если нужно)
 ssh vds-root 'cd /opt/projects/my-agent && git fetch /root/git/my-agent.git main && git reset --hard FETCH_HEAD'
 
-# Перезапуск
-ssh vds-root 'cd /opt/projects/my-agent && pkill -f "uvicorn web.server:app --host 127.0.0.1 --port 8020"; sleep 2; nohup .venv/bin/python -m uvicorn web.server:app --host 127.0.0.1 --port 8020 >> /var/log/my-agent.log 2>&1 &'
+# .env (обязательно в prod)
+# ENV=production
+# DATABASE_URL=postgresql://agent:agentpass@127.0.0.1:5437/agent_db
+# REDIS_URL=redis://127.0.0.1:6380/0
 
-curl -s http://127.0.0.1:8020/api/health
+docker compose up -d db redis
+docker compose exec -T agent python -m alembic upgrade head 2>/dev/null || true
+
+# systemd (один раз)
+cp deploy/my-agent.service /etc/systemd/system/
+systemctl daemon-reload && systemctl enable --now my-agent
+
+# Мониторинг
+docker compose --profile monitoring up -d
+
+curl -s http://127.0.0.1:8020/api/health | python3 -m json.tool
+# Ожидаем: "redis": true
 ```
 
 Frontend собирается локально и коммитится в `web/static/app/` (на VDS нет bun).
+
+### Backup PostgreSQL
+
+```bash
+# Ручной бэкап
+bash deploy/scripts/backup-db.sh
+
+# Cron (ежедневно 03:00)
+echo '0 3 * * * root /opt/projects/my-agent/deploy/scripts/backup-db.sh >> /var/log/my-agent-backup.log 2>&1' \
+  > /etc/cron.d/my-agent-backup
+```
+
+**Restore (≈15 мин):**
+
+```bash
+gunzip -c /opt/backups/my-agent/agent_db_YYYYMMDD_HHMMSS.sql.gz | psql "$DATABASE_URL"
+systemctl restart my-agent
+```
+
+### Миграция SQLite → PostgreSQL (один раз)
+
+```bash
+cd /opt/projects/my-agent
+export DATABASE_URL=postgresql://agent:agentpass@127.0.0.1:5437/agent_db
+.venv/bin/python scripts/migrate_sqlite_to_postgres.py --dry-run
+.venv/bin/python scripts/migrate_sqlite_to_postgres.py
+```
 
 ---
 

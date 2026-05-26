@@ -1,0 +1,21 @@
+groups:
+  - name: my-agent
+    interval: 30s
+    rules:
+      - alert: MyAgentDown
+        expr: up{job="my-agent"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "my-agent metrics scrape failed"
+          description: "Prometheus cannot reach /metrics on port 8020 for 2 minutes."
+
+      - alert: MyAgentHighErrorRate
+        expr: sum(rate(http_requests_total{status=~"5.."}[5m])) > 0.1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "my-agent 5xx rate elevated"
+          description: "HTTP 5xx rate exceeds 0.1 req/s over 5 minutes."

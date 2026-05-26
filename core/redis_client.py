@@ -206,6 +206,33 @@ class RedisClient:
             logger.warning("Redis queue_trim failed: %s", e)
             return False
 
+    async def queue_pop_durable(
+        self,
+        pending_key: str,
+        processing_key: str,
+        timeout: int = 5,
+    ) -> Optional[str]:
+        """Atomically move a job from pending to processing (BRPOPLPUSH)."""
+        if not self._available or not self._client:
+            return None
+        try:
+            result = await self._client.brpoplpush(pending_key, processing_key, timeout=timeout)
+            return result
+        except Exception as e:
+            logger.warning("Redis queue_pop_durable failed: %s", e)
+            return None
+
+    async def queue_remove(self, queue_key: str, value: str, count: int = 1) -> bool:
+        """Remove a specific value from a Redis list."""
+        if not self._available or not self._client:
+            return False
+        try:
+            await self._client.lrem(queue_key, count, value)
+            return True
+        except Exception as e:
+            logger.warning("Redis queue_remove failed: %s", e)
+            return False
+
 
 # Singleton
 redis_client = RedisClient()
