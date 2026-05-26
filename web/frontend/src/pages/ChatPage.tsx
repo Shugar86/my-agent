@@ -14,6 +14,8 @@ import {
   type ChatSession,
 } from '../api/appClient';
 import ChatMarkdown from '../components/chat/ChatMarkdown';
+import DemoModal from '../components/DemoModal';
+import FeatureTag from '../components/ui/FeatureTag';
 import EmptyState from '../components/ui/EmptyState';
 import { t } from '../i18n';
 
@@ -43,6 +45,8 @@ export default function ChatPage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [streaming, setStreaming] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [demoOpen, setDemoOpen] = useState(false);
   const [threadsOpen, setThreadsOpen] = useState(false);
   const [lastUserQuery, setLastUserQuery] = useState('');
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -60,13 +64,21 @@ export default function ChatPage() {
   };
 
   useEffect(() => {
-    listAgents().then((list) => {
-      setAgents(Array.isArray(list) ? list : []);
-      if (!searchParams.get('agent') && list.length > 0) {
-        setAgentId(list[0].id);
-      }
-    });
-    loadThreads();
+    setLoading(true);
+    Promise.all([
+      listAgents().then((list) => {
+        setAgents(Array.isArray(list) ? list : []);
+        if (!searchParams.get('agent') && list.length > 0) {
+          setAgentId(list[0].id);
+        }
+      }),
+      listChatSessions().then((sessions) => {
+        setThreads(sessions);
+        if (sessions.length > 0 && !activeThread) {
+          setActiveThread(sessions[0].id);
+        }
+      }).catch(() => setThreads([])),
+    ]).finally(() => setLoading(false));
     logUxEvent('chat_page_view');
   }, [searchParams]);
 
@@ -261,6 +273,7 @@ export default function ChatPage() {
 
   return (
     <div className="chat-layout">
+      <DemoModal open={demoOpen} onClose={() => setDemoOpen(false)} />
       {threadsOpen && (
         <button
           type="button"
@@ -297,21 +310,27 @@ export default function ChatPage() {
             ☰
           </button>
           <select className="input" style={{ width: 'auto', minWidth: 160 }} value={agentId} onChange={(e) => setAgentId(e.target.value)}>
-            {agents.map((a) => (
-              <option key={a.id} value={a.id}>{a.name || a.id}</option>
-            ))}
-            {agents.length === 0 && <option value="universal">universal</option>}
+          {agents.map((a) => (
+            <option key={a.id} value={a.id}>{a.name || a.id}</option>
+          ))}
+          {agents.length === 0 && <option value="universal">universal</option>}
           </select>
+          <FeatureTag status="beta" showDot={false} />
+          <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{t('chat.llmHint')}</span>
           {streaming && <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{t('chat.streaming')}</span>}
         </div>
 
         <div className="chat-messages">
-          {messages.length === 0 ? (
+          {loading ? (
+            <div className="skeleton" style={{ height: 200, margin: 16 }} />
+          ) : messages.length === 0 ? (
             <EmptyState
               title={t('chat.emptyTitle')}
               description={t('chat.emptyDesc')}
               actionLabel={t('chat.emptyCta')}
               actionTo="/marketplace"
+              secondaryActionLabel={t('chat.tryDemo')}
+              secondaryOnAction={() => setDemoOpen(true)}
             />
           ) : (
             messages.map(renderBubble)

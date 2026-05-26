@@ -146,4 +146,47 @@
   }
 
   loadLandingUseCases();
+  loadMarketplacePreview();
+
+  /** Load featured templates from API with showcase.json fallback. */
+  async function loadMarketplacePreview() {
+    const grid = document.getElementById('marketplacePreview');
+    if (!grid) return;
+    try {
+      let templates = [];
+      const res = await fetch('/api/public/templates?featured=true&limit=3');
+      if (res.ok) {
+        const data = await res.json();
+        templates = data.templates || [];
+      }
+      if (templates.length === 0) {
+        const fallback = await fetch('/welcome-assets/data/showcase.json');
+        if (fallback.ok) {
+          const data = await fallback.json();
+          templates = data.featured_templates || [];
+        }
+      }
+      if (templates.length === 0) throw new Error('no templates');
+      grid.innerHTML = templates
+        .slice(0, 3)
+        .map(
+          (tpl) => `<article class="use-case-card reveal">
+            <span class="use-case-badge">${escapeHtml(tpl.category || 'template')}</span>
+            <h3>${escapeHtml(tpl.name)}</h3>
+            <p>${escapeHtml(tpl.description || '')}</p>
+            <a href="/login?next=/app/marketplace" class="use-case-link">Установить →</a>
+          </article>`,
+        )
+        .join('');
+      if (!reducedMotion && revealObs) {
+        grid.querySelectorAll('.reveal').forEach((el) => revealObs.observe(el));
+      } else {
+        grid.querySelectorAll('.reveal').forEach((el) => el.classList.add('visible'));
+      }
+    } catch {
+      grid.innerHTML = `<p style="color:var(--text-secondary);grid-column:1/-1;text-align:center">
+        <a href="/login?next=/app/marketplace" class="btn btn-primary">Marketplace →</a>
+      </p>`;
+    }
+  }
 })();

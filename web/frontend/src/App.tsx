@@ -10,9 +10,6 @@ import AnalyticsPage from './pages/AnalyticsPage';
 import AdminPage from './pages/AdminPage';
 import OnboardingPage from './pages/OnboardingPage';
 import PublicTemplatePage from './pages/PublicTemplatePage';
-import AgentsPage from './pages/AgentsPage';
-import KnowledgePage from './pages/KnowledgePage';
-import McpPage from './pages/McpPage';
 import ShowcasePage from './pages/ShowcasePage';
 
 const WorkflowBuilder = lazy(() => import('./pages/WorkflowBuilder'));
@@ -42,13 +39,13 @@ export default function App() {
           <Route path="marketplace" element={<LazyPage><MarketplacePage /></LazyPage>} />
           <Route path="showcase" element={<ShowcasePage />} />
           <Route path="chat" element={<ChatPage />} />
-          <Route path="builder" element={<Navigate to="/agents" replace />} />
+          <Route path="builder" element={<Navigate to="/settings?tab=agents" replace />} />
+          <Route path="agents" element={<Navigate to="/settings?tab=agents" replace />} />
+          <Route path="knowledge" element={<Navigate to="/settings?tab=knowledge" replace />} />
+          <Route path="mcp" element={<Navigate to="/settings?tab=mcp" replace />} />
           <Route path="settings" element={<SettingsPage />} />
           <Route path="analytics" element={<AnalyticsPage />} />
           <Route path="admin" element={<AdminPage />} />
-          <Route path="agents" element={<AgentsPage />} />
-          <Route path="knowledge" element={<KnowledgePage />} />
-          <Route path="mcp" element={<McpPage />} />
         </Route>
         <Route path="onboarding" element={<OnboardingPage />} />
         <Route path="share/templates/:templateId" element={<PublicTemplatePage />} />

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { startDemoRun } from '../api/appClient';
+import FeatureTag from '../components/ui/FeatureTag';
 import { t } from '../i18n';
 
 interface DemoModalProps {
@@ -130,7 +131,8 @@ export default function DemoModal({ open, onClose }: DemoModalProps) {
           </button>
         </div>
 
-        <p style={{ fontSize: 11, color: 'var(--text-subtle)', marginTop: 16, marginBottom: 0 }}>
+        <p style={{ fontSize: 11, color: 'var(--text-subtle)', marginTop: 16, marginBottom: 0, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+          <FeatureTag status="mock" showDot={false} />
           {t('demo.fallbackNote')}
         </p>
       </div>

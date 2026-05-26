@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { getUsageSummary, type UsageSummary } from '../api/appClient';
+import { listWorkflows } from '../api/workflowClient';
 import { t } from '../i18n';
 
 function compactNumber(n: number): string {
@@ -12,12 +13,20 @@ export default function AnalyticsPage() {
   const [loading, setLoading] = useState(true);
   const [period, setPeriod] = useState<'7d' | '30d'>('7d');
   const [summary, setSummary] = useState<UsageSummary | null>(null);
+  const [workflowNames, setWorkflowNames] = useState<Record<string, string>>({});
 
   useEffect(() => {
     setLoading(true);
-    getUsageSummary(period)
-      .then(setSummary)
-      .catch(() => setSummary(null))
+    Promise.all([
+      getUsageSummary(period).catch(() => null),
+      listWorkflows().catch(() => []),
+    ])
+      .then(([usage, workflows]) => {
+        setSummary(usage);
+        const names: Record<string, string> = {};
+        workflows.forEach((w) => { names[w.id] = w.name; });
+        setWorkflowNames(names);
+      })
       .finally(() => setLoading(false));
   }, [period]);
 
@@ -44,6 +53,7 @@ export default function AnalyticsPage() {
   const daily = summary?.daily || [];
   const maxTokens = Math.max(...daily.map((d) => d.tokens), 1);
   const maxEvents = Math.max(...daily.map((d) => d.events), 1);
+  const hasRuns = (summary?.workflow_runs ?? 0) > 0;
 
   return (
     <div style={{ padding: 30 }}>
@@ -58,35 +68,40 @@ export default function AnalyticsPage() {
         </select>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 16, marginBottom: 32 }}>
-        {stats.map((s) => (
-          <div key={s.label} className="card">
-            <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{s.label}</div>
-            <div style={{ fontSize: 26, color: 'var(--accent)', fontWeight: 600 }}>{s.value}</div>
-          </div>
-        ))}
-      </div>
+      {hasRuns && (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 16, marginBottom: 32 }}>
+          {stats.map((s) => (
+            <div key={s.label} className="card">
+              <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{s.label}</div>
+              <div style={{ fontSize: 26, color: 'var(--accent)', fontWeight: 600 }}>{s.value}</div>
+            </div>
+          ))}
+        </div>
+      )}
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(380px, 1fr))', gap: 16, marginBottom: 24 }}>
-        <section className="card">
-          <h2 style={{ fontSize: 14, marginBottom: 16 }}>{t('analytics.tokensPerDay')}</h2>
-          <DailyBarChart data={daily.map((d) => ({ label: d.day, value: d.tokens }))} max={maxTokens} accent="var(--accent)" />
-        </section>
-        <section className="card">
-          <h2 style={{ fontSize: 14, marginBottom: 16 }}>{t('analytics.eventsPerDay')}</h2>
-          <DailyBarChart data={daily.map((d) => ({ label: d.day, value: d.events }))} max={maxEvents} accent="var(--success)" />
-        </section>
-      </div>
+      {hasRuns && daily.length > 0 && (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(380px, 1fr))', gap: 16, marginBottom: 24 }}>
+          <section className="card">
+            <h2 style={{ fontSize: 14, marginBottom: 16 }}>{t('analytics.tokensPerDay')}</h2>
+            <DailyBarChart data={daily.map((d) => ({ label: d.day, value: d.tokens }))} max={maxTokens} accent="var(--accent)" />
+          </section>
+          <section className="card">
+            <h2 style={{ fontSize: 14, marginBottom: 16 }}>{t('analytics.eventsPerDay')}</h2>
+            <DailyBarChart data={daily.map((d) => ({ label: d.day, value: d.events }))} max={maxEvents} accent="var(--success)" />
+          </section>
+        </div>
+      )}
 
       {summary?.top_workflows?.length ? (
         <section className="card">
           <h2 style={{ fontSize: 14, marginBottom: 12 }}>{t('analytics.topWorkflows')}</h2>
           {summary.top_workflows.map((w) => {
             const ratio = (w.runs / Math.max(1, summary.top_workflows[0].runs)) * 100;
+            const displayName = workflowNames[w.workflow_id] || w.workflow_id;
             return (
               <div key={w.workflow_id} style={{ marginBottom: 10 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, marginBottom: 4 }}>
-                  <span style={{ fontFamily: 'monospace' }}>{w.workflow_id}</span>
+                  <span>{displayName}</span>
                   <span style={{ color: 'var(--text-muted)' }}>{t('analytics.runsCount', { count: w.runs })}</span>
                 </div>
                 <div style={{ height: 6, background: 'var(--bg-tertiary)', borderRadius: 3, overflow: 'hidden' }}>
@@ -98,7 +113,9 @@ export default function AnalyticsPage() {
         </section>
       ) : (
         <div className="card" style={{ textAlign: 'center', padding: 32 }}>
-          <p style={{ color: 'var(--text-muted)' }}>{t('analytics.noRunsYet')}</p>
+          <p style={{ color: 'var(--text-muted)', marginBottom: 16 }}>{t('analytics.noRunsYet')}</p>
+          <p style={{ fontSize: 13, marginBottom: 16 }}>{t('analytics.emptyCta')}</p>
+          <a href="/demo" className="btn btn-primary">{t('analytics.emptyCtaLink')}</a>
         </div>
       )}
     </div>

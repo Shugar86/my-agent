@@ -1,5 +1,33 @@
 # Changelog — My Agent
 
+## 3.4.1 — 2026-05-26 (UX sprint — investor funnel)
+
+### Frontend — status & demo UX
+- `FeatureTag` component + `featureRegistry.ts` (Live / Beta / Preview / Coming soon)
+- `PlaygroundDemo` + `DemoStepper` embedded in `/app/showcase` and onboarding step 1
+- Marketplace template demo-run: ExecutionTimeline modal instead of raw JSON
+- WorkflowBuilder: demo mode banner (`?demo=mock`), breadcrumbs
+- `demoFallback.ts` for offline showcase data on Dashboard/Showcase
+
+### Frontend — navigation IA
+- AppShell: Main (Dashboard, Workflows, Marketplace, Chat) + Secondary (Analytics, Settings)
+- Agents / Knowledge / MCP moved to Settings tabs (`?tab=agents|knowledge|mcp`)
+- Redirects from legacy `/app/agents`, `/app/knowledge`, `/app/mcp`
+- Sidebar tagline: «Autonomous Workflow OS»
+
+### Public landing
+- `#problems` section (3 pain cards)
+- `#live-demo` iframe embed of `/demo`
+- `#marketplace-preview` from `/api/public/templates?featured=true&limit=3`
+
+### Polish
+- Chat: loading skeleton, Beta badge, «Try 90s demo» in empty state
+- Analytics: workflow names, empty CTA to `/demo`
+- Settings billing: Stripe `coming-soon` badge
+- E2E: landing sections, authenticated showcase playground, billing badge
+
+---
+
 ## 3.4.0 — 2026-05-26 (CEO audit — Production readiness)
 
 ### Ops

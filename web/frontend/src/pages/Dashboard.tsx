@@ -4,8 +4,10 @@ import { listAgents, listTemplates, installTemplate } from '../api/appClient';
 import { listWorkflows } from '../api/workflowClient';
 import type { Workflow } from '../types/workflow';
 import DemoModal from '../components/DemoModal';
+import FeatureTag from '../components/ui/FeatureTag';
 import PageHeader from '../components/ui/PageHeader';
 import { useToast } from '../components/ui/Toast';
+import { OFFLINE_SHOWCASE, fetchWithDemoFallback } from '../lib/demoFallback';
 import { t } from '../i18n';
 
 interface ShowcaseCard {
@@ -39,12 +41,15 @@ export default function Dashboard() {
   const [showcaseCards, setShowcaseCards] = useState<ShowcaseCard[]>([]);
   const [stats, setStats] = useState<DashboardStats>({ workflows: 0, templates: 0, integrations: 0, agents: 0 });
   const [demoOpen, setDemoOpen] = useState(false);
+  const [showcaseSource, setShowcaseSource] = useState<'live' | 'mock'>('live');
 
   useEffect(() => {
     Promise.all([
-      fetch('/welcome-assets/data/showcase.json')
-        .then((r) => (r.ok ? r.json() : { cards: [] }))
-        .catch(() => ({ cards: [] })),
+      fetchWithDemoFallback<{ cards: ShowcaseCard[] }>('/welcome-assets/data/showcase.json', OFFLINE_SHOWCASE)
+        .then(({ data, source }) => {
+          setShowcaseSource(source);
+          return data;
+        }),
       listTemplates(undefined, 'popular').catch(() => []),
       listWorkflows().catch(() => []),
       listAgents().catch(() => []),
@@ -106,6 +111,11 @@ export default function Dashboard() {
       <section className="dashboard-hero">
         <div style={{ flex: '1 1 320px' }}>
           <div className="dashboard-hero__badge">{t('dashboard.heroBadge')}</div>
+          {showcaseSource === 'mock' && (
+            <div style={{ marginBottom: 8 }}>
+              <FeatureTag status="mock" label={t('featureTag.previewData')} />
+            </div>
+          )}
           <h1 className="dashboard-hero__title">{t('dashboard.heroTitle')}</h1>
           <p className="dashboard-hero__desc">{t('dashboard.heroDesc')}</p>
         </div>
@@ -115,6 +125,7 @@ export default function Dashboard() {
           </button>
           <div style={{ display: 'flex', gap: 8 }}>
             <Link to="/showcase" className="btn">{t('nav.showcase')}</Link>
+            <a href="/showcase" className="btn btn-ghost" target="_blank" rel="noopener noreferrer">{t('showcase.publicVersion')}</a>
             <Link to="/marketplace" className="btn">{t('nav.marketplace')}</Link>
           </div>
         </div>
@@ -168,7 +179,7 @@ export default function Dashboard() {
                 </div>
               </div>
               <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 8 }}>
-                <span className="badge badge-featured">{t('showcase.liveBadge')}</span>
+                <FeatureTag status="live" label={t('showcase.liveBadge')} />
                 <span className="badge">{card.platform}</span>
               </div>
               <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 8 }}>{card.one_liner}</p>

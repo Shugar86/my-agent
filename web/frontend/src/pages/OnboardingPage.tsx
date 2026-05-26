@@ -11,12 +11,10 @@ import {
   saveIntegrationCredentials,
   testIntegration,
   getIntegrationAuthUrl,
-  startDemoRun,
   logUxEvent,
   type Integration,
 } from '../api/appClient';
-import { getRun } from '../api/workflowClient';
-import ExecutionTimeline from '../components/ExecutionTimeline';
+import PlaygroundDemo from '../components/demo/PlaygroundDemo';
 import { t } from '../i18n';
 
 const STEP_KEYS = ['demo', 'usecase', 'workspace', 'integrations'] as const;
@@ -56,15 +54,7 @@ export default function OnboardingPage() {
   const [installedWfId, setInstalledWfId] = useState<string | null>(null);
   const [drafts, setDrafts] = useState<Record<string, Record<string, string>>>({});
   const [testing, setTesting] = useState<string | null>(null);
-  const [demoRun, setDemoRun] = useState<{
-    workflow_id: string;
-    run_id: string;
-    mode: 'mock' | 'real';
-    artifact_url?: string;
-    logs: Array<{ node_id: string; event: string; detail?: unknown }>;
-    status: string;
-  } | null>(null);
-  const [demoStarting, setDemoStarting] = useState(false);
+  const [demoCompleted, setDemoCompleted] = useState(false);
 
   useEffect(() => {
     logUxEvent('onboarding_start');
@@ -147,46 +137,6 @@ export default function OnboardingPage() {
     }
   };
 
-  const handleTestRun = async () => {
-    setDemoStarting(true);
-    setStatus('');
-    try {
-      const result = await startDemoRun('Notion', 'Linear', false);
-      setDemoRun({
-        workflow_id: result.workflow_id,
-        run_id: result.run_id,
-        mode: result.mode,
-        artifact_url: result.artifact_url,
-        logs: [],
-        status: 'running',
-      });
-      logUxEvent('onboarding_demo_started');
-    } catch {
-      setStatus(t('onboarding.demoFailed'));
-    } finally {
-      setDemoStarting(false);
-    }
-  };
-
-  useEffect(() => {
-    if (!demoRun || demoRun.status !== 'running') return undefined;
-    const interval = setInterval(async () => {
-      try {
-        const run = await getRun(demoRun.workflow_id, demoRun.run_id);
-        setDemoRun((prev) =>
-          prev ? { ...prev, logs: run.logs || [], status: run.status } : prev,
-        );
-        if (run.status !== 'running') {
-          clearInterval(interval);
-          logUxEvent('onboarding_demo_completed', { status: run.status });
-        }
-      } catch {
-        clearInterval(interval);
-      }
-    }, 800);
-    return () => clearInterval(interval);
-  }, [demoRun?.run_id, demoRun?.status]);
-
   const finish = async () => {
     await completeOnboarding();
     logUxEvent('onboarding_complete');
@@ -230,43 +180,19 @@ export default function OnboardingPage() {
         <div className="card">
           <h2 style={{ fontSize: 16, marginBottom: 8 }}>{t('onboarding.demoTitle')}</h2>
           <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 16 }}>{t('onboarding.demoDesc')}</p>
-          {!demoRun ? (
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              <button type="button" className="btn btn-primary" onClick={handleTestRun} disabled={demoStarting}>
-                {demoStarting ? t('common.loading') : t('onboarding.runDemo')}
-              </button>
-              <button type="button" className="btn" onClick={() => setStep(2)}>{t('common.skip')}</button>
-            </div>
-          ) : (
-            <div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12, padding: '8px 12px', background: 'var(--bg-tertiary)', borderRadius: 6, fontSize: 12 }}>
-                <span>
-                  {demoRun.status === 'success' ? '✓' : demoRun.status === 'failed' ? '✗' : '…'}{' '}
-                  <strong style={{ color: demoRun.status === 'success' ? 'var(--success)' : demoRun.status === 'failed' ? 'var(--danger)' : 'var(--accent)' }}>
-                    {demoRun.status}
-                  </strong>
-                </span>
-                <span style={{ color: 'var(--text-muted)' }}>{demoRun.logs.length} events</span>
-              </div>
-              <div style={{ maxHeight: 400, overflowY: 'auto', border: '1px solid var(--border)', borderRadius: 6, padding: 12 }}>
-                <ExecutionTimeline logs={demoRun.logs} />
-              </div>
-              <div style={{ display: 'flex', gap: 8, marginTop: 16, flexWrap: 'wrap' }}>
-                {demoRun.status !== 'running' && demoRun.artifact_url && (
-                  <a href={demoRun.artifact_url} className="btn btn-primary" download target="_blank" rel="noreferrer">
-                    {t('onboarding.downloadDocx')}
-                  </a>
-                )}
-                {demoRun.status !== 'running' && (
-                  <button type="button" className="btn btn-primary" onClick={() => setStep(2)}>
-                    {t('common.continue')}
-                  </button>
-                )}
-                <button type="button" className="btn" onClick={() => navigate(`/workflows/${demoRun.workflow_id}?run=${demoRun.run_id}`)}>
-                  {t('onboarding.openInBuilder')}
-                </button>
-              </div>
-            </div>
+          <PlaygroundDemo
+            variant="compact"
+            showContinue={demoCompleted}
+            onComplete={() => {
+              setDemoCompleted(true);
+              logUxEvent('onboarding_demo_completed');
+            }}
+            onContinue={() => setStep(2)}
+          />
+          {!demoCompleted && (
+            <button type="button" className="btn btn-ghost" style={{ marginTop: 12 }} onClick={() => setStep(2)}>
+              {t('common.skip')}
+            </button>
           )}
         </div>
       )}
@@ -274,7 +200,8 @@ export default function OnboardingPage() {
       {step === 2 && (
         <div className="card">
           <h2 style={{ fontSize: 16, marginBottom: 12 }}>{t('onboarding.usecaseTitle')}</h2>
-          <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 16 }}>{t('onboarding.usecaseDesc')}</p>
+          <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 8 }}>{t('onboarding.usecaseDesc')}</p>
+          <p style={{ fontSize: 12, color: 'var(--accent)', marginBottom: 16 }}>{t('onboarding.usecaseHint')}</p>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 12 }}>
             {usecaseCards.map((card) => (
               <button

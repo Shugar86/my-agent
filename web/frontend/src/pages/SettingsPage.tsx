@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
   listIntegrations,
   saveIntegrationCredentials,
@@ -18,10 +19,16 @@ import {
   type ApiKeyEntry,
 } from '../api/appClient';
 import PageHeader from '../components/ui/PageHeader';
+import FeatureTag from '../components/ui/FeatureTag';
 import { useToast } from '../components/ui/Toast';
+import AgentsPage from './AgentsPage';
+import KnowledgePage from './KnowledgePage';
+import McpPage from './McpPage';
 import { t } from '../i18n';
 
-type TabId = 'integrations' | 'models' | 'workspace' | 'apiKeys' | 'billing';
+type TabId = 'integrations' | 'models' | 'workspace' | 'apiKeys' | 'billing' | 'agents' | 'knowledge' | 'mcp';
+
+const VALID_TABS: TabId[] = ['integrations', 'models', 'workspace', 'apiKeys', 'billing', 'agents', 'knowledge', 'mcp'];
 
 interface ConnectionDraft {
   [field: string]: string;
@@ -32,7 +39,11 @@ const DEFAULT_MODEL_PROFILE = 'kimi';
 /** Settings with tabs: integrations, models/API keys, workspace profile. */
 export default function SettingsPage() {
   const { showToast } = useToast();
-  const [tab, setTab] = useState<TabId>('integrations');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tabParam = searchParams.get('tab') as TabId | null;
+  const [tab, setTab] = useState<TabId>(
+    tabParam && VALID_TABS.includes(tabParam) ? tabParam : 'integrations',
+  );
   const [health, setHealth] = useState<Record<string, unknown> | null>(null);
   const [integrations, setIntegrations] = useState<Integration[]>([]);
   const [drafts, setDrafts] = useState<Record<string, ConnectionDraft>>({});
@@ -50,6 +61,15 @@ export default function SettingsPage() {
 
   const refresh = () => {
     listIntegrations().then(setIntegrations).catch(() => setIntegrations([]));
+  };
+
+  useEffect(() => {
+    if (tabParam && VALID_TABS.includes(tabParam)) setTab(tabParam);
+  }, [tabParam]);
+
+  const selectTab = (id: TabId) => {
+    setTab(id);
+    setSearchParams({ tab: id });
   };
 
   useEffect(() => {
@@ -174,6 +194,9 @@ export default function SettingsPage() {
     { id: 'apiKeys', label: t('settings.tabs.apiKeys') },
     { id: 'billing', label: t('settings.tabs.billing') },
     { id: 'workspace', label: t('settings.tabs.workspace') },
+    { id: 'agents', label: t('settings.tabs.agents') },
+    { id: 'knowledge', label: t('settings.tabs.knowledge') },
+    { id: 'mcp', label: t('settings.tabs.mcp') },
   ];
 
   return (
@@ -188,7 +211,7 @@ export default function SettingsPage() {
             role="tab"
             aria-selected={tab === tb.id}
             className={`tab ${tab === tb.id ? 'active' : ''}`}
-            onClick={() => setTab(tb.id)}
+            onClick={() => selectTab(tb.id)}
           >
             {tb.label}
           </button>
@@ -324,7 +347,11 @@ export default function SettingsPage() {
 
       {tab === 'billing' && (
         <div className="card">
-          <h2 style={{ fontSize: 15, marginBottom: 12 }}>{t('settings.billingPlan')}</h2>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+            <h2 style={{ fontSize: 15, margin: 0 }}>{t('settings.billingPlan')}</h2>
+            <FeatureTag status="coming-soon" label="Stripe" />
+          </div>
+          <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 16 }}>{t('settings.stripeComingSoon')}</p>
           {billing ? (
             <>
               <p style={{ fontSize: 22, color: 'var(--accent)', fontWeight: 600, marginBottom: 8 }}>{billing.label}</p>
@@ -344,6 +371,10 @@ export default function SettingsPage() {
           )}
         </div>
       )}
+
+      {tab === 'agents' && <AgentsPage embedded />}
+      {tab === 'knowledge' && <KnowledgePage embedded />}
+      {tab === 'mcp' && <McpPage embedded />}
     </div>
   );
 }

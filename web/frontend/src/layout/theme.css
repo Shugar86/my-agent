@@ -206,6 +206,78 @@ textarea.input { line-height: 1.5; resize: vertical; }
   100% { box-shadow: 0 0 0 0 rgba(88,166,255,0); }
 }
 
+/* Feature status tags (Live / Beta / Preview / Coming soon). */
+.feature-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+.feature-tag__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--success);
+  flex-shrink: 0;
+}
+.feature-tag--live { color: var(--success); background: rgba(35,134,54,0.12); }
+.feature-tag--beta { color: var(--warning); background: rgba(210,153,34,0.15); }
+.feature-tag--mock { color: var(--text-muted); background: var(--bg-tertiary); }
+.feature-tag--coming-soon {
+  color: var(--text-muted);
+  border: 1px dashed var(--border);
+  background: transparent;
+}
+.feature-tag--broken { color: var(--danger); background: rgba(248,81,73,0.12); }
+
+.breadcrumbs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+}
+.breadcrumbs__sep { margin: 0 4px; opacity: 0.6; }
+.breadcrumbs__link { color: var(--accent); text-decoration: none; }
+.breadcrumbs__link:hover { text-decoration: underline; }
+.breadcrumbs__current { color: var(--text); font-weight: 500; }
+
+.demo-stepper { display: flex; flex-direction: column; gap: 10px; }
+.demo-step {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  font-size: 13px;
+}
+.demo-step-marker {
+  width: 22px;
+  text-align: center;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+.demo-step--done .demo-step-marker { color: var(--success); }
+.demo-step--running .demo-step-marker { color: var(--accent); animation: pulseRing 1.4s infinite; }
+.demo-step-label { font-weight: 500; }
+.demo-step-log { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+
+.playground-demo { margin-bottom: 32px; }
+.playground-presets { display: flex; flex-wrap: wrap; gap: 8px; }
+.playground-error {
+  margin-top: 12px;
+  padding: 10px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  color: var(--danger);
+  background: rgba(248,81,73,0.12);
+  border: 1px solid rgba(248,81,73,0.35);
+}
+
 /* Featured badge for marketplace + dashboard cards. */
 .badge-featured {
   display: inline-block;

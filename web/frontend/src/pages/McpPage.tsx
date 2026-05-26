@@ -8,12 +8,13 @@ import {
   type McpServer,
 } from '../api/appClient';
 import PageHeader from '../components/ui/PageHeader';
+import FeatureTag from '../components/ui/FeatureTag';
 import EmptyState from '../components/ui/EmptyState';
 import { useToast } from '../components/ui/Toast';
 import { t } from '../i18n';
 
 /** MCP server management — migrated from legacy mcp.html. */
-export default function McpPage() {
+export default function McpPage({ embedded = false }: { embedded?: boolean }) {
   const { showToast } = useToast();
   const [servers, setServers] = useState<McpServer[]>([]);
   const [loading, setLoading] = useState(true);
@@ -93,18 +94,27 @@ export default function McpPage() {
   };
 
   return (
-    <div className="page-content">
-      <PageHeader
-        title={t('mcp.title')}
-        subtitle={t('mcp.subtitle')}
-        actions={
-          <>
-            <button type="button" className="btn" onClick={handleStartAll} disabled={busy === 'all'}>{t('common.startAll')}</button>
-            <button type="button" className="btn" onClick={handleStopAll} disabled={busy === 'all'}>{t('common.stopAll')}</button>
-            <button type="button" className="btn" onClick={load} aria-label={t('common.refresh')}>🔄</button>
-          </>
-        }
-      />
+    <div className={embedded ? undefined : 'page-content'}>
+      {!embedded ? (
+        <PageHeader
+          title={t('mcp.title')}
+          subtitle={t('mcp.subtitle')}
+          actions={
+            <>
+              <button type="button" className="btn" onClick={handleStartAll} disabled={busy === 'all'}>{t('common.startAll')}</button>
+              <button type="button" className="btn" onClick={handleStopAll} disabled={busy === 'all'}>{t('common.stopAll')}</button>
+              <button type="button" className="btn" onClick={load} aria-label={t('common.refresh')}>🔄</button>
+            </>
+          }
+        />
+      ) : (
+        <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
+          <FeatureTag status="beta" />
+          <button type="button" className="btn" onClick={handleStartAll} disabled={busy === 'all'}>{t('common.startAll')}</button>
+          <button type="button" className="btn" onClick={handleStopAll} disabled={busy === 'all'}>{t('common.stopAll')}</button>
+          <button type="button" className="btn" onClick={load} aria-label={t('common.refresh')}>🔄</button>
+        </div>
+      )}
 
       {loading ? (
         <div className="cards-grid">

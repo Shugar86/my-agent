@@ -1,23 +1,21 @@
 import { useEffect, useState } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
 import TeamSwitcher from '../components/TeamSwitcher';
+import FeatureTag from '../components/ui/FeatureTag';
+import { NAV_FEATURE_STATUS } from '../config/featureRegistry';
 import { getMe, type MeUser } from '../api/appClient';
-import { t } from '../i18n';
+import { t, type I18nKey } from '../i18n';
 import './theme.css';
 
 const NAV_MAIN = [
   { to: '/', labelKey: 'nav.dashboard' as const },
-  { to: '/showcase', labelKey: 'nav.showcase' as const },
-  { to: '/chat', labelKey: 'nav.chat' as const },
   { to: '/workflows', labelKey: 'nav.workflows' as const },
   { to: '/marketplace', labelKey: 'nav.marketplace' as const },
-  { to: '/analytics', labelKey: 'nav.analytics' as const },
+  { to: '/chat', labelKey: 'nav.chat' as const },
 ];
 
-const NAV_POWER = [
-  { to: '/agents', labelKey: 'nav.agents' as const },
-  { to: '/knowledge', labelKey: 'nav.knowledge' as const },
-  { to: '/mcp', labelKey: 'nav.mcp' as const },
+const NAV_SECONDARY = [
+  { to: '/analytics', labelKey: 'nav.analytics' as const },
   { to: '/settings', labelKey: 'nav.settings' as const },
 ];
 
@@ -25,6 +23,7 @@ function navLinkStyle(isActive: boolean) {
   return {
     display: 'flex' as const,
     alignItems: 'center' as const,
+    justifyContent: 'space-between' as const,
     gap: 10,
     padding: '10px 18px',
     color: isActive ? 'var(--text)' : 'var(--text-muted)',
@@ -41,6 +40,18 @@ const THEME_STORAGE_KEY = 'my-agent.theme';
 
 function applyTheme(theme: 'dark' | 'light') {
   document.documentElement.dataset.theme = theme;
+}
+
+function NavItem({ to, labelKey, end, onNavigate }: { to: string; labelKey: I18nKey; end?: boolean; onNavigate: () => void }) {
+  const status = NAV_FEATURE_STATUS[to] ?? 'live';
+  return (
+    <NavLink to={to} end={end} onClick={onNavigate} style={({ isActive }) => navLinkStyle(isActive)}>
+      <span>{t(labelKey)}</span>
+      {(status === 'beta' || status === 'mock') && (
+        <FeatureTag status={status} showDot={false} />
+      )}
+    </NavLink>
+  );
 }
 
 export default function AppShell() {
@@ -99,26 +110,11 @@ export default function AppShell() {
         <TeamSwitcher />
         <nav style={{ flex: 1, overflowY: 'auto' }}>
           {NAV_MAIN.map((item) => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              end={item.to === '/'}
-              onClick={() => setSidebarOpen(false)}
-              style={({ isActive }) => navLinkStyle(isActive)}
-            >
-              {t(item.labelKey)}
-            </NavLink>
+            <NavItem key={item.to} to={item.to} labelKey={item.labelKey} end={item.to === '/'} onNavigate={() => setSidebarOpen(false)} />
           ))}
           <div style={{ margin: '8px 18px', borderTop: '1px solid var(--border)' }} />
-          {NAV_POWER.map((item) => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              onClick={() => setSidebarOpen(false)}
-              style={({ isActive }) => navLinkStyle(isActive)}
-            >
-              {t(item.labelKey)}
-            </NavLink>
+          {NAV_SECONDARY.map((item) => (
+            <NavItem key={item.to} to={item.to} labelKey={item.labelKey} onNavigate={() => setSidebarOpen(false)} />
           ))}
           {showAdmin && (
             <NavLink
@@ -130,16 +126,21 @@ export default function AppShell() {
             </NavLink>
           )}
         </nav>
-        <div style={{ padding: '12px 18px', borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{t('app.theme')}</span>
-          <button
-            type="button"
-            className="btn btn-ghost"
-            onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-            style={{ padding: '4px 8px', fontSize: 11 }}
-          >
-            {theme === 'dark' ? t('app.themeLight') : t('app.themeDark')}
-          </button>
+        <div style={{ padding: '12px 18px', borderTop: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <a href="/showcase" className="btn btn-ghost" style={{ fontSize: 11, justifyContent: 'center' }} target="_blank" rel="noopener noreferrer">
+            {t('showcase.publicVersion')}
+          </a>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{t('app.theme')}</span>
+            <button
+              type="button"
+              className="btn btn-ghost"
+              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+              style={{ padding: '4px 8px', fontSize: 11 }}
+            >
+              {theme === 'dark' ? t('app.themeLight') : t('app.themeDark')}
+            </button>
+          </div>
         </div>
       </aside>
 

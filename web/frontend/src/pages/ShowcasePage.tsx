@@ -1,7 +1,11 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
-import DemoModal from '../components/DemoModal';
+import { Link, useNavigate } from 'react-router-dom';
+import { installTemplate } from '../api/appClient';
+import PlaygroundDemo from '../components/demo/PlaygroundDemo';
+import FeatureTag from '../components/ui/FeatureTag';
 import PageHeader from '../components/ui/PageHeader';
+import { useToast } from '../components/ui/Toast';
+import { OFFLINE_SHOWCASE, fetchWithDemoFallback } from '../lib/demoFallback';
 import { t } from '../i18n';
 
 interface PersonaSnippet {
@@ -40,27 +44,30 @@ interface ShowcaseData {
   }>;
 }
 
-/** Authenticated mirror of /showcase — cards from JSON, featured templates from API. */
+/** Authenticated showcase — vertical cases, playground, featured templates. */
 export default function ShowcasePage() {
+  const navigate = useNavigate();
+  const { showToast } = useToast();
   const [data, setData] = useState<ShowcaseData | null>(null);
   const [featuredTemplates, setFeaturedTemplates] = useState<ShowcaseData['featured_templates']>([]);
   const [expanded, setExpanded] = useState<string | null>(null);
-  const [demoOpen, setDemoOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [dataSource, setDataSource] = useState<'live' | 'mock'>('live');
+  const [installingId, setInstallingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    setLoading(true);
     Promise.all([
-      fetch('/welcome-assets/data/showcase.json')
-        .then((r) => {
-          if (!r.ok) throw new Error('Failed to load showcase');
-          return r.json();
-        }),
+      fetchWithDemoFallback<ShowcaseData>('/welcome-assets/data/showcase.json', OFFLINE_SHOWCASE),
       fetch('/api/public/templates?featured=true&limit=9')
         .then((r) => (r.ok ? r.json() : { templates: [] }))
         .catch(() => ({ templates: [] })),
     ])
-      .then(([showcaseJson, featuredJson]) => {
-        setData(showcaseJson);
+      .then(([showcaseResult, featuredJson]) => {
+        setData(showcaseResult.data);
+        setDataSource(showcaseResult.source);
+        if (showcaseResult.source === 'mock') showToast(t('featureTag.previewData'), 'info');
         const apiTemplates = (featuredJson.templates || []).map(
           (tpl: { id: string; name: string; category: string; description: string; nodes?: number }) => ({
             id: tpl.id,
@@ -71,27 +78,51 @@ export default function ShowcasePage() {
           }),
         );
         setFeaturedTemplates(
-          apiTemplates.length > 0 ? apiTemplates : showcaseJson.featured_templates || [],
+          apiTemplates.length > 0 ? apiTemplates : showcaseResult.data.featured_templates || [],
         );
       })
-      .catch(() => setError(t('showcase.loadError')));
-  }, []);
+      .catch(() => setError(t('showcase.loadError')))
+      .finally(() => setLoading(false));
+  }, [showToast]);
 
-  if (error) {
+  const handleInstall = async (templateId: string) => {
+    setInstallingId(templateId);
+    try {
+      const result = await installTemplate(templateId);
+      navigate(`/workflows/${result.workflow.id}`);
+    } catch {
+      showToast(t('dashboard.installFailed'), 'error');
+    } finally {
+      setInstallingId(null);
+    }
+  };
+
+  if (loading) {
     return (
       <div className="page-content">
-        <PageHeader title={t('showcase.title')} subtitle={error} />
-        <div className="card" style={{ marginTop: 16 }}>
-          <p style={{ color: 'var(--text-muted)' }}>{t('showcase.loadError')}</p>
+        <PageHeader title={t('showcase.title')} subtitle={t('common.loading')} />
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+            gap: 16,
+            marginBottom: 32,
+          }}
+        >
+          {[1, 2, 3, 4, 5, 6].map((i) => (
+            <div key={i} className="skeleton" style={{ height: 220 }} />
+          ))}
         </div>
+        <div className="skeleton" style={{ height: 280 }} />
       </div>
     );
   }
 
-  if (!data) {
+  if (error || !data) {
     return (
       <div className="page-content">
-        <PageHeader title={t('showcase.title')} subtitle={t('common.loading')} />
+        <PageHeader title={t('showcase.title')} subtitle={error || t('showcase.loadError')} />
+        <PlaygroundDemo />
       </div>
     );
   }
@@ -108,14 +139,7 @@ export default function ShowcasePage() {
           templates: meta.templates,
         })}
         actions={
-          <>
-            <button type="button" className="btn btn-primary" onClick={() => setDemoOpen(true)}>
-              {t('onboarding.runDemo')}
-            </button>
-            <a href="/showcase" className="btn btn-secondary" target="_blank" rel="noopener noreferrer">
-              {t('showcase.publicPage')} ↗
-            </a>
-          </>
+          dataSource === 'mock' ? <FeatureTag status="mock" label={t('featureTag.previewData')} /> : undefined
         }
       />
 
@@ -151,9 +175,7 @@ export default function ShowcasePage() {
               </div>
             </div>
             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 10 }}>
-              <span className="badge badge-featured">
-                {card.status === 'live' ? t('showcase.liveBadge') : t('showcase.labBadge')}
-              </span>
+              <FeatureTag status={card.status === 'live' ? 'live' : 'beta'} />
               <span className="badge">{card.platform}</span>
             </div>
             <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 8 }}>{card.one_liner}</p>
@@ -182,14 +204,23 @@ export default function ShowcasePage() {
                 {card.cta_label}
               </a>
             ) : card.id === 'my-agent' ? (
-              <button type="button" className="btn btn-primary" style={{ width: '100%' }} onClick={() => setDemoOpen(true)}>
+              <a href="#playground" className="btn btn-primary" style={{ width: '100%', display: 'block', textAlign: 'center' }}>
                 {card.cta_label}
-              </button>
+              </a>
             ) : (
-              <span className="btn btn-secondary" style={{ width: '100%', opacity: 0.7 }}>{card.cta_label}</span>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                <FeatureTag status="coming-soon" />
+                <button type="button" className="btn btn-secondary" style={{ width: '100%' }} disabled title={t('showcase.comingSoonHint')}>
+                  {card.cta_label}
+                </button>
+              </div>
             )}
           </article>
         ))}
+      </div>
+
+      <div id="playground">
+        <PlaygroundDemo />
       </div>
 
       <h2 style={{ fontSize: 18, marginBottom: 12 }}>{t('showcase.featuredTemplates')}</h2>
@@ -202,18 +233,30 @@ export default function ShowcasePage() {
         }}
       >
         {featuredTemplates.map((tpl) => (
-          <div key={tpl.id} className="card" style={{ padding: 16 }}>
+          <div key={tpl.id} className="card" style={{ padding: 16, display: 'flex', flexDirection: 'column' }}>
             <div style={{ fontSize: 11, color: 'var(--accent)', textTransform: 'uppercase', marginBottom: 4 }}>{tpl.category}</div>
             <h3 style={{ fontSize: 14, marginBottom: 6 }}>{tpl.name}</h3>
-            <p style={{ fontSize: 12, color: 'var(--text-muted)' }}>{tpl.description}</p>
+            <p style={{ fontSize: 12, color: 'var(--text-muted)', flex: 1, marginBottom: 12 }}>{tpl.description}</p>
+            <button
+              type="button"
+              className="btn btn-primary"
+              style={{ width: '100%' }}
+              disabled={installingId === tpl.id}
+              onClick={() => handleInstall(tpl.id)}
+            >
+              {installingId === tpl.id ? t('common.loading') : t('showcase.installTemplate')}
+            </button>
           </div>
         ))}
       </div>
-      <Link to="/marketplace" className="btn btn-primary">
-        {t('common.viewAll')}
-      </Link>
-
-      <DemoModal open={demoOpen} onClose={() => setDemoOpen(false)} />
+      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
+        <Link to="/marketplace" className="btn btn-primary">
+          {t('common.viewAll')}
+        </Link>
+        <a href="/showcase" className="btn btn-ghost" target="_blank" rel="noopener noreferrer" style={{ fontSize: 13 }}>
+          {t('showcase.publicVersion')}
+        </a>
+      </div>
     </div>
   );
 }

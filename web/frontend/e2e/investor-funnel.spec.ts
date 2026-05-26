@@ -57,6 +57,19 @@ test.describe('Investor funnel', () => {
     await expect(page.locator('#dev-footer')).toBeVisible();
     await expect(page.locator('#dev-footer')).toContainText(/admin \/ admin/i);
   });
+
+  test('landing has problems and live-demo sections', async ({ page }) => {
+    await page.goto('/');
+    await expect(page.locator('#problems')).toBeVisible();
+    await expect(page.locator('#problems')).toContainText(/4 часа/i);
+    await expect(page.locator('#live-demo')).toBeVisible();
+    await expect(page.locator('#live-demo iframe')).toHaveAttribute('src', '/demo');
+  });
+
+  test('landing marketplace preview section exists', async ({ page }) => {
+    await page.goto('/');
+    await expect(page.locator('#marketplace-preview')).toBeVisible();
+  });
 });
 
 test.describe('Public demo run', () => {
@@ -109,5 +122,55 @@ test.describe('Showcase playground run', () => {
     await page.getByRole('button', { name: /Запустить demo/i }).click();
     await expect(page.locator('#playgroundTimeline')).toBeVisible({ timeout: 10_000 });
     await expect(page.getByRole('link', { name: /Скачать brief/i })).toBeVisible({ timeout: 90_000 });
+  });
+});
+
+async function loginAsAdmin(page: import('@playwright/test').Page) {
+  await page.goto('/login?dev=1');
+  const userInput = page.locator('#username, input[type="text"]').first();
+  await userInput.fill('admin');
+  const passInput = page.locator('#password, input[type="password"]').first();
+  await passInput.fill('admin');
+  await page.getByRole('button', { name: /войти|login|sign in/i }).click();
+  await page.waitForURL(/\/app/, { timeout: 15_000 });
+}
+
+test.describe('Authenticated SPA UX', () => {
+  test('app showcase has playground demo button', async ({ page }) => {
+    await loginAsAdmin(page);
+    await page.goto('/app/showcase');
+    await expect(page.getByRole('button', { name: /Запустить demo/i })).toBeVisible({ timeout: 10_000 });
+    await expect(page.locator('#playground')).toBeVisible();
+  });
+
+  test('settings billing shows coming soon badge', async ({ page }) => {
+    await loginAsAdmin(page);
+    await page.goto('/app/settings?tab=billing');
+    await expect(page.locator('body')).toContainText(/Скоро|Stripe/i);
+  });
+});
+
+async function loginAsAdmin(page: import('@playwright/test').Page) {
+  await page.goto('/login?dev=1');
+  const userInput = page.locator('#username, input[type="text"]').first();
+  await userInput.fill('admin');
+  const passInput = page.locator('#password, input[type="password"]').first();
+  await passInput.fill('admin');
+  await page.getByRole('button', { name: /войти|login|sign in/i }).click();
+  await page.waitForURL(/\/app/, { timeout: 15_000 });
+}
+
+test.describe('Authenticated SPA UX', () => {
+  test('app showcase has playground demo button', async ({ page }) => {
+    await loginAsAdmin(page);
+    await page.goto('/app/showcase');
+    await expect(page.getByRole('button', { name: /Запустить demo/i })).toBeVisible({ timeout: 10_000 });
+    await expect(page.locator('#playground')).toBeVisible();
+  });
+
+  test('settings billing shows coming soon badge', async ({ page }) => {
+    await loginAsAdmin(page);
+    await page.goto('/app/settings?tab=billing');
+    await expect(page.locator('body')).toContainText(/Скоро|Stripe/i);
   });
 });

@@ -1,7 +1,7 @@
 # My Agent — Technical Documentation
 
 > Last updated: 2026-05-26
-> Version: 3.4.0 (CEO audit — production readiness)
+> Version: 3.4.1 (UX sprint — investor funnel + FeatureTag)
 > Author: AI Assistant
 
 ---
@@ -42,17 +42,33 @@ Mock fallback works without API keys — safe for live investor presentations.
 | `/app/chat` | Чат (markdown, tool bubbles, feedback) |
 | `/app/workflows` | Список workflows + builder (`/app/workflows/:id`) — **RU UI** |
 | `/app/marketplace` | Маркетплейс шаблонов |
-| `/app/agents` | CRUD агентов |
-| `/app/knowledge` | База знаний (RAG) |
-| `/app/mcp` | MCP-серверы |
-| `/app/settings` | Интеграции, модели, API keys, billing, профиль workspace |
-| `/app/onboarding` | 4-step wizard + 90s demo |
-| `/app/showcase` | Demo-MVP vertical cases (auth) |
+| `/app/settings` | Интеграции, модели, API keys, billing, agents/knowledge/MCP (tabs) |
+| `/app/onboarding` | 4-step wizard + PlaygroundDemo (90s) |
+| `/app/showcase` | Vertical cases + **embedded PlaygroundDemo** (auth) |
+| `/` | Маркетинговый лендинг (`#problems`, `#live-demo`, marketplace preview) |
 | `/showcase` | Demo-MVP showcase (public, no auth) |
 | `/demo` | Public Competitor Intelligence demo |
-| `/welcome` | Маркетинговый лендинг |
+| `/welcome` | Alias лендинга (`/` ) |
+
+Legacy redirects: `/app/agents`, `/app/knowledge`, `/app/mcp` → `/app/settings?tab=...`
 
 Дизайн-система: [`web/frontend/DESIGN.md`](web/frontend/DESIGN.md). Сборка: `cd web/frontend && bun run build`.
+
+### Changelog 3.4.1 (2026-05-26) — UX sprint (investor funnel)
+
+**Status system:** `<FeatureTag status="live|beta|mock|coming-soon" />` — nav, demo runs, dead CTAs.
+
+**Showcase SPA:** `/app/showcase` — PlaygroundDemo (auth `startDemoRun` + mock fallback), skeleton loading, install featured templates.
+
+**Demo UX:** Marketplace demo-run → ExecutionTimeline modal; WorkflowBuilder demo banner (`?demo=mock`); DemoModal Preview badge.
+
+**Navigation:** sidebar сжат до Dashboard / Workflows / Marketplace / Chat + Analytics / Settings; agents/knowledge/MCP в Settings tabs.
+
+**Landing:** `#problems`, iframe `/demo`, dynamic marketplace preview из API.
+
+**Polish:** Onboarding → PlaygroundDemo; Chat empty state + demo CTA; Analytics empty → `/demo`; billing Stripe `coming-soon`.
+
+Build: `cd web/frontend && bun run build`. E2E: `bun run test:e2e` (сервер на `:8020`).
 
 ### Changelog 3.4.0 (2026-05-26) — Production readiness
 

@@ -15,6 +15,8 @@ import {
 import '@xyflow/react/dist/style.css';
 import WorkflowNodeComponent from '../components/nodes/WorkflowNodeComponent';
 import ExecutionTimeline from '../components/ExecutionTimeline';
+import Breadcrumbs from '../components/ui/Breadcrumbs';
+import FeatureTag from '../components/ui/FeatureTag';
 import { NODE_TYPES, NODE_CATEGORIES, type WorkflowDefinition } from '../types/workflow';
 import {
   getWorkflow,
@@ -118,6 +120,8 @@ export default function WorkflowBuilder() {
   const [branchLabel, setBranchLabel] = useState('true');
   const [pendingConnection, setPendingConnection] = useState<Connection | null>(null);
   const [selectedEdge, setSelectedEdge] = useState<Edge | null>(null);
+
+  const demoMode = searchParams.get('demo');
 
   const handleSaveRef = useRef<() => Promise<void>>();
 
@@ -467,7 +471,21 @@ export default function WorkflowBuilder() {
       </div>
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+        {demoMode === 'mock' && (
+          <div style={{ padding: '8px 16px', background: 'var(--bg-tertiary)', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 10 }}>
+            <FeatureTag status="mock" />
+            <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{t('builder.demoBanner')}</span>
+          </div>
+        )}
         <div style={{ padding: '10px 16px', borderBottom: '1px solid var(--border)', display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', background: 'var(--bg-secondary)' }}>
+          <div style={{ flex: '1 1 100%', minWidth: 200 }}>
+            <Breadcrumbs
+              items={[
+                { label: t('nav.workflows'), to: '/workflows' },
+                { label: name },
+              ]}
+            />
+          </div>
           <input className="input" value={name} onChange={(e) => setName(e.target.value)} style={{ width: 200 }} />
           <select className="input" style={{ width: 'auto' }} value={wfStatus} onChange={(e) => setWfStatus(e.target.value as 'draft' | 'active')}>
             <option value="draft">{t('builder.statusDraft')}</option>

@@ -10,6 +10,8 @@ import {
   demoRunTemplate,
   type Template,
 } from '../api/appClient';
+import ExecutionTimeline from '../components/ExecutionTimeline';
+import FeatureTag from '../components/ui/FeatureTag';
 import WorkflowThumbnail from '../components/WorkflowThumbnail';
 import PageHeader from '../components/ui/PageHeader';
 import EmptyState from '../components/ui/EmptyState';
@@ -53,7 +55,13 @@ export default function MarketplacePage() {
   const [pubTags, setPubTags] = useState('');
   const [pubDefinition, setPubDefinition] = useState('{"nodes":[],"edges":[]}');
   const [previewTemplate, setPreviewTemplate] = useState<Template | null>(null);
-  const [demoPreview, setDemoPreview] = useState<{ templateId: string; logs: Array<{ node_id: string; event: string }> } | null>(null);
+  const [demoPreview, setDemoPreview] = useState<{
+    templateId: string;
+    templateName: string;
+    logs: Array<{ node_id: string; event: string; detail?: unknown }>;
+    mode: string;
+    status: string;
+  } | null>(null);
 
   useEffect(() => {
     const t = setTimeout(() => setDebouncedSearch(search), 250);
@@ -125,8 +133,15 @@ export default function MarketplacePage() {
 
   const handleDemoRun = async (id: string) => {
     try {
+      const tpl = templates.find((t) => t.id === id);
       const result = await demoRunTemplate(id);
-      setDemoPreview({ templateId: id, logs: result.logs || [] });
+      setDemoPreview({
+        templateId: id,
+        templateName: tpl?.name || id,
+        logs: result.logs || [],
+        mode: result.mode || 'mock',
+        status: result.status || 'success',
+      });
       showToast(t('marketplace.demoRunDone'), 'success');
     } catch {
       showToast(t('common.error'), 'error');
@@ -269,11 +284,33 @@ export default function MarketplacePage() {
       )}
 
       {demoPreview && (
-        <div className="card" style={{ marginTop: 24 }}>
-          <h3 style={{ fontSize: 14, marginBottom: 8 }}>{t('marketplace.demoRun')}: {demoPreview.templateId}</h3>
-          <pre style={{ fontSize: 11, maxHeight: 200, overflow: 'auto', background: 'var(--bg)', padding: 12, borderRadius: 6 }}>
-            {JSON.stringify(demoPreview.logs.slice(0, 20), null, 2)}
-          </pre>
+        <div
+          onClick={() => setDemoPreview(null)}
+          style={{
+            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 1000,
+            display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20,
+          }}
+        >
+          <div
+            className="card"
+            onClick={(e) => e.stopPropagation()}
+            style={{ width: 640, maxWidth: '100%', maxHeight: '90vh', overflowY: 'auto' }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: 12, gap: 8 }}>
+              <div>
+                <h2 style={{ marginBottom: 4 }}>{t('marketplace.demoRunModalTitle')}</h2>
+                <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>{demoPreview.templateName}</p>
+              </div>
+              <FeatureTag status={demoPreview.mode === 'mock' ? 'mock' : 'live'} />
+            </div>
+            <ExecutionTimeline logs={demoPreview.logs} />
+            <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
+              <button type="button" className="btn btn-primary" style={{ flex: 1 }} onClick={() => handleInstall(demoPreview.templateId)}>
+                {t('marketplace.cloneEdit')}
+              </button>
+              <button type="button" className="btn" onClick={() => setDemoPreview(null)}>{t('marketplace.close')}</button>
+            </div>
+          </div>
         </div>
       )}
 

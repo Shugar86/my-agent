@@ -13,7 +13,7 @@ import { useToast } from '../components/ui/Toast';
 import { t } from '../i18n';
 
 /** RAG knowledge base — migrated from legacy knowledge.html. */
-export default function KnowledgePage() {
+export default function KnowledgePage({ embedded = false }: { embedded?: boolean }) {
   const { showToast } = useToast();
   const [docs, setDocs] = useState<KnowledgeDoc[]>([]);
   const [source, setSource] = useState('');
@@ -75,8 +75,8 @@ export default function KnowledgePage() {
   };
 
   return (
-    <div className="page-content">
-      <PageHeader title={t('knowledge.title')} subtitle={t('knowledge.subtitle')} />
+    <div className={embedded ? undefined : 'page-content'}>
+      {!embedded && <PageHeader title={t('knowledge.title')} subtitle={t('knowledge.subtitle')} />}
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 20 }}>
         <div>

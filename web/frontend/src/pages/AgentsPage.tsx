@@ -25,7 +25,7 @@ const EMPTY_FORM = {
 };
 
 /** Agent CRUD page — migrated from legacy agents.html. */
-export default function AgentsPage() {
+export default function AgentsPage({ embedded = false }: { embedded?: boolean }) {
   const { showToast } = useToast();
   const [agents, setAgents] = useState<Agent[]>([]);
   const [loading, setLoading] = useState(true);
@@ -109,22 +109,30 @@ export default function AgentsPage() {
   };
 
   if (loading) {
-    return (
-      <div className="page-content">
+    const skeleton = (
+      <>
         <div className="skeleton" style={{ height: 40, width: 240, marginBottom: 24 }} />
         <div className="cards-grid">
           {[1, 2, 3].map((i) => <div key={i} className="skeleton" style={{ height: 140 }} />)}
         </div>
-      </div>
+      </>
     );
+    return embedded ? <div>{skeleton}</div> : <div className="page-content">{skeleton}</div>;
   }
 
   return (
-    <div className="page-content">
-      <PageHeader
-        title={t('agents.title')}
-        actions={<button type="button" className="btn btn-primary" onClick={openCreate}>{t('agents.newAgent')}</button>}
-      />
+    <div className={embedded ? undefined : 'page-content'}>
+      {!embedded && (
+        <PageHeader
+          title={t('agents.title')}
+          actions={<button type="button" className="btn btn-primary" onClick={openCreate}>{t('agents.newAgent')}</button>}
+        />
+      )}
+      {embedded && (
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 16 }}>
+          <button type="button" className="btn btn-primary" onClick={openCreate}>{t('agents.newAgent')}</button>
+        </div>
+      )}
 
       {agents.length === 0 ? (
         <EmptyState

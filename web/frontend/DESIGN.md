@@ -35,10 +35,23 @@ Design tokens and component classes for the React SPA at `/app/*`.
 - **Buttons:** `.btn`, `.btn-primary`, `.btn-danger`, `.btn-ghost`
 - **Forms:** `.input`, `textarea.input`
 - **Surfaces:** `.card`, `.badge`, `.badge-featured`
+- **Status:** `.feature-tag`, `.feature-tag--live|beta|mock|coming-soon|broken` — React: `<FeatureTag />`
 - **Feedback:** `.skeleton`, `.toast`, `.empty-state`
-- **Layout:** `.page-header`, `.page-content`, `.modal-*`
+- **Layout:** `.page-header`, `.page-content`, `.modal-*`, `.breadcrumbs`
+- **Demo:** `.demo-stepper`, `.playground-demo`, `.playground-presets`
 - **Chat:** `.chat-bubble`, `.chat-tool-call`, `.chat-markdown`
 - **Workflow:** `.node-running` (pulse glow)
+
+## Feature status tags
+
+| Status | Meaning | Use |
+|--------|---------|-----|
+| `live` | Connected to backend | Nav core items, successful demo runs |
+| `beta` | Works but unstable | Chat, Analytics, MCP |
+| `mock` | Prerecorded / static data | Demo runs without API keys |
+| `coming-soon` | UI only | Dead showcase CTAs, Stripe billing |
+
+Registry: `src/config/featureRegistry.ts` (`NAV_FEATURE_STATUS`).
 
 ## i18n
 
