@@ -1,8 +1,8 @@
 # Handoff Instructions — My Agent
 
 > **Date:** 2026-05-26  
-> **Version:** 3.3.1  
-> **Last session:** CEO audits — sales readiness + product depth
+> **Version:** 3.4.0  
+> **Last session:** CEO audit — production readiness (systemd, PG, Redis queue, Grafana)
 
 ---
 
@@ -19,17 +19,18 @@ docker compose up -d --build
 open http://127.0.0.1:8020/app   # login: admin / admin or self-serve register
 ```
 
-Optional manual seed:
+For local production-like stack, set in `.env`:
 
-```bash
-docker compose exec agent python scripts/seed_workflow_templates.py
-docker compose exec agent python scripts/generate_demo_artifact.py
+```
+ENV=production
+DATABASE_URL=postgresql://agent:agentpass@127.0.0.1:5437/agent_db
+REDIS_URL=redis://127.0.0.1:6380/0
 ```
 
 Run tests:
 
 ```bash
-docker compose exec -T agent python -m pytest tests/test_marketplace.py tests/test_workflow_engine.py tests/test_workspace_isolation.py -q
+docker compose exec -T agent python -m pytest tests/test_production_v34.py tests/test_workflow_engine.py tests/test_workspace_isolation.py -q
 ```
 
 ---
@@ -39,28 +40,26 @@ docker compose exec -T agent python -m pytest tests/test_marketplace.py tests/te
 | Surface | Status |
 |---------|--------|
 | `/login` | Register (12+ char password) → `/app/onboarding` |
-| `/app/` Dashboard | 4 stat cards; integrations count from `configured` |
-| `/app/chat` | Kimi universal agent, ~61 real tools |
-| `/app/workflows` | List + schedule section (next/last run, pause/resume) |
-| `/app/workflows/:id` | Builder RU; branch modal; edge config; `enable_memory` on agent nodes |
-| `/app/marketplace` | Browse + demo-run button on templates |
-| `/app/settings` | Integrations, API keys, billing plan, models |
-| `/showcase` | Public Demo-MVP (7 verticals) |
-| Workflow runs | Async by default; failed actions → failed run |
+| `/app/workflows` | List + schedule (next/last run, pause/resume) |
+| `/app/workflows/:id` | Builder RU; branch modal; `enable_memory` on agent nodes |
+| `/app/marketplace` | Browse + demo-run on templates |
+| `/app/settings` | Integrations, API keys, billing plan |
+| Workflow runs | Durable Redis queue; async by default |
+| Prod health | `/api/health` → `"redis": true` when configured |
 
 ---
 
-## Key Files (3.3.1)
+## Key Files (3.4.0)
 
 | Area | Files |
 |------|-------|
-| Billing | `core/billing/plans.py`, `web/workflow_router.py` (quota) |
-| Async runs | `core/workflow/executor.py` (`start_background`) |
-| Schedule | `core/scheduler_manager.py`, `WorkflowList.tsx` |
-| Builder UX | `WorkflowBuilder.tsx`, `types/workflow.ts` (`paletteHidden`) |
-| Template demo | `core/workflow/template_demo.py`, `MarketplacePage.tsx` |
-| Audits | `AUDIT_REPORT.md`, `AUDIT_2026.md`, `AUDIT_PRODUCT_2026.md` |
-| Monitoring | `docker-compose.yml` (`--profile monitoring`) |
+| Run queue | `core/workflow/run_queue.py`, `core/redis_client.py` |
+| Prod DB | `core/db_manager.py` (fail-fast PG in production) |
+| systemd | `deploy/my-agent.service` |
+| Backup | `deploy/scripts/backup-db.sh` |
+| Migration | `scripts/migrate_sqlite_to_postgres.py` |
+| Monitoring | `deploy/monitoring/` (Grafana dashboard, Prometheus alerts) |
+| Audits | `AUDIT_PRODUCTION_2026.md`, `AUDIT_PRODUCT_2026.md`, `SERVER.md` |
 
 ---
 
@@ -68,11 +67,10 @@ docker compose exec -T agent python -m pytest tests/test_marketplace.py tests/te
 
 | Variable | Required | Notes |
 |----------|----------|-------|
-| `KIMI_API_KEY` | Yes (prod demo) | Kimi Code API |
-| `OPENROUTER_API_KEY` | Fallback | Optional secondary LLM |
-| `TAVILY_API_KEY` | Demo research | Mock works without |
-| `TELEGRAM_BOT_TOKEN` | Workflows | Telegram actions fail honestly without it |
-| `DATABASE_URL` | Prod recommended | PostgreSQL in compose; SQLite fallback local |
+| `ENV` | Prod | `production` enables PG + Redis requirements |
+| `DATABASE_URL` | Prod | PostgreSQL only when `ENV=production` |
+| `REDIS_URL` | Prod | Required for queue, rate limits, JWT revoke |
+| `KIMI_API_KEY` | Demo/prod | Kimi Code API |
 
 See `.env.example` for full list.
 
@@ -80,36 +78,29 @@ See `.env.example` for full list.
 
 ## Deploy (VDS)
 
-Prod runs **bare uvicorn** on `127.0.0.1:8020` (not root docker-compose service).
+**Stack:** systemd → uvicorn `:8020` + Docker `db` + `redis` + optional `monitoring`.
 
 ```bash
-# Local
-git commit && vds-push
+# Local → GitHub
+git push origin main
 
-# Sync work tree on VDS (if hook didn't update)
-ssh vds-root 'cd /opt/projects/my-agent && git fetch /root/git/my-agent.git main && git reset --hard FETCH_HEAD'
+# Local → VDS code
+vds-push
 
-# Restart
-ssh vds-root 'cd /opt/projects/my-agent && pkill -f "uvicorn web.server:app --host 127.0.0.1 --port 8020"; sleep 2; nohup .venv/bin/python -m uvicorn web.server:app --host 127.0.0.1 --port 8020 >> /var/log/my-agent.log 2>&1 &'
-
-curl -s http://127.0.0.1:8020/api/health
+# On VDS (see SERVER.md)
+systemctl restart my-agent
+curl -s http://127.0.0.1:8020/api/health   # expect redis: true
 ```
 
 Path on VDS: `/opt/projects/my-agent/`  
-Docs: [SERVER.md](./SERVER.md), [DEMO.md](./DEMO.md), [CHANGELOG.md](./CHANGELOG.md), [AUDIT_PRODUCT_2026.md](./AUDIT_PRODUCT_2026.md)
-
-Optional monitoring:
-
-```bash
-cd /opt/projects/my-agent && docker compose --profile monitoring up -d prometheus grafana
-```
+Full runbook: [SERVER.md](./SERVER.md), [AUDIT_PRODUCTION_2026.md](./AUDIT_PRODUCTION_2026.md)
 
 ---
 
 ## Known Gaps (next iteration)
 
 - Stripe payment integration (plan limits exist; no checkout)
-- HubSpot / Airtable / Linear connectors (roadmap in AUDIT_PRODUCT_2026)
-- Full E2E for all 52 templates requires integration credentials
-- 3 templates still `draft` (gmail digest, notion sync, invoice followup)
-- VDS prod uses SQLite unless `DATABASE_URL` set — migrate to PostgreSQL
+- Worker service split (scheduler still in API process)
+- External uptime check (UptimeRobot)
+- HubSpot / Airtable connectors — see AUDIT_PRODUCT_2026.md
+- 3 templates still `draft`

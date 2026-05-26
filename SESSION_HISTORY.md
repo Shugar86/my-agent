@@ -2,6 +2,22 @@
 
 ---
 
+## 2026-05-26 — Production readiness (v3.4.0)
+
+> **Focus:** VDS hardening — systemd, PostgreSQL, Redis queue, Grafana  
+> **Result:** Prod survives restarts; health `redis: true`
+
+- Fail-fast PostgreSQL + Redis when `ENV=production`
+- Durable workflow run queue (`core/workflow/run_queue.py`)
+- systemd unit, pg_dump backup cron, SQLite→PG migration script
+- Grafana dashboard + Prometheus alert rules on VDS
+- [AUDIT_PRODUCTION_2026.md](./AUDIT_PRODUCTION_2026.md)
+
+**Commits:** `abd9b13`, `f34df44`  
+**Verify:** `pytest tests/test_production_v34.py -q` → 4 passed
+
+---
+
 ## 2026-05-26 — CEO audits (v3.3.1)
 
 > **Focus:** Sales readiness + product depth + roadmap  

@@ -26,9 +26,6 @@ docker compose --profile monitoring up -d
 cp deploy/my-agent.service /etc/systemd/system/
 systemctl daemon-reload && systemctl enable --now my-agent
 
-# Мониторинг
-docker compose --profile monitoring up -d
-
 curl -s http://127.0.0.1:8020/api/health | python3 -m json.tool
 # Ожидаем: "redis": true
 ```

@@ -1,7 +1,7 @@
 # My Agent — Technical Documentation
 
 > Last updated: 2026-05-26
-> Version: 3.3.1 (CEO audits — sales readiness + product depth)
+> Version: 3.4.0 (CEO audit — production readiness)
 > Author: AI Assistant
 
 ---
@@ -54,6 +54,14 @@ Mock fallback works without API keys — safe for live investor presentations.
 
 Дизайн-система: [`web/frontend/DESIGN.md`](web/frontend/DESIGN.md). Сборка: `cd web/frontend && bun run build`.
 
+### Changelog 3.4.0 (2026-05-26) — Production readiness
+
+**Ops:** systemd on VDS, PostgreSQL + Redis required in prod, daily `pg_dump` backup, Grafana/Prometheus alerts.
+
+**Execution:** durable workflow run queue (Redis RPOPLPUSH); orphaned runs marked failed on restart.
+
+Docs: [AUDIT_PRODUCTION_2026.md](./AUDIT_PRODUCTION_2026.md), [SERVER.md](./SERVER.md).
+
 ### Changelog 3.3.1 (2026-05-26) — CEO audits
 
 **Sales readiness:** signup → onboarding, plan limits, template demo-run, API keys + billing UI, workspace isolation tests.
@@ -84,8 +92,9 @@ Roadmap: [AUDIT_PRODUCT_2026.md](./AUDIT_PRODUCT_2026.md).
 **Verify after deploy**
 ```bash
 docker compose up -d --build agent
-docker compose exec -T agent python -m pytest tests/test_marketplace.py tests/test_kimi_provider.py -q
+docker compose exec -T agent python -m pytest tests/test_production_v34.py tests/test_marketplace.py -q
 curl -s http://127.0.0.1:8020/api/health
+# Production: ENV=production requires DATABASE_URL + REDIS_URL
 ```
 
 ---
