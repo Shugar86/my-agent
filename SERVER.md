@@ -21,9 +21,8 @@ ssh vds-root 'cd /opt/projects/my-agent && git fetch /root/git/my-agent.git main
 # REDIS_URL=redis://127.0.0.1:6380/0
 
 docker compose up -d db redis
-docker compose exec -T agent python -m alembic upgrade head 2>/dev/null || true
-
-# systemd (один раз)
+# Не поднимайте контейнер `agent` на VDS — API работает через systemd (порт 8020).
+docker compose --profile monitoring up -d
 cp deploy/my-agent.service /etc/systemd/system/
 systemctl daemon-reload && systemctl enable --now my-agent
 
