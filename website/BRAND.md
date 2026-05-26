@@ -1,6 +1,6 @@
 # My Agent — Brand & Messaging
 
-Единый narrative для investor funnel (landing, `/showcase`, `/demo`, login, `/app`).
+Единый narrative для investor funnel (React landing `/`, `/showcase`, `/demo`, login, `/app`).
 
 ## Positioning
 
@@ -24,6 +24,10 @@
 3. **Live playground** — `/showcase#playground` or `/app/showcase#playground`
 4. **Начать бесплатно** — `/login?next=/app/onboarding` → dashboard
 
+## Glue narrative (везде в UI)
+
+**Шаблон → Workflow → Результат** — полоска в PublicLayout и AppShell; блок в onboarding и landing `#product`.
+
 ## Tone
 
 - Professional, calm B2B
@@ -32,33 +36,30 @@
 
 ## Visual bridge
 
-- **Marketing:** light cream `#FDFCF8`, accent `#FF4D00`, Manrope + Inter
-- **Product:** GitHub-dark в `/app`; скриншоты на лендинге — в тёмных device frames
+- **Marketing (React):** light cream `#FDFCF8`, accent `#FF4D00`, Manrope + Inter — [`web/frontend/src/layout/landing.css`](../web/frontend/src/layout/landing.css)
+- **Product:** GitHub-dark в `/app`; device frame на лендинге — тёмный скрин dashboard
 
-## Motion & elevation
+## Status badges (FeatureTag)
 
-| Token | Value | Use |
-|-------|-------|-----|
-| `--motion-fast` | 200ms | Hover, focus |
-| `--motion-base` | 350ms | Nav, cards |
-| Card hover | `translateY(-2px)` + `--shadow-hover` | Steps, pricing, use cases |
-| Scroll reveal | `.reveal` → `.visible` | Sections on landing |
+| Status | Meaning |
+|--------|---------|
+| Live | Backend connected |
+| Beta | Works, may be unstable |
+| Preview | Mock / static data |
+| Скоро | UI only (e.g. Stripe billing) |
 
-**Reduced motion:** при `prefers-reduced-motion: reduce` scroll reveal отключается (`main.js`).
+Registry: `web/frontend/src/config/featureRegistry.ts`
 
-## Spacing
-
-- Section padding desktop: **120px** (`--section-pad`)
-- Section padding mobile: **80px**
-
-## CSS files
+## CSS / assets
 
 | File | Scope |
 |------|-------|
-| `style.css` | Tokens, nav, buttons, device frame, reveal |
-| `marketing.css` | Landing sections, demo page |
-| `showcase.css` | Demo-MVP showcase page |
-| `login.css` | Login split layout |
+| `web/frontend/src/layout/landing.css` | React landing sections |
+| `web/frontend/src/layout/theme.css` | Product SPA (dark/light) |
+| `website/style.css`, `marketing.css` | Legacy static (deprecated — assets only via `/welcome-assets`) |
+| `website/login.css` | Login split layout |
+
+Static HTML pages deprecated — see [`README-DEPRECATED.md`](README-DEPRECATED.md).
 
 ## Investor demo theme
 

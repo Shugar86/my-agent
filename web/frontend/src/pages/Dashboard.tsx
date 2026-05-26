@@ -8,7 +8,8 @@ import GettingStartedBanner from '../components/GettingStartedBanner';
 import FeatureTag from '../components/ui/FeatureTag';
 import PageHeader from '../components/ui/PageHeader';
 import { useToast } from '../components/ui/Toast';
-import { fetchWithDemoFallback } from '../lib/demoFallback';
+import { useDemoAwareFetch } from '../hooks/useDemoAwareFetch';
+import { appRoute } from '../lib/routes';
 import { t } from '../i18n';
 
 interface ShowcaseCard {
@@ -42,26 +43,25 @@ export default function Dashboard() {
   const [showcaseCards, setShowcaseCards] = useState<ShowcaseCard[]>([]);
   const [stats, setStats] = useState<DashboardStats>({ workflows: 0, templates: 0, integrations: 0, agents: 0 });
   const [demoOpen, setDemoOpen] = useState(false);
-  const [showcaseSource, setShowcaseSource] = useState<'live' | 'mock'>('live');
+  const { data: showcaseData, source: showcaseSource, loading: showcaseLoading } = useDemoAwareFetch<{ cards: ShowcaseCard[] }>(
+    '/welcome-assets/data/showcase.json',
+  );
 
   useEffect(() => {
     Promise.all([
-      fetchWithDemoFallback<{ cards: ShowcaseCard[] }>()
-        .then(({ data, source }) => {
-          setShowcaseSource(source);
-          return data;
-        }),
       listTemplates(undefined, 'popular').catch(() => []),
       listWorkflows().catch(() => []),
       listAgents().catch(() => []),
       fetch('/api/integrations').then((r) => (r.ok ? r.json() : [])).catch(() => []),
-    ]).then(([showcaseData, tplList, wfList, agentList, integrations]) => {
-      const cards = (showcaseData.cards || []) as ShowcaseCard[];
-      const featuredIds = ['ararat', 'pegasszn', 'pretenzia'];
-      const liveFeatured = cards.filter(
-        (c) => c.status === 'live' && featuredIds.includes(c.id),
-      );
-      setShowcaseCards(liveFeatured.length > 0 ? liveFeatured : cards.filter((c) => c.status === 'live').slice(0, 3));
+    ]).then(([tplList, wfList, agentList, integrations]) => {
+      if (showcaseData?.cards) {
+        const cards = showcaseData.cards;
+        const featuredIds = ['ararat', 'pegasszn', 'pretenzia'];
+        const liveFeatured = cards.filter(
+          (c) => c.status === 'live' && featuredIds.includes(c.id),
+        );
+        setShowcaseCards(liveFeatured.length > 0 ? liveFeatured : cards.filter((c) => c.status === 'live').slice(0, 3));
+      }
       const tplArray = Array.isArray(tplList) ? tplList : [];
       setTemplates(tplArray.slice(0, 4));
       const wfArray = Array.isArray(wfList) ? wfList : [];
@@ -76,18 +76,24 @@ export default function Dashboard() {
       });
       setLoading(false);
     });
-  }, []);
+  }, [showcaseData]);
+
+  useEffect(() => {
+    if (showcaseSource === 'mock' && showcaseData) {
+      showToast(t('featureTag.previewData'), 'info');
+    }
+  }, [showcaseSource, showcaseData, showToast]);
 
   const handleInstall = async (id: string) => {
     try {
       const result = await installTemplate(id);
-      navigate(`/workflows/${result.workflow.id}`);
+      navigate(appRoute(`/workflows/${result.workflow.id}`));
     } catch {
       showToast(t('dashboard.installFailed'), 'error');
     }
   };
 
-  if (loading) {
+  if (loading || showcaseLoading) {
     return (
       <div className="page-content">
         <div className="skeleton" style={{ height: 120, marginBottom: 24 }} />
@@ -121,7 +127,7 @@ export default function Dashboard() {
           <p className="dashboard-hero__desc">{t('dashboard.heroDesc')}</p>
         </div>
         <div className="dashboard-hero__actions">
-          <Link to="/marketplace" className="btn btn-primary">{t('dashboard.heroPrimaryCta')}</Link>
+          <Link to={appRoute('/marketplace')} className="btn btn-primary">{t('dashboard.heroPrimaryCta')}</Link>
           <button type="button" className="btn" onClick={() => setDemoOpen(true)}>
             {t('dashboard.tryDemoModal')}
           </button>
@@ -194,14 +200,14 @@ export default function Dashboard() {
             </article>
           ))}
         </div>
-        <Link to="/showcase" style={{ color: 'var(--accent)', fontSize: 13 }}>
+        <Link to={appRoute('/showcase')} style={{ color: 'var(--accent)', fontSize: 13 }}>
           {t('dashboard.viewAllCases')}
         </Link>
         <span style={{ fontSize: 11, color: 'var(--text-muted)', marginLeft: 12 }}>
           ·{' '}
-          <a href="/showcase" target="_blank" rel="noopener noreferrer" title={t('showcase.publicVersionHint')}>
+          <Link to="/showcase" title={t('showcase.publicVersionHint')} style={{ color: 'var(--text-muted)' }}>
             {t('showcase.publicVersionShort')}
-          </a>
+          </Link>
         </span>
       </section>
 
@@ -227,7 +233,7 @@ export default function Dashboard() {
               </div>
             ))}
           </div>
-          <Link to="/marketplace" style={{ color: 'var(--accent)', fontSize: 13, marginTop: 12, display: 'inline-block' }}>
+          <Link to={appRoute('/marketplace')} style={{ color: 'var(--accent)', fontSize: 13, marginTop: 12, display: 'inline-block' }}>
             {t('common.viewAll')}
           </Link>
         </section>

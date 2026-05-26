@@ -6,7 +6,8 @@ import FeatureTag from '../components/ui/FeatureTag';
 import PageHeader from '../components/ui/PageHeader';
 import { useToast } from '../components/ui/Toast';
 import { SHOWCASE_CARD_TEMPLATES, showcaseCardFeatureStatus } from '../config/showcaseCards';
-import { fetchWithDemoFallback } from '../lib/demoFallback';
+import { useDemoAwareFetch } from '../hooks/useDemoAwareFetch';
+import { appRoute } from '../lib/routes';
 import { t } from '../i18n';
 
 interface PersonaSnippet {
@@ -49,26 +50,24 @@ interface ShowcaseData {
 export default function ShowcasePage() {
   const navigate = useNavigate();
   const { showToast } = useToast();
-  const [data, setData] = useState<ShowcaseData | null>(null);
+  const { data, source: dataSource, loading } = useDemoAwareFetch<ShowcaseData>('/welcome-assets/data/showcase.json');
   const [featuredTemplates, setFeaturedTemplates] = useState<ShowcaseData['featured_templates']>([]);
   const [expanded, setExpanded] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [dataSource, setDataSource] = useState<'live' | 'mock'>('live');
   const [installingId, setInstallingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    setLoading(true);
-    Promise.all([
-      fetchWithDemoFallback<ShowcaseData>(),
-      fetch('/api/public/templates?featured=true&limit=9')
-        .then((r) => (r.ok ? r.json() : { templates: [] }))
-        .catch(() => ({ templates: [] })),
-    ])
-      .then(([showcaseResult, featuredJson]) => {
-        setData(showcaseResult.data);
-        setDataSource(showcaseResult.source);
-        if (showcaseResult.source === 'mock') showToast(t('featureTag.previewData'), 'info');
+    if (dataSource === 'mock' && data) {
+      showToast(t('featureTag.previewData'), 'info');
+    }
+  }, [dataSource, data, showToast]);
+
+  useEffect(() => {
+    if (!data) return;
+    fetch('/api/public/templates?featured=true&limit=9')
+      .then((r) => (r.ok ? r.json() : { templates: [] }))
+      .catch(() => ({ templates: [] }))
+      .then((featuredJson) => {
         const apiTemplates = (featuredJson.templates || []).map(
           (tpl: { id: string; name: string; category: string; description: string; nodes?: number }) => ({
             id: tpl.id,
@@ -78,19 +77,16 @@ export default function ShowcasePage() {
             nodes: tpl.nodes || 0,
           }),
         );
-        setFeaturedTemplates(
-          apiTemplates.length > 0 ? apiTemplates : showcaseResult.data.featured_templates || [],
-        );
+        setFeaturedTemplates(apiTemplates.length > 0 ? apiTemplates : data.featured_templates || []);
       })
-      .catch(() => setError(t('showcase.loadError')))
-      .finally(() => setLoading(false));
-  }, [showToast]);
+      .catch(() => setError(t('showcase.loadError')));
+  }, [data]);
 
   const handleInstall = async (templateId: string) => {
     setInstallingId(templateId);
     try {
       const result = await installTemplate(templateId);
-      navigate(`/workflows/${result.workflow.id}`);
+      navigate(appRoute(`/workflows/${result.workflow.id}`));
     } catch {
       showToast(t('dashboard.installFailed'), 'error');
     } finally {
@@ -219,7 +215,7 @@ export default function ShowcasePage() {
                 {installingId === card.id ? t('common.loading') : t('showcase.installSimilar')}
               </button>
             ) : (
-              <Link to="/marketplace" className="btn btn-secondary" style={{ width: '100%', display: 'block', textAlign: 'center' }}>
+              <Link to={appRoute('/marketplace')} className="btn btn-secondary" style={{ width: '100%', display: 'block', textAlign: 'center' }}>
                 {t('showcase.browseMarketplace')}
               </Link>
             )}
@@ -258,12 +254,12 @@ export default function ShowcasePage() {
         ))}
       </div>
       <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
-        <Link to="/marketplace" className="btn btn-primary">
+        <Link to={appRoute('/marketplace')} className="btn btn-primary">
           {t('common.viewAll')}
         </Link>
-        <a href="/showcase" className="btn btn-ghost" target="_blank" rel="noopener noreferrer" style={{ fontSize: 13 }}>
+        <Link to="/showcase" className="btn btn-ghost" style={{ fontSize: 13 }}>
           {t('showcase.publicVersion')}
-        </a>
+        </Link>
       </div>
     </div>
   );

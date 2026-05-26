@@ -21,7 +21,9 @@ import {
   ONBOARDING_USECASE_TEMPLATES,
   type OnboardingUsecaseCard,
 } from '../config/onboardingUseCases';
+import ProductNarrative from '../components/ProductNarrative';
 import { fetchWithDemoFallback } from '../lib/demoFallback';
+import { appRoute } from '../lib/routes';
 import { t } from '../i18n';
 
 const STEP_KEYS = ['demo', 'usecase', 'workspace', 'integrations'] as const;
@@ -143,7 +145,7 @@ export default function OnboardingPage() {
   const finish = async (skippedIntegrations = false) => {
     await completeOnboarding();
     logUxEvent(skippedIntegrations ? 'onboarding_complete_skip_integrations' : 'onboarding_complete');
-    navigate('/');
+    navigate(appRoute('/'));
   };
 
   const progressPct = Math.round((step / TOTAL_STEPS) * 100);
@@ -152,6 +154,12 @@ export default function OnboardingPage() {
     <div className="page-content" style={{ maxWidth: 760, margin: '0 auto' }}>
       <h1 style={{ marginBottom: 8 }}>{t('onboarding.title')}</h1>
       <p style={{ color: 'var(--text-muted)', marginBottom: 16 }}>{t('onboarding.subtitle')}</p>
+
+      <div className="card" style={{ marginBottom: 20, padding: 16 }}>
+        <h2 style={{ fontSize: 15, marginBottom: 8 }}>{t('onboarding.explainerTitle')}</h2>
+        <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 12 }}>{t('onboarding.explainerDesc')}</p>
+        <ProductNarrative variant="steps" />
+      </div>
 
       <div className="onboarding-progress">
         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: 'var(--text-muted)', marginBottom: 6 }}>
@@ -245,7 +253,7 @@ export default function OnboardingPage() {
               {t('onboarding.skipUsecase')}
             </button>
             {installedWfId && (
-              <button type="button" className="btn" onClick={() => navigate(`/workflows/${installedWfId}`)}>
+              <button type="button" className="btn" onClick={() => navigate(appRoute(`/workflows/${installedWfId}`))}>
                 {t('onboarding.openInstalled')}
               </button>
             )}

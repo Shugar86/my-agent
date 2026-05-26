@@ -4,6 +4,7 @@ import { installTemplate, ApiError, type Template } from '../api/appClient';
 import WorkflowThumbnail from '../components/WorkflowThumbnail';
 import FeatureTag from '../components/ui/FeatureTag';
 import { useToast } from '../components/ui/Toast';
+import { appRoute } from '../lib/routes';
 import { t } from '../i18n';
 
 export default function PublicTemplatePage() {
@@ -13,12 +14,16 @@ export default function PublicTemplatePage() {
   const [template, setTemplate] = useState<Template | null>(null);
   const [error, setError] = useState('');
   const [installing, setInstalling] = useState(false);
+  const [loadedFromApi, setLoadedFromApi] = useState(false);
 
   useEffect(() => {
     if (!templateId) return;
     fetch(`/api/public/templates/${templateId}`)
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error('Not found'))))
-      .then(setTemplate)
+      .then((tpl) => {
+        setTemplate(tpl);
+        setLoadedFromApi(true);
+      })
       .catch(() => setError(t('publicTemplate.notFound')));
   }, [templateId]);
 
@@ -27,7 +32,7 @@ export default function PublicTemplatePage() {
     setInstalling(true);
     try {
       const result = await installTemplate(templateId);
-      navigate(`/workflows/${result.workflow.id}`);
+      navigate(appRoute(`/workflows/${result.workflow.id}`));
     } catch (e) {
       if (e instanceof ApiError && e.status === 401) {
         const loginUrl = `/login?next=${encodeURIComponent(`/app/share/templates/${templateId}`)}`;
@@ -46,7 +51,7 @@ export default function PublicTemplatePage() {
         <div className="card">
           <h1>{error}</h1>
           <p style={{ color: 'var(--text-muted)', marginTop: 8 }}>{t('publicTemplate.unavailable')}</p>
-          <button className="btn btn-primary" style={{ marginTop: 16 }} onClick={() => navigate('/')}>
+          <button className="btn btn-primary" style={{ marginTop: 16 }} onClick={() => navigate(appRoute('/'))}>
             {t('publicTemplate.openApp')}
           </button>
         </div>
@@ -62,7 +67,7 @@ export default function PublicTemplatePage() {
     <div style={{ padding: 40, maxWidth: 720, margin: '40px auto' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
         <p style={{ fontSize: 12, color: 'var(--text-muted)', margin: 0 }}>{t('publicTemplate.shared')}</p>
-        <FeatureTag status="mock" label={t('publicTemplate.previewOnly')} showDot={false} />
+        <FeatureTag status={loadedFromApi ? 'beta' : 'mock'} label={t('publicTemplate.previewOnly')} showDot={false} />
       </div>
       <h1 style={{ marginBottom: 8 }}>{template.name}</h1>
       <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginBottom: 16 }}>

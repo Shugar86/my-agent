@@ -480,6 +480,29 @@ export interface DemoRunResult {
   summary?: { total_duration_ms?: number; total_duration_human?: string; tokens_used?: number; estimated_cost_usd?: number };
 }
 
+export async function startPublicDemoRun(
+  target = 'Notion',
+  ourCompany = 'Linear',
+  preset: 'competitor' | 'beauty' | 'lead' = 'competitor',
+): Promise<DemoRunResult> {
+  const res = await fetch('/api/demo/public/run', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ target, our_company: ourCompany, real: false, preset }),
+  });
+  if (!res.ok) throw new Error('Public demo run failed');
+  return res.json();
+}
+
+export async function getPublicDemoRun(
+  runId: string,
+  preset: 'competitor' | 'beauty' | 'lead' = 'competitor',
+): Promise<{ status: string; logs: Array<{ node_id: string; event: string; detail?: unknown }> }> {
+  const res = await fetch(`/api/demo/public/runs/${runId}?preset=${preset}`);
+  if (!res.ok) throw new Error('Public demo poll failed');
+  return res.json();
+}
+
 export async function startDemoRun(
   target = 'Notion',
   ourCompany = 'Linear',

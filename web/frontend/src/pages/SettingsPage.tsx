@@ -20,6 +20,7 @@ import {
 } from '../api/appClient';
 import PageHeader from '../components/ui/PageHeader';
 import FeatureTag from '../components/ui/FeatureTag';
+import type { FeatureStatus } from '../components/ui/FeatureTag';
 import { useToast } from '../components/ui/Toast';
 import AgentsPage from './AgentsPage';
 import KnowledgePage from './KnowledgePage';
@@ -188,6 +189,13 @@ export default function SettingsPage() {
     }
   };
 
+const TAB_STATUS: Partial<Record<TabId, FeatureStatus>> = {
+  agents: 'live',
+  knowledge: 'beta',
+  mcp: 'beta',
+  billing: 'coming-soon',
+};
+
   const tabs: { id: TabId; label: string }[] = [
     { id: 'integrations', label: t('settings.tabs.integrations') },
     { id: 'models', label: t('settings.tabs.models') },
@@ -212,8 +220,12 @@ export default function SettingsPage() {
             aria-selected={tab === tb.id}
             className={`tab ${tab === tb.id ? 'active' : ''}`}
             onClick={() => selectTab(tb.id)}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
           >
             {tb.label}
+            {TAB_STATUS[tb.id] && (
+              <FeatureTag status={TAB_STATUS[tb.id]!} showDot={false} />
+            )}
           </button>
         ))}
       </div>
@@ -310,7 +322,7 @@ export default function SettingsPage() {
           <div className="card">
             <h2 style={{ fontSize: 15, marginBottom: 12 }}>{t('settings.workspaceInfo')}</h2>
             <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>{me?.username} · {me?.email || '—'}</p>
-            <p style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 8 }}>{t('settings.version')}: 3.4.3</p>
+            <p style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 8 }}>{t('settings.version')}: 3.5.0</p>
             <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>{t('settings.framework')}: FastAPI</p>
             <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>{t('settings.defaultModel')}: {primaryModel}</p>
           </div>

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getDemoSample, startDemoRun } from '../../api/appClient';
+import { getDemoSample, startDemoRun, startPublicDemoRun, getPublicDemoRun } from '../../api/appClient';
 import { getRun } from '../../api/workflowClient';
 import {
   advanceOfflineDemoRun,
@@ -14,6 +14,7 @@ import {
   DEFAULT_DEMO_PRESETS,
   type DemoPreset,
 } from '../../lib/demoNodeLabels';
+import { appRoute, loginUrl } from '../../lib/routes';
 import { t } from '../../i18n';
 
 interface DemoRunState {
@@ -44,6 +45,7 @@ interface PlaygroundDemoProps {
   variant?: 'inline' | 'compact';
   presets?: DemoPreset[];
   showAdvancedPresets?: boolean;
+  publicMode?: boolean;
   onComplete?: (result: PlaygroundDemoResult) => void;
   onContinue?: () => void;
   showContinue?: boolean;
@@ -66,6 +68,7 @@ export default function PlaygroundDemo({
   variant = 'inline',
   presets = DEFAULT_DEMO_PRESETS,
   showAdvancedPresets = false,
+  publicMode = false,
   onComplete,
   onContinue,
   showContinue = false,
@@ -133,7 +136,7 @@ export default function PlaygroundDemo({
       };
       onComplete?.(result);
       if (navigateOnComplete && !demoRun.offline && demoRun.status === 'success') {
-        navigate(`/workflows/${demoRun.workflow_id}?run=${demoRun.run_id}&demo=${demoRun.mode}`);
+        navigate(appRoute(`/workflows/${demoRun.workflow_id}?run=${demoRun.run_id}&demo=${demoRun.mode}`));
       }
     }
     return undefined;
@@ -143,7 +146,9 @@ export default function PlaygroundDemo({
     if (!demoRun || demoRun.status !== 'running' || demoRun.offline) return undefined;
     pollRef.current = setInterval(async () => {
       try {
-        const run = await getRun(demoRun.workflow_id, demoRun.run_id);
+        const run = publicMode
+          ? await getPublicDemoRun(demoRun.run_id, demoPreset)
+          : await getRun(demoRun.workflow_id, demoRun.run_id);
         setDemoRun((prev) =>
           prev
             ? {
@@ -159,7 +164,7 @@ export default function PlaygroundDemo({
       }
     }, 500);
     return () => clearPoll();
-  }, [demoRun?.run_id, demoRun?.status, demoRun?.workflow_id, demoRun?.offline, clearPoll]);
+  }, [demoRun?.run_id, demoRun?.status, demoRun?.workflow_id, demoRun?.offline, clearPoll, publicMode, demoPreset]);
 
   useEffect(() => {
     if (!demoRun?.offline || demoRun.status !== 'running') return undefined;
@@ -219,12 +224,18 @@ export default function PlaygroundDemo({
     clearPoll();
     clearOfflineTimer();
     try {
-      const result = await startDemoRun(
-        target.trim() || 'Notion',
-        ourCompany.trim() || 'Linear',
-        realRun,
-        demoPreset,
-      );
+      const result = publicMode
+        ? await startPublicDemoRun(
+            target.trim() || 'Notion',
+            ourCompany.trim() || 'Linear',
+            demoPreset,
+          )
+        : await startDemoRun(
+            target.trim() || 'Notion',
+            ourCompany.trim() || 'Linear',
+            realRun,
+            demoPreset,
+          );
       setDemoRun({
         workflow_id: result.workflow_id,
         run_id: result.run_id,
@@ -253,9 +264,16 @@ export default function PlaygroundDemo({
   const isRunning = demoRun?.status === 'running';
   const isDone = demoRun && demoRun.status !== 'running';
   const statusTag = demoRun?.offline || demoRun?.mode === 'mock' ? 'mock' : 'live';
+  const showPreviewBanner = offlineNotice || (demoRun && (demoRun.offline || demoRun.mode === 'mock')) || publicMode;
 
   return (
     <section className={`playground-demo ${isCompact ? 'playground-demo--compact' : ''}`}>
+      {showPreviewBanner && !demoRun && (
+        <div className="demo-preview-banner" role="status">
+          <FeatureTag status="mock" reason={t('playground.previewModeReason')} showDot={false} />
+          <span>{t('playground.previewModeBanner')}</span>
+        </div>
+      )}
       {!isCompact && (
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
           <h2 style={{ fontSize: 18, margin: 0 }}>{t('playground.title')}</h2>
@@ -325,7 +343,10 @@ export default function PlaygroundDemo({
       )}
 
       {offlineNotice && (
-        <p style={{ fontSize: 12, color: 'var(--warning)', marginTop: 8 }}>{t('playground.offlineNotice')}</p>
+        <div className="demo-preview-banner" role="status">
+          <FeatureTag status="mock" reason={t('playground.previewModeReason')} showDot={false} />
+          <span>{t('playground.offlineNotice')}</span>
+        </div>
       )}
 
       {demoRun && (
@@ -361,14 +382,19 @@ export default function PlaygroundDemo({
                   {t('common.continue')}
                 </button>
               )}
-              {!demoRun.offline && (
+              {!demoRun.offline && !publicMode && (
                 <button
                   type="button"
                   className="btn"
-                  onClick={() => navigate(`/workflows/${demoRun.workflow_id}?run=${demoRun.run_id}&demo=${demoRun.mode}`)}
+                  onClick={() => navigate(appRoute(`/workflows/${demoRun.workflow_id}?run=${demoRun.run_id}&demo=${demoRun.mode}`))}
                 >
                   {t('onboarding.openInBuilder')}
                 </button>
+              )}
+              {publicMode && isDone && demoRun.status === 'success' && (
+                <a href={loginUrl('/app/onboarding')} className="btn btn-primary">
+                  {t('landing.saveWorkflowCta')}
+                </a>
               )}
               <button type="button" className="btn btn-ghost" onClick={handleRunAgain}>
                 {t('playground.runAgain')}

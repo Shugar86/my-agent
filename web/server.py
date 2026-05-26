@@ -526,58 +526,35 @@ class AgentRequest(BaseModel):
 # Static pages
 # ---------------------------------------------------------------------------
 
+def _serve_spa_index() -> HTMLResponse:
+    """Serve unified React SPA (public + /app routes)."""
+    spa_path = os.path.join(_STATIC_DIR, "app", "index.html")
+    if os.path.exists(spa_path):
+        with open(spa_path, "r", encoding="utf-8") as f:
+            return HTMLResponse(f.read())
+    with open(os.path.join(_STATIC_DIR, "workflow-fallback.html"), "r", encoding="utf-8") as f:
+        return HTMLResponse(f.read())
+
+
 @app.get("/", response_class=HTMLResponse)
-async def index():
-    """Public landing for unauthenticated users."""
-    website_path = os.path.join(os.path.dirname(__file__), "..", "website", "index.html")
-    if os.path.exists(website_path):
-        with open(website_path, "r", encoding="utf-8") as f:
-            return f.read()
-    with open(os.path.join(_STATIC_DIR, "index.html"), "r", encoding="utf-8") as f:
-        return f.read()
+@app.get("/demo", response_class=HTMLResponse)
+@app.get("/showcase", response_class=HTMLResponse)
+async def public_spa_routes():
+    """React marketing routes: landing, public demo, public showcase."""
+    return _serve_spa_index()
 
 
 @app.get("/welcome", response_class=HTMLResponse)
 async def welcome_page():
-    """Marketing landing page."""
-    website_path = os.path.join(os.path.dirname(__file__), "..", "website", "index.html")
-    if os.path.exists(website_path):
-        with open(website_path, "r", encoding="utf-8") as f:
-            return f.read()
-    return RedirectResponse(url="/")
-
-
-def _serve_website_page(filename: str) -> HTMLResponse:
-    """Return a static marketing page from website/."""
-    website_path = os.path.join(os.path.dirname(__file__), "..", "website", filename)
-    if not os.path.exists(website_path):
-        raise HTTPException(status_code=404, detail="Page not found")
-    with open(website_path, "r", encoding="utf-8") as f:
-        return f.read()
-
-
-@app.get("/demo", response_class=HTMLResponse)
-async def demo_page():
-    """Public live demo (Competitor Intelligence)."""
-    return _serve_website_page("demo.html")
-
-
-@app.get("/showcase", response_class=HTMLResponse)
-async def showcase_page():
-    """Demo-MVP showcase — vertical cases + playground + CTA."""
-    return _serve_website_page("showcase.html")
+    """Legacy marketing URL → React landing."""
+    return RedirectResponse(url="/", status_code=301)
 
 
 @app.get("/app", response_class=HTMLResponse)
 @app.get("/app/{path:path}", response_class=HTMLResponse)
 async def app_spa(path: str = ""):
     """Serve unified React SPA."""
-    spa_path = os.path.join(_STATIC_DIR, "app", "index.html")
-    if os.path.exists(spa_path):
-        with open(spa_path, "r", encoding="utf-8") as f:
-            return f.read()
-    with open(os.path.join(_STATIC_DIR, "workflow-fallback.html"), "r", encoding="utf-8") as f:
-        return f.read()
+    return _serve_spa_index()
 
 
 @app.get("/chat", response_class=HTMLResponse)

@@ -29,6 +29,7 @@ import {
   type WorkflowRun,
 } from '../api/workflowClient';
 import { t, type I18nKey } from '../i18n';
+import { appRoute } from '../lib/routes';
 
 function builderNodeLabel(type: string): string {
   const key = `builder.nodes.${type.replace(/\./g, '_')}` as I18nKey;
@@ -304,7 +305,7 @@ export default function WorkflowBuilder() {
         const wf = await createWorkflow(name, definition, wfStatus);
         setCurrentId(wf.id);
         setWebhookToken(wf.webhook_token || '');
-        navigate(`/workflows/${wf.id}`, { replace: true });
+        navigate(appRoute(`/workflows/${wf.id}`), { replace: true });
       }
       setStatus(t('builder.saved'));
       setTimeout(() => setStatus(''), 2000);
@@ -322,7 +323,7 @@ export default function WorkflowBuilder() {
       setCurrentId(wf.id);
       setWebhookToken(wf.webhook_token || '');
       id = wf.id;
-      navigate(`/workflows/${wf.id}`, { replace: true });
+      navigate(appRoute(`/workflows/${wf.id}`), { replace: true });
     }
     setIsRunning(true);
     setShowRuns(true);
@@ -432,7 +433,7 @@ export default function WorkflowBuilder() {
   return (
     <div style={{ display: 'flex', height: '100vh', background: 'var(--bg)', color: 'var(--text)' }}>
       <div style={{ width: 220, borderRight: '1px solid var(--border)', padding: 12, overflowY: 'auto', background: 'var(--bg-secondary)' }}>
-        <button className="btn" onClick={() => navigate('/workflows')} style={{ width: '100%', marginBottom: 12 }}>
+        <button className="btn" onClick={() => navigate(appRoute('/workflows'))} style={{ width: '100%', marginBottom: 12 }}>
           {t('builder.back')}
         </button>
         <input

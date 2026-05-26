@@ -17,6 +17,7 @@ import ChatMarkdown from '../components/chat/ChatMarkdown';
 import DemoModal from '../components/DemoModal';
 import FeatureTag from '../components/ui/FeatureTag';
 import EmptyState from '../components/ui/EmptyState';
+import { appRoute } from '../lib/routes';
 import { t } from '../i18n';
 
 type MessageRole = 'user' | 'assistant' | 'tool-call' | 'tool-result';
@@ -334,7 +335,7 @@ export default function ChatPage() {
                 secondaryOnAction={() => setDemoOpen(true)}
               />
               <p style={{ textAlign: 'center', marginTop: -8 }}>
-                <Link to="/settings?tab=models" style={{ fontSize: 12, color: 'var(--accent)' }}>
+                <Link to={appRoute('/settings?tab=models')} style={{ fontSize: 12, color: 'var(--accent)' }}>
                   {t('nav.settings')} → Модели
                 </Link>
               </p>

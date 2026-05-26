@@ -40,9 +40,9 @@ test.describe('Authenticated flows', () => {
     await expect(page.locator('h1')).toContainText(/My Agent|Добро пожаловать/i);
   });
 
-  test('agents page loads grid', async ({ page }) => {
-    await page.goto('/app/agents');
-    await expect(page.locator('h1')).toContainText(/агент/i);
+  test('agents settings tab loads grid', async ({ page }) => {
+    await page.goto('/app/settings?tab=agents');
+    await expect(page.locator('body')).toContainText(/агент/i);
   });
 
   test('chat page has composer', async ({ page }) => {

@@ -16,6 +16,7 @@ import WorkflowThumbnail from '../components/WorkflowThumbnail';
 import PageHeader from '../components/ui/PageHeader';
 import EmptyState from '../components/ui/EmptyState';
 import { useToast } from '../components/ui/Toast';
+import { appRoute } from '../lib/routes';
 import { t, type I18nKey } from '../i18n';
 
 const CATEGORIES = ['all', 'sales', 'support', 'marketing', 'ops', 'productivity', 'finance', 'hr'];
@@ -56,6 +57,9 @@ export default function MarketplacePage() {
   const [pubDefinition, setPubDefinition] = useState('{"nodes":[],"edges":[]}');
   const [previewTemplate, setPreviewTemplate] = useState<Template | null>(null);
   const [demoRunningId, setDemoRunningId] = useState<string | null>(null);
+  const [installingId, setInstallingId] = useState<string | null>(null);
+  const [previewLoadingId, setPreviewLoadingId] = useState<string | null>(null);
+  const [ratingId, setRatingId] = useState<string | null>(null);
   const [demoPreview, setDemoPreview] = useState<{
     templateId: string;
     templateName: string;
@@ -99,25 +103,32 @@ export default function MarketplacePage() {
   );
 
   const handleInstall = async (id: string) => {
+    setInstallingId(id);
     try {
       const result = await installTemplate(id);
       showToast(t('common.success'));
-      navigate(`/workflows/${result.workflow.id}`);
+      navigate(appRoute(`/workflows/${result.workflow.id}`));
     } catch {
       showToast(t('dashboard.installFailed'), 'error');
+    } finally {
+      setInstallingId(null);
     }
   };
 
   const handlePreview = async (id: string) => {
+    setPreviewLoadingId(id);
     try {
       const full = await getTemplate(id);
       setPreviewTemplate(full);
     } catch {
       showToast(t('common.error'), 'error');
+    } finally {
+      setPreviewLoadingId(null);
     }
   };
 
   const handleRate = async (id: string, score: number) => {
+    setRatingId(id);
     try {
       await rateTemplate(id, score);
       const refreshed = await listTemplates(
@@ -129,6 +140,8 @@ export default function MarketplacePage() {
       showToast(t('common.success'));
     } catch {
       showToast(t('common.error'), 'error');
+    } finally {
+      setRatingId(null);
     }
   };
 
@@ -245,13 +258,15 @@ export default function MarketplacePage() {
                     <h3 style={{ fontSize: 17, color: 'var(--accent)', marginTop: 14, marginBottom: 6 }}>{tpl.name}</h3>
                     <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 16, flex: 1 }}>{tpl.description}</p>
                     <div style={{ display: 'flex', gap: 8 }}>
-                      <button type="button" className="btn btn-primary" onClick={() => handleInstall(tpl.id)} style={{ flex: 1 }}>
-                        {t('marketplace.cloneEdit')}
+                      <button type="button" className="btn btn-primary" onClick={() => handleInstall(tpl.id)} disabled={installingId === tpl.id} style={{ flex: 1 }}>
+                        {installingId === tpl.id ? t('common.loading') : t('marketplace.cloneEdit')}
                       </button>
                       <button type="button" className="btn" onClick={() => handleDemoRun(tpl.id)} disabled={demoRunningId === tpl.id}>
                         {demoRunningId === tpl.id ? t('common.loading') : t('marketplace.demoRun')}
                       </button>
-                      <button type="button" className="btn" onClick={() => handlePreview(tpl.id)}>{t('marketplace.preview')}</button>
+                      <button type="button" className="btn" onClick={() => handlePreview(tpl.id)} disabled={previewLoadingId === tpl.id}>
+                        {previewLoadingId === tpl.id ? t('common.loading') : t('marketplace.preview')}
+                      </button>
                     </div>
                     <FeatureTag status="mock" label={t('marketplace.demoPreviewTag')} showDot={false} className="marketplace-demo-tag" />
                   </div>
@@ -273,18 +288,20 @@ export default function MarketplacePage() {
                 </div>
                 <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 12, minHeight: 40, flex: 1 }}>{tpl.description}</p>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12, fontSize: 13 }}>
-                  <Stars rating={tpl.rating_avg || 0} onRate={(score) => handleRate(tpl.id, score)} />
+                  <Stars rating={tpl.rating_avg || 0} onRate={ratingId === tpl.id ? undefined : (score) => handleRate(tpl.id, score)} />
                   <span style={{ color: 'var(--text-muted)' }}>({tpl.rating_count || 0})</span>
                   <span style={{ color: 'var(--text-muted)', marginLeft: 'auto' }}>↓ {tpl.installs}</span>
                 </div>
                 <div style={{ display: 'flex', gap: 8 }}>
-                  <button type="button" className="btn btn-primary" onClick={() => handleInstall(tpl.id)} style={{ flex: 1 }}>
-                    {t('marketplace.cloneEdit')}
+                  <button type="button" className="btn btn-primary" onClick={() => handleInstall(tpl.id)} disabled={installingId === tpl.id} style={{ flex: 1 }}>
+                    {installingId === tpl.id ? t('common.loading') : t('marketplace.cloneEdit')}
                   </button>
                   <button type="button" className="btn" onClick={() => handleDemoRun(tpl.id)} disabled={demoRunningId === tpl.id}>
                     {demoRunningId === tpl.id ? t('common.loading') : t('marketplace.demoRun')}
                   </button>
-                  <button type="button" className="btn" onClick={() => handlePreview(tpl.id)}>{t('marketplace.preview')}</button>
+                  <button type="button" className="btn" onClick={() => handlePreview(tpl.id)} disabled={previewLoadingId === tpl.id}>
+                    {previewLoadingId === tpl.id ? t('common.loading') : t('marketplace.preview')}
+                  </button>
                 </div>
                 <FeatureTag status="mock" label={t('marketplace.demoPreviewTag')} showDot={false} className="marketplace-demo-tag" />
               </div>

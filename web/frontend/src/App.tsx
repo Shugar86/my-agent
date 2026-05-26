@@ -2,6 +2,7 @@ import { lazy, Suspense } from 'react';
 import './layout/theme.css';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import AppShell from './layout/AppShell';
+import PublicLayout from './layout/PublicLayout';
 import Dashboard from './pages/Dashboard';
 import ChatPage from './pages/ChatPage';
 import SettingsPage from './pages/SettingsPage';
@@ -12,6 +13,10 @@ import OnboardingPage from './pages/OnboardingPage';
 import PublicTemplatePage from './pages/PublicTemplatePage';
 import ShowcasePage from './pages/ShowcasePage';
 import DemoPage from './pages/DemoPage';
+import LandingPage from './pages/LandingPage';
+import PublicDemoPage from './pages/PublicDemoPage';
+import PublicShowcasePage from './pages/PublicShowcasePage';
+import { APP_BASE } from './lib/routes';
 
 const WorkflowBuilder = lazy(() => import('./pages/WorkflowBuilder'));
 const MarketplacePage = lazy(() => import('./pages/MarketplacePage'));
@@ -31,9 +36,15 @@ function LazyPage({ children }: { children: React.ReactNode }) {
 
 export default function App() {
   return (
-    <BrowserRouter basename="/app">
+    <BrowserRouter>
       <Routes>
-        <Route element={<AppShell />}>
+        <Route element={<PublicLayout />}>
+          <Route index element={<LandingPage />} />
+          <Route path="demo" element={<PublicDemoPage />} />
+          <Route path="showcase" element={<PublicShowcasePage />} />
+        </Route>
+
+        <Route path={APP_BASE} element={<AppShell />}>
           <Route index element={<Dashboard />} />
           <Route path="workflows" element={<WorkflowList />} />
           <Route path="workflows/:workflowId" element={<LazyPage><WorkflowBuilder /></LazyPage>} />
@@ -41,16 +52,17 @@ export default function App() {
           <Route path="showcase" element={<ShowcasePage />} />
           <Route path="demo" element={<DemoPage />} />
           <Route path="chat" element={<ChatPage />} />
-          <Route path="builder" element={<Navigate to="/settings?tab=agents" replace />} />
-          <Route path="agents" element={<Navigate to="/settings?tab=agents" replace />} />
-          <Route path="knowledge" element={<Navigate to="/settings?tab=knowledge" replace />} />
-          <Route path="mcp" element={<Navigate to="/settings?tab=mcp" replace />} />
+          <Route path="builder" element={<Navigate to={`${APP_BASE}/settings?tab=agents`} replace />} />
+          <Route path="agents" element={<Navigate to={`${APP_BASE}/settings?tab=agents`} replace />} />
+          <Route path="knowledge" element={<Navigate to={`${APP_BASE}/settings?tab=knowledge`} replace />} />
+          <Route path="mcp" element={<Navigate to={`${APP_BASE}/settings?tab=mcp`} replace />} />
           <Route path="settings" element={<SettingsPage />} />
           <Route path="analytics" element={<AnalyticsPage />} />
           <Route path="admin" element={<AdminPage />} />
         </Route>
-        <Route path="onboarding" element={<OnboardingPage />} />
-        <Route path="share/templates/:templateId" element={<PublicTemplatePage />} />
+
+        <Route path={`${APP_BASE}/onboarding`} element={<OnboardingPage />} />
+        <Route path={`${APP_BASE}/share/templates/:templateId`} element={<PublicTemplatePage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>

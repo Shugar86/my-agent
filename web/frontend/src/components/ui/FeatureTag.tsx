@@ -13,6 +13,7 @@ const LABEL_KEYS: Record<FeatureStatus, 'featureTag.live' | 'featureTag.beta' | 
 interface FeatureTagProps {
   status: FeatureStatus;
   label?: string;
+  reason?: string;
   showDot?: boolean;
   className?: string;
 }
@@ -21,6 +22,7 @@ interface FeatureTagProps {
 export default function FeatureTag({
   status,
   label,
+  reason,
   showDot,
   className = '',
 }: FeatureTagProps) {
@@ -28,11 +30,12 @@ export default function FeatureTag({
 
   const resolvedLabel = label ?? t(LABEL_KEYS[status]);
   const useDot = showDot ?? status === 'live';
+  const title = reason ?? resolvedLabel;
 
   return (
     <span
       className={`feature-tag feature-tag--${status} ${className}`.trim()}
-      title={resolvedLabel}
+      title={title}
     >
       {useDot && status === 'live' && <span className="feature-tag__dot" aria-hidden />}
       {resolvedLabel}

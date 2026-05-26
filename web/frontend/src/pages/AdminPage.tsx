@@ -71,12 +71,14 @@ export default function AdminPage() {
       {me?.workspace_id && (me.team_role === 'owner' || me.team_role === 'admin') && (
         <section className="card" style={{ marginBottom: 24 }}>
           <h2 style={{ fontSize: 14, marginBottom: 12 }}>{t('admin.teamMembers')}</h2>
-          {members.map((m) => (
+          {members.map((m) => {
+            const label = users.find((u) => u.id === m.user_id)?.username || m.user_id;
+            return (
             <div key={m.user_id} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid var(--border)' }}>
-              <span style={{ fontSize: 13 }}>{m.user_id}</span>
+              <span style={{ fontSize: 13 }}>{label}</span>
               <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{m.role}</span>
             </div>
-          ))}
+          );})}
           <div style={{ marginTop: 16, display: 'flex', gap: 8 }}>
             <input className="input" placeholder={t('admin.inviteEmail')} value={inviteEmail} onChange={(e) => setInviteEmail(e.target.value)} />
             <button className="btn btn-primary" onClick={handleInvite}>{t('admin.invite')}</button>

@@ -8,6 +8,8 @@ import {
   type ScheduleJob,
 } from '../api/appClient';
 import type { Workflow } from '../types/workflow';
+import Breadcrumbs from '../components/ui/Breadcrumbs';
+import { appRoute } from '../lib/routes';
 import { t } from '../i18n';
 
 function formatTime(iso: string | null | undefined): string {
@@ -24,7 +26,18 @@ export default function WorkflowList() {
   const [workflows, setWorkflows] = useState<Workflow[]>([]);
   const [jobs, setJobs] = useState<ScheduleJob[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [actionId, setActionId] = useState<string | null>(null);
+
+  const loadWorkflows = useCallback(() => {
+    setLoadError(null);
+    return listWorkflows()
+      .then(setWorkflows)
+      .catch(() => {
+        setWorkflows([]);
+        setLoadError(t('workflows.loadError'));
+      });
+  }, []);
 
   const loadJobs = useCallback(() => {
     return listScheduleJobs()
@@ -33,10 +46,8 @@ export default function WorkflowList() {
   }, []);
 
   useEffect(() => {
-    Promise.all([listWorkflows().catch(() => []), loadJobs()])
-      .then(([wfList]) => setWorkflows(wfList))
-      .finally(() => setLoading(false));
-  }, [loadJobs]);
+    Promise.all([loadWorkflows(), loadJobs()]).finally(() => setLoading(false));
+  }, [loadWorkflows, loadJobs]);
 
   const handlePause = async (jobId: string) => {
     setActionId(jobId);
@@ -60,13 +71,28 @@ export default function WorkflowList() {
 
   return (
     <div style={{ padding: 30 }}>
+      <Breadcrumbs
+        items={[
+          { label: t('nav.dashboard'), to: appRoute('/') },
+          { label: t('workflows.title') },
+        ]}
+      />
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
         <div>
           <h1 style={{ fontSize: 24, marginBottom: 4 }}>{t('workflows.title')}</h1>
           <p style={{ color: 'var(--text-muted)' }}>{t('workflows.subtitle')}</p>
         </div>
-        <button className="btn btn-primary" onClick={() => navigate('/workflows/new')}>{t('workflows.new')}</button>
+        <button className="btn btn-primary" onClick={() => navigate(appRoute('/workflows/new'))}>{t('workflows.new')}</button>
       </div>
+
+      {loadError && (
+        <div className="playground-error" style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
+          <span>{loadError}</span>
+          <button type="button" className="btn btn-sm" onClick={() => { setLoading(true); loadWorkflows().finally(() => setLoading(false)); }}>
+            {t('common.refresh')}
+          </button>
+        </div>
+      )}
 
       {jobs.length > 0 && (
         <section className="card" style={{ marginBottom: 24 }}>
@@ -138,7 +164,7 @@ export default function WorkflowList() {
           <div
             key={wf.id}
             className="card"
-            onClick={() => navigate(`/workflows/${wf.id}`)}
+            onClick={() => navigate(appRoute(`/workflows/${wf.id}`))}
             style={{ cursor: 'pointer' }}
           >
             <h3 style={{ marginBottom: 8 }}>{wf.name}</h3>
@@ -149,10 +175,10 @@ export default function WorkflowList() {
         ))}
       </div>
 
-      {!loading && workflows.length === 0 && (
+      {!loading && workflows.length === 0 && !loadError && (
         <div style={{ textAlign: 'center', padding: 60, color: 'var(--text-muted)' }}>
           <p>{t('workflows.empty')}</p>
-          <button className="btn btn-primary" style={{ marginTop: 16 }} onClick={() => navigate('/marketplace')}>
+          <button className="btn btn-primary" style={{ marginTop: 16 }} onClick={() => navigate(appRoute('/marketplace'))}>
             {t('workflows.emptyMarketplaceCta')}
           </button>
         </div>

@@ -1,7 +1,7 @@
 # My Agent — Technical Documentation
 
 > Last updated: 2026-05-26
-> Version: 3.4.3 (UX funnel — onboarding fallback, dashboard IA, demo polish)
+> Version: 3.5.0 (React landing — UX audit, public routes, demo IA)
 > Author: AI Assistant
 
 ---
@@ -27,34 +27,52 @@ docker compose exec agent python scripts/generate_demo_artifact.py
 Full script, talking points, and troubleshooting: **[DEMO.md](./DEMO.md)**.
 
 **Demo-MVP showcase (recommended):** `http://localhost:8020/showcase` — 7 vertical
-production cases, live playground, lead CTA. Quick ref: **[INVESTOR.md](./INVESTOR.md)**.
+production cases, live playground (React SPA). Quick ref: **[INVESTOR.md](./INVESTOR.md)**.
+
+**Marketing landing:** `http://localhost:8020/` — React `LandingPage` (Hero, problems, live demo embed, pricing).
+Static HTML в `website/` deprecated — см. [`website/README-DEPRECATED.md`](website/README-DEPRECATED.md).
 
 Mock fallback works without API keys — safe for live investor presentations.
 
-### Web UI (v3.2)
+### Web UI (v3.5)
 
-Единый React SPA на `/app/*` (интерфейс на русском). Legacy static (`/agents`, `/chat`, …) редиректит в SPA.
+Единый React bundle: публичные маршруты (`/`, `/demo`, `/showcase`) + продукт `/app/*` (RU UI).
+Legacy static HTML (`website/*.html`) больше не отдаётся — только assets в `/welcome-assets`.
 
 | URL | Назначение |
 |-----|------------|
 | `/login` | JWT + Google OAuth |
-| `/app/` | Панель (action-oriented hero, GettingStartedBanner, demo modal) |
-| `/app/chat` | Чат (markdown, tool bubbles, feedback; beta + API key hint) |
-| `/app/workflows` | Список workflows + builder (`/app/workflows/:id`) — **RU UI** |
+| `/` | **React landing** — outcome pitch, `#problems`, `#live-demo`, `#pricing` |
+| `/demo` | Public Competitor Intelligence demo (`PlaygroundDemo` + `publicMode`) |
+| `/showcase` | Public vertical cases + playground (без auth) |
+| `/welcome` | 301 → `/` |
+| `/app/` | Панель (activation hero, GettingStartedBanner, demo modal) |
+| `/app/chat` | Чат (markdown, tools; beta + API key hint) |
+| `/app/workflows` | Список + builder (`/app/workflows/:id`) |
 | `/app/marketplace` | Маркетплейс шаблонов |
-| `/app/settings` | Интеграции, модели, API keys, billing, agents/knowledge/MCP (tabs) |
-| `/app/onboarding` | 4-step wizard + PlaygroundDemo (90s) |
-| `/app/showcase` | Vertical cases + PlaygroundDemo (sidebar: «Кейсы и demo») |
-| `/app/demo` | In-app live demo (PlaygroundDemo + presets, без static HTML) |
-| `/app/share/templates/:id` | Публичный preview шаблона (**без auth**, install → login) |
-| `/` | Маркетинговый лендинг (primary CTA → `/demo`, `#problems`, marketplace preview) |
-| `/showcase` | Demo-MVP showcase (public, no auth) |
-| `/demo` | Public Competitor Intelligence demo |
-| `/welcome` | Alias лендинга (`/` ) |
+| `/app/demo` | In-app live demo (sidebar: «Live demo 90s») |
+| `/app/showcase` | Authenticated cases + install templates |
+| `/app/settings` | Интеграции, models, billing, agents/knowledge/MCP (tabs + badges) |
+| `/app/onboarding` | 4-step wizard + explainer + PlaygroundDemo |
+| `/app/share/templates/:id` | Публичный preview шаблона (install → login) |
 
-Legacy redirects: `/app/agents`, `/app/knowledge`, `/app/mcp` → `/app/settings?tab=...`
+Legacy redirects: `/app/agents`, `/app/knowledge`, `/app/mcp`, `/app/builder` → `/app/settings?tab=...`
+
+Narrative strip: **Шаблон → Workflow → Результат** (PublicLayout + AppShell).
 
 Дизайн-система: [`web/frontend/DESIGN.md`](web/frontend/DESIGN.md). Сборка: `cd web/frontend && bun run build`.
+
+### Changelog 3.5.0 (2026-05-26) — UX audit (React landing + IA)
+
+**Landing migration:** `/`, `/demo`, `/showcase` → React SPA (`LandingPage`, `PublicDemoPage`, `PublicShowcasePage`); `server.py` `_serve_spa_index()`; static HTML deprecated.
+
+**IA:** sidebar — «Live demo 90s» + «Кейсы» (отдельно); quick links Agents/Knowledge/MCP; `ProductNarrative` strip.
+
+**Demo UX:** `PlaygroundDemo.publicMode` → `/api/demo/public/run`; unified preview banner; ararat CTA → «Установить шаблон».
+
+**Onboarding:** explainer block (Template → Workflow → Result) перед step 1.
+
+**Polish:** `useDemoAwareFetch`; marketplace install/preview loading; WorkflowList error banner + breadcrumbs; Settings tab badges; EN i18n для landing; E2E обновлены.
 
 ### Changelog 3.4.3 (2026-05-26) — UX funnel (investor + first-run)
 

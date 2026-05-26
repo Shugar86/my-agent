@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { appRoute } from '../lib/routes';
 import { t } from '../i18n';
 
 interface GettingStartedBannerProps {
@@ -20,13 +21,13 @@ export default function GettingStartedBanner({ onOpenDemo }: GettingStartedBanne
       <h2 style={{ fontSize: 16, margin: '0 0 8px' }}>{t('dashboard.gettingStartedTitle')}</h2>
       <p style={{ fontSize: 13, color: 'var(--text-muted)', margin: '0 0 16px' }}>{t('dashboard.gettingStartedDesc')}</p>
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-        <Link to="/marketplace" className="btn btn-primary">{t('dashboard.gettingStartedMarketplace')}</Link>
+        <Link to={appRoute('/marketplace')} className="btn btn-primary">{t('dashboard.gettingStartedMarketplace')}</Link>
         {onOpenDemo ? (
           <button type="button" className="btn" onClick={onOpenDemo}>{t('dashboard.tryDemoModal')}</button>
         ) : (
-          <Link to="/showcase#playground" className="btn">{t('dashboard.tryDemo')}</Link>
+          <Link to={appRoute('/demo')} className="btn">{t('dashboard.tryDemo')}</Link>
         )}
-        <Link to="/workflows" className="btn btn-ghost">{t('nav.workflows')}</Link>
+        <Link to={appRoute('/workflows')} className="btn btn-ghost">{t('nav.workflows')}</Link>
       </div>
     </section>
   );

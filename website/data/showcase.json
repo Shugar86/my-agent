@@ -15,7 +15,7 @@
       "llm": "Gemini 2.5 Flash Lite",
       "metric": "4 persona · 1 API",
       "icon": "jewelry",
-      "cta_label": "Открыть виджет",
+      "cta_label": "Установить шаблон",
       "cta_url": null,
       "persona": {
         "role": "Старший консультант ювелирного бутика Mary Jewelry",

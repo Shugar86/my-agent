@@ -1,24 +1,27 @@
 import { useEffect, useState } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
 import TeamSwitcher from '../components/TeamSwitcher';
+import ProductNarrative from '../components/ProductNarrative';
 import FeatureTag from '../components/ui/FeatureTag';
 import FeatureStatusLegend from '../components/ui/FeatureStatusLegend';
 import { NAV_FEATURE_STATUS } from '../config/featureRegistry';
+import { APP_BASE } from '../lib/routes';
 import { getMe, type MeUser } from '../api/appClient';
 import { t, type I18nKey } from '../i18n';
 import './theme.css';
 
 const NAV_MAIN = [
-  { to: '/', labelKey: 'nav.dashboard' as const },
-  { to: '/workflows', labelKey: 'nav.workflows' as const },
-  { to: '/marketplace', labelKey: 'nav.marketplace' as const },
-  { to: '/chat', labelKey: 'nav.chat' as const },
+  { to: APP_BASE, labelKey: 'nav.dashboard' as const, end: true },
+  { to: `${APP_BASE}/marketplace`, labelKey: 'nav.marketplace' as const },
+  { to: `${APP_BASE}/workflows`, labelKey: 'nav.workflows' as const },
+  { to: `${APP_BASE}/chat`, labelKey: 'nav.chat' as const },
 ];
 
 const NAV_SECONDARY = [
-  { to: '/showcase', labelKey: 'nav.showcaseDemo' as const },
-  { to: '/analytics', labelKey: 'nav.analytics' as const },
-  { to: '/settings', labelKey: 'nav.settings' as const },
+  { to: `${APP_BASE}/demo`, labelKey: 'nav.demo' as const },
+  { to: `${APP_BASE}/showcase`, labelKey: 'nav.showcase' as const },
+  { to: `${APP_BASE}/analytics`, labelKey: 'nav.analytics' as const },
+  { to: `${APP_BASE}/settings`, labelKey: 'nav.settings' as const },
 ];
 
 function navLinkStyle(isActive: boolean) {
@@ -44,7 +47,17 @@ function applyTheme(theme: 'dark' | 'light') {
   document.documentElement.dataset.theme = theme;
 }
 
-function NavItem({ to, labelKey, end, onNavigate }: { to: string; labelKey: I18nKey; end?: boolean; onNavigate: () => void }) {
+function NavItem({
+  to,
+  labelKey,
+  end,
+  onNavigate,
+}: {
+  to: string;
+  labelKey: I18nKey;
+  end?: boolean;
+  onNavigate: () => void;
+}) {
   const status = NAV_FEATURE_STATUS[to] ?? 'live';
   return (
     <NavLink to={to} end={end} onClick={onNavigate} style={({ isActive }) => navLinkStyle(isActive)}>
@@ -77,85 +90,105 @@ export default function AppShell() {
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh' }}>
-      <button
-        className="mobile-toggle btn"
-        onClick={() => setSidebarOpen(!sidebarOpen)}
-        aria-label={t('app.menu')}
-        style={{
-          display: 'none',
-          position: 'fixed', top: 12, left: 12, zIndex: 1001,
-        }}
-      >
-        {t('app.menu')}
-      </button>
+        <button
+          className="mobile-toggle btn"
+          onClick={() => setSidebarOpen(!sidebarOpen)}
+          aria-label={t('app.menu')}
+          style={{
+            display: 'none',
+            position: 'fixed', top: 12, left: 12, zIndex: 1001,
+          }}
+        >
+          {t('app.menu')}
+        </button>
 
-      <aside
-        className={`sidebar ${sidebarOpen ? 'open' : ''}`}
-        style={{
-          width: 'var(--sidebar-width)',
-          minWidth: 'var(--sidebar-width)',
-          background: 'var(--bg-secondary)',
-          borderRight: '1px solid var(--border)',
-          padding: '16px 0',
-          position: 'fixed',
-          top: 0, bottom: 0, left: 0,
-          zIndex: 1000,
-          transition: 'transform 0.2s',
-          display: 'flex',
-          flexDirection: 'column',
-        }}
-      >
-        <div style={{ padding: '0 18px 14px', borderBottom: '1px solid var(--border)', marginBottom: 8 }}>
-          <h1 style={{ fontSize: '1.05rem', color: 'var(--accent)', letterSpacing: '-0.01em' }}>{t('app.title')}</h1>
-          <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>{t('app.tagline')}</p>
-        </div>
-        <TeamSwitcher />
-        <nav style={{ flex: 1, overflowY: 'auto' }}>
-          {NAV_MAIN.map((item) => (
-            <NavItem key={item.to} to={item.to} labelKey={item.labelKey} end={item.to === '/'} onNavigate={() => setSidebarOpen(false)} />
-          ))}
-          <div style={{ margin: '8px 18px', borderTop: '1px solid var(--border)' }} />
-          {NAV_SECONDARY.map((item) => (
-            <NavItem key={item.to} to={item.to} labelKey={item.labelKey} onNavigate={() => setSidebarOpen(false)} />
-          ))}
-          {showAdmin && (
-            <NavLink
-              to="/admin"
-              onClick={() => setSidebarOpen(false)}
-              style={({ isActive }) => navLinkStyle(isActive)}
-            >
-              {t('nav.admin')}
-            </NavLink>
-          )}
-        </nav>
-        <FeatureStatusLegend />
-        <div style={{ padding: '12px 18px', borderTop: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: 8 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{t('app.theme')}</span>
-            <button
-              type="button"
-              className="btn btn-ghost"
-              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-              style={{ padding: '4px 8px', fontSize: 11 }}
-            >
-              {theme === 'dark' ? t('app.themeLight') : t('app.themeDark')}
-            </button>
+        <aside
+          className={`sidebar ${sidebarOpen ? 'open' : ''}`}
+          style={{
+            width: 'var(--sidebar-width)',
+            minWidth: 'var(--sidebar-width)',
+            background: 'var(--bg-secondary)',
+            borderRight: '1px solid var(--border)',
+            padding: '16px 0',
+            position: 'fixed',
+            top: 0, bottom: 0, left: 0,
+            zIndex: 1000,
+            transition: 'transform 0.2s',
+            display: 'flex',
+            flexDirection: 'column',
+          }}
+        >
+          <div style={{ padding: '0 18px 14px', borderBottom: '1px solid var(--border)', marginBottom: 8 }}>
+            <h1 style={{ fontSize: '1.05rem', color: 'var(--accent)', letterSpacing: '-0.01em' }}>{t('app.title')}</h1>
+            <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>{t('app.tagline')}</p>
           </div>
-        </div>
-      </aside>
+          <TeamSwitcher />
+          <nav style={{ flex: 1, overflowY: 'auto' }}>
+            {NAV_MAIN.map((item) => (
+              <NavItem
+                key={item.to}
+                to={item.to}
+                labelKey={item.labelKey}
+                end={item.end}
+                onNavigate={() => setSidebarOpen(false)}
+              />
+            ))}
+            <div style={{ margin: '8px 18px', borderTop: '1px solid var(--border)' }} />
+            {NAV_SECONDARY.map((item) => (
+              <NavItem key={item.to} to={item.to} labelKey={item.labelKey} onNavigate={() => setSidebarOpen(false)} />
+            ))}
+            {showAdmin && (
+              <NavLink
+                to={`${APP_BASE}/admin`}
+                onClick={() => setSidebarOpen(false)}
+                style={({ isActive }) => navLinkStyle(isActive)}
+              >
+                {t('nav.admin')}
+              </NavLink>
+            )}
+          </nav>
+          <FeatureStatusLegend />
+          <div style={{ padding: '12px 18px', borderTop: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4 }}>{t('nav.settingsQuick')}</div>
+            <NavLink to={`${APP_BASE}/settings?tab=agents`} style={{ fontSize: 12, color: 'var(--text-muted)', textDecoration: 'none', display: 'flex', justifyContent: 'space-between' }}>
+              {t('nav.agents')}
+              <FeatureTag status="live" showDot={false} />
+            </NavLink>
+            <NavLink to={`${APP_BASE}/settings?tab=knowledge`} style={{ fontSize: 12, color: 'var(--text-muted)', textDecoration: 'none', display: 'flex', justifyContent: 'space-between' }}>
+              {t('nav.knowledge')}
+              <FeatureTag status="beta" showDot={false} />
+            </NavLink>
+            <NavLink to={`${APP_BASE}/settings?tab=mcp`} style={{ fontSize: 12, color: 'var(--text-muted)', textDecoration: 'none', display: 'flex', justifyContent: 'space-between' }}>
+              {t('nav.mcp')}
+              <FeatureTag status="beta" showDot={false} />
+            </NavLink>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 }}>
+              <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{t('app.theme')}</span>
+              <button
+                type="button"
+                className="btn btn-ghost"
+                onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+                style={{ padding: '4px 8px', fontSize: 11 }}
+              >
+                {theme === 'dark' ? t('app.themeLight') : t('app.themeDark')}
+              </button>
+            </div>
+          </div>
+        </aside>
 
-      <main style={{ marginLeft: 'var(--sidebar-width)', flex: 1, minHeight: '100vh' }}>
-        <Outlet />
-      </main>
+        <main style={{ marginLeft: 'var(--sidebar-width)', flex: 1, minHeight: '100vh' }}>
+          <ProductNarrative variant="strip" />
+          <Outlet />
+        </main>
 
-      <style>{`
-        @media (max-width: 768px) {
-          .mobile-toggle { display: inline-flex !important; }
-          .sidebar { transform: translateX(-100%); width: 240px !important; min-width: 240px !important; }
-          .sidebar.open { transform: translateX(0); }
-          main { margin-left: 0 !important; }
-        }
-      `}</style>
+        <style>{`
+          @media (max-width: 768px) {
+            .mobile-toggle { display: inline-flex !important; }
+            .sidebar { transform: translateX(-100%); width: 240px !important; min-width: 240px !important; }
+            .sidebar.open { transform: translateX(0); }
+            main { margin-left: 0 !important; }
+          }
+        `}</style>
     </div>
   );
 }

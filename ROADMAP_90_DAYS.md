@@ -16,7 +16,7 @@
 
 | Компонент | Статус | Реализация |
 |-----------|--------|------------|
-| Showcase page | ✅ | `/showcase` — static HTML, 7 секций |
+| Showcase page | ✅ | `/showcase` — React SPA (`PublicShowcasePage`), 7 vertical cards |
 | Vertical cards | ✅ | 7 cases из production (ai-tutor, DocBrain, Pretenzia, …) |
 | Persona accordion | ✅ | YAML preview + dialog snippets |
 | Live playground | ✅ | `POST /api/demo/public/run` + polling stepper |
