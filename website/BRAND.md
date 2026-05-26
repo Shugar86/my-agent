@@ -19,10 +19,10 @@
 
 ## Primary CTAs
 
-1. **7 vertical cases** — `/showcase` (primary для инвесторской встречи)
-2. **Live playground** — `/showcase#playground` (Competitor Intelligence, без auth)
-3. **Смотреть демо 90 сек** — `/demo` (узкий сценарий)
-4. **Начать бесплатно** — `/app/onboarding` или `/login`
+1. **Live demo** — `/demo` (landing primary CTA; mock без keys)
+2. **7 vertical cases** — `/showcase` (investor meetings)
+3. **Live playground** — `/showcase#playground` or `/app/showcase#playground`
+4. **Начать бесплатно** — `/login?next=/app/onboarding` → dashboard
 
 ## Tone
 

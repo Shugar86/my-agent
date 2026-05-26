@@ -1,4 +1,5 @@
-import PlaygroundDemo from './demo/PlaygroundDemo';
+import { useState } from 'react';
+import PlaygroundDemo, { type PlaygroundDemoResult } from './demo/PlaygroundDemo';
 import { t } from '../i18n';
 
 interface DemoModalProps {
@@ -6,9 +7,27 @@ interface DemoModalProps {
   onClose: () => void;
 }
 
-/** Modal wrapper around PlaygroundDemo — same presets and real-run toggle as dashboard. */
+/** Modal wrapper around PlaygroundDemo — closes only on successful run. */
 export default function DemoModal({ open, onClose }: DemoModalProps) {
+  const [runKey, setRunKey] = useState(0);
+  const [lastFailed, setLastFailed] = useState(false);
+
   if (!open) return null;
+
+  const handleComplete = (result: PlaygroundDemoResult) => {
+    const ok = result.status === 'success' || result.status === 'completed';
+    if (ok) {
+      setLastFailed(false);
+      onClose();
+    } else {
+      setLastFailed(true);
+    }
+  };
+
+  const handleRetry = () => {
+    setLastFailed(false);
+    setRunKey((k) => k + 1);
+  };
 
   return (
     <div
@@ -45,11 +64,18 @@ export default function DemoModal({ open, onClose }: DemoModalProps) {
           </button>
         </div>
         <PlaygroundDemo
+          key={runKey}
           variant="compact"
           showAdvancedPresets
           navigateOnComplete
-          onComplete={onClose}
+          onComplete={handleComplete}
         />
+        {lastFailed && (
+          <div style={{ marginTop: 12, display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+            <p style={{ fontSize: 13, color: 'var(--warning)', margin: 0, flex: '1 1 200px' }}>{t('demo.retryHint')}</p>
+            <button type="button" className="btn btn-primary" onClick={handleRetry}>{t('demo.retry')}</button>
+          </div>
+        )}
       </div>
     </div>
   );

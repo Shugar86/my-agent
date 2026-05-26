@@ -1,8 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { startDemoRun } from '../../api/appClient';
+import { getDemoSample, startDemoRun } from '../../api/appClient';
 import { getRun } from '../../api/workflowClient';
-import { buildOfflineDemoRun } from '../../lib/offlineDemo';
+import {
+  advanceOfflineDemoRun,
+  buildOfflineDemoRun,
+  OFFLINE_DEMO_STEP_MS,
+} from '../../lib/offlineDemo';
 import FeatureTag from '../ui/FeatureTag';
 import DemoStepper from './DemoStepper';
 import {
@@ -30,6 +34,12 @@ export interface PlaygroundDemoResult {
   artifact_url?: string;
 }
 
+interface DemoMetrics {
+  tokens: number;
+  costUsd: number;
+  durationHuman: string;
+}
+
 interface PlaygroundDemoProps {
   variant?: 'inline' | 'compact';
   presets?: DemoPreset[];
@@ -39,6 +49,12 @@ interface PlaygroundDemoProps {
   showContinue?: boolean;
   navigateOnComplete?: boolean;
 }
+
+const DEFAULT_METRICS: DemoMetrics = {
+  tokens: 18420,
+  costUsd: 0.42,
+  durationHuman: '~4h saved',
+};
 
 function formatTokens(n: number): string {
   if (n >= 1000) return `${(n / 1000).toFixed(1)}k`;
@@ -65,7 +81,10 @@ export default function PlaygroundDemo({
   const [error, setError] = useState<string | null>(null);
   const [offlineNotice, setOfflineNotice] = useState(false);
   const [demoRun, setDemoRun] = useState<DemoRunState | null>(null);
+  const [metrics, setMetrics] = useState<DemoMetrics>(DEFAULT_METRICS);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const offlineTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const completedRunIdRef = useRef<string | null>(null);
 
   const clearPoll = useCallback(() => {
     if (pollRef.current) {
@@ -74,12 +93,37 @@ export default function PlaygroundDemo({
     }
   }, []);
 
-  useEffect(() => () => clearPoll(), [clearPoll]);
+  const clearOfflineTimer = useCallback(() => {
+    if (offlineTimerRef.current) {
+      clearInterval(offlineTimerRef.current);
+      offlineTimerRef.current = null;
+    }
+  }, []);
+
+  useEffect(() => () => {
+    clearPoll();
+    clearOfflineTimer();
+  }, [clearPoll, clearOfflineTimer]);
+
+  useEffect(() => {
+    getDemoSample()
+      .then((sample) => {
+        const summary = sample.summary as Record<string, unknown>;
+        setMetrics({
+          tokens: Number(summary.tokens_used ?? DEFAULT_METRICS.tokens),
+          costUsd: Number(summary.estimated_cost_usd ?? DEFAULT_METRICS.costUsd),
+          durationHuman: String(summary.total_duration_human ?? DEFAULT_METRICS.durationHuman),
+        });
+      })
+      .catch(() => setMetrics(DEFAULT_METRICS));
+  }, []);
 
   useEffect(() => {
     if (!demoRun || demoRun.status === 'running') return undefined;
+    if (completedRunIdRef.current === demoRun.run_id) return undefined;
     clearPoll();
     if (demoRun.status === 'success' || demoRun.status === 'failed') {
+      completedRunIdRef.current = demoRun.run_id;
       const result: PlaygroundDemoResult = {
         workflow_id: demoRun.workflow_id,
         run_id: demoRun.run_id,
@@ -117,6 +161,31 @@ export default function PlaygroundDemo({
     return () => clearPoll();
   }, [demoRun?.run_id, demoRun?.status, demoRun?.workflow_id, demoRun?.offline, clearPoll]);
 
+  useEffect(() => {
+    if (!demoRun?.offline || demoRun.status !== 'running') return undefined;
+    clearOfflineTimer();
+    offlineTimerRef.current = setInterval(() => {
+      setDemoRun((prev) => {
+        if (!prev?.offline || prev.status !== 'running') return prev;
+        const advanced = advanceOfflineDemoRun(
+          {
+            workflow_id: prev.workflow_id,
+            run_id: prev.run_id,
+            mode: 'mock',
+            artifact_url: prev.artifact_url || '',
+            logs: prev.logs,
+            status: 'running',
+          },
+          target.trim() || 'Notion',
+          ourCompany.trim() || 'Linear',
+          demoPreset,
+        );
+        return { ...prev, logs: advanced.logs, status: advanced.status };
+      });
+    }, OFFLINE_DEMO_STEP_MS);
+    return () => clearOfflineTimer();
+  }, [demoRun?.run_id, demoRun?.offline, demoRun?.status, target, ourCompany, demoPreset, clearOfflineTimer]);
+
   const handlePreset = (preset: DemoPreset) => {
     setActivePreset(preset.id);
     setTarget(preset.target);
@@ -128,6 +197,7 @@ export default function PlaygroundDemo({
       target.trim() || 'Notion',
       ourCompany.trim() || 'Linear',
       demoPreset,
+      { animate: true },
     );
     setOfflineNotice(true);
     setDemoRun({
@@ -145,7 +215,9 @@ export default function PlaygroundDemo({
     setStarting(true);
     setError(null);
     setOfflineNotice(false);
+    completedRunIdRef.current = null;
     clearPoll();
+    clearOfflineTimer();
     try {
       const result = await startDemoRun(
         target.trim() || 'Notion',
@@ -168,9 +240,19 @@ export default function PlaygroundDemo({
     }
   };
 
+  const handleRunAgain = () => {
+    completedRunIdRef.current = null;
+    clearPoll();
+    clearOfflineTimer();
+    setDemoRun(null);
+    setError(null);
+    setOfflineNotice(false);
+  };
+
   const isCompact = variant === 'compact';
   const isRunning = demoRun?.status === 'running';
   const isDone = demoRun && demoRun.status !== 'running';
+  const statusTag = demoRun?.offline || demoRun?.mode === 'mock' ? 'mock' : 'live';
 
   return (
     <section className={`playground-demo ${isCompact ? 'playground-demo--compact' : ''}`}>
@@ -249,17 +331,17 @@ export default function PlaygroundDemo({
       {demoRun && (
         <div className="card" style={{ marginTop: isCompact ? 0 : 16, padding: 16 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, flexWrap: 'wrap', gap: 8 }}>
-            <FeatureTag status={demoRun.mode === 'mock' ? 'mock' : 'live'} />
+            <FeatureTag status={statusTag} />
             <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
               {isRunning ? t('playground.running') : demoRun.status}
             </span>
           </div>
 
-          {isRunning && (
+          {isRunning && demoRun.logs.length === 0 && (
             <div className="skeleton" style={{ height: 120, marginBottom: 12 }} />
           )}
 
-          {(isRunning || isDone) && (
+          {(isRunning || isDone) && demoRun.logs.length > 0 && (
             <DemoStepper
               nodeOrder={DEFAULT_DEMO_NODE_ORDER}
               logs={demoRun.logs}
@@ -288,17 +370,15 @@ export default function PlaygroundDemo({
                   {t('onboarding.openInBuilder')}
                 </button>
               )}
-              {!isCompact && (
-                <button type="button" className="btn btn-ghost" onClick={() => setDemoRun(null)}>
-                  {t('playground.runAgain')}
-                </button>
-              )}
+              <button type="button" className="btn btn-ghost" onClick={handleRunAgain}>
+                {t('playground.runAgain')}
+              </button>
             </div>
           )}
 
-          {isDone && demoRun.mode === 'mock' && (
+          {isDone && (
             <p style={{ fontSize: 11, color: 'var(--text-subtle)', marginTop: 12, marginBottom: 0 }}>
-              {t('demo.fallbackNote')} · {formatTokens(18420)} tokens · ~$0.42 · ~4ч saved
+              {t('demo.fallbackNote')} · {formatTokens(metrics.tokens)} tokens · ~${metrics.costUsd.toFixed(2)} · {metrics.durationHuman}
             </p>
           )}
         </div>

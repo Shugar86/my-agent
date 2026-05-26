@@ -6,12 +6,12 @@ One-page cheat sheet for demos and pitch meetings.
 
 | Surface | URL | Notes |
 |---------|-----|-------|
-| Landing | `/` or `/welcome` | Outcome pitch, pricing, video |
-| **Demo-MVP showcase** | **`/showcase`** | **7 vertical cases + playground + CTA (primary for meetings)** |
+| Landing | `/` or `/welcome` | Outcome pitch; **primary CTA → `/demo`** |
+| **Demo-MVP showcase** | **`/showcase`** (public) or **`/app/showcase`** (auth) | **7 vertical cases + `#playground` demo** |
 | Public demo | `/demo` | Competitor Intelligence only; no login |
 | Login | `/login` | Split SaaS layout; `?next=/app/onboarding` |
-| Product | `/app` | Full SPA after auth |
-| Showcase (auth) | `/app/showcase` | React mirror of `/showcase` + DemoModal |
+| Product | `/app` | Dashboard: «Выбрать шаблон» + demo modal; GettingStartedBanner if no workflows |
+| Showcase (auth) | `/app/showcase` | Sidebar «Кейсы и demo»; PlaygroundDemo + install similar |
 | Dev creds | `/login?dev=1` | Shows `admin / admin` footer (internal only) |
 
 ## Env flags
@@ -26,7 +26,9 @@ One-page cheat sheet for demos and pitch meetings.
 
 **Recommended (Demo-MVP):** `/showcase` → scroll 7 vertical cards → playground «Запустить demo» → CTA form.
 
-**Classic funnel:** see [DEMO.md](DEMO.md) — `/` → `/demo` → login → `/app`.
+**Classic funnel:** `/` (CTA → `/demo`) → login → `/app/onboarding` → dashboard.
+
+**In-app first-run:** `/app` → GettingStartedBanner → marketplace install OR demo modal.
 
 ## Showcase verticals (7 cards)
 

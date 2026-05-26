@@ -15,3 +15,12 @@ export const NAV_FEATURE_STATUS: Record<string, FeatureStatus> = {
   '/mcp': 'beta',
   '/admin': 'live',
 };
+
+/** Feature maturity for page sections and actions. */
+export const PAGE_FEATURE_STATUS: Record<string, FeatureStatus> = {
+  'marketplace.demoRun': 'mock',
+  'showcase.cards': 'mock',
+  'settings.billing.stripe': 'coming-soon',
+  'chat.stream': 'beta',
+  'playground.offline': 'mock',
+};

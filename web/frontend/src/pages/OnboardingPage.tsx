@@ -15,30 +15,17 @@ import {
   type Integration,
 } from '../api/appClient';
 import PlaygroundDemo from '../components/demo/PlaygroundDemo';
+import {
+  filterOnboardingUsecaseCards,
+  ONBOARDING_USECASE_FALLBACK,
+  ONBOARDING_USECASE_TEMPLATES,
+  type OnboardingUsecaseCard,
+} from '../config/onboardingUseCases';
+import { fetchWithDemoFallback } from '../lib/demoFallback';
 import { t } from '../i18n';
 
 const STEP_KEYS = ['demo', 'usecase', 'workspace', 'integrations'] as const;
 const TOTAL_STEPS = STEP_KEYS.length;
-
-const USECASE_IDS = ['ararat', 'pegasszn', 'pretenzia', 'my-agent'] as const;
-
-const USECASE_TEMPLATES: Record<(typeof USECASE_IDS)[number], string> = {
-  ararat: 'tpl_beauty_consultant',
-  pegasszn: 'tpl_content_repurpose',
-  pretenzia: 'tpl_lead_qualifier',
-  'my-agent': 'tpl_competitor_intelligence',
-};
-
-interface ShowcaseCard {
-  id: string;
-  vertical: string;
-  title: string;
-  one_liner: string;
-  metric: string;
-  persona: {
-    snippets: Array<{ text: string }>;
-  };
-}
 
 /** Four-step onboarding: demo first, then use case, workspace, optional integrations. */
 export default function OnboardingPage() {
@@ -48,7 +35,8 @@ export default function OnboardingPage() {
   const [teamName, setTeamName] = useState('');
   const [teams, setTeams] = useState<Array<{ id: string; name: string }>>([]);
   const [integrations, setIntegrations] = useState<Integration[]>([]);
-  const [usecaseCards, setUsecaseCards] = useState<ShowcaseCard[]>([]);
+  const [usecaseCards, setUsecaseCards] = useState<OnboardingUsecaseCard[]>([]);
+  const [usecaseLoading, setUsecaseLoading] = useState(true);
   const [status, setStatus] = useState('');
   const [installing, setInstalling] = useState(false);
   const [installedWfId, setInstalledWfId] = useState<string | null>(null);
@@ -57,6 +45,7 @@ export default function OnboardingPage() {
   const [demoCompleted, setDemoCompleted] = useState(false);
   const [demoSuccessMsg, setDemoSuccessMsg] = useState('');
   const [usecaseSuccessMsg, setUsecaseSuccessMsg] = useState('');
+  const [creatingTeam, setCreatingTeam] = useState(false);
 
   useEffect(() => {
     logUxEvent('onboarding_start');
@@ -68,19 +57,29 @@ export default function OnboardingPage() {
     }
     listTeams().then((d) => setTeams(d.teams)).catch(() => {});
     listIntegrations().then(setIntegrations).catch(() => {});
-    fetch('/welcome-assets/data/showcase.json')
-      .then((r) => (r.ok ? r.json() : { cards: [] }))
-      .then((data) => {
-        const cards = (data.cards || []) as ShowcaseCard[];
-        setUsecaseCards(cards.filter((c) => USECASE_IDS.includes(c.id as (typeof USECASE_IDS)[number])));
+
+    setUsecaseLoading(true);
+    fetchWithDemoFallback<{ cards: OnboardingUsecaseCard[] }>()
+      .then(({ data }) => {
+        const filtered = filterOnboardingUsecaseCards(data.cards || []);
+        setUsecaseCards(filtered.length > 0 ? filtered : ONBOARDING_USECASE_FALLBACK);
       })
-      .catch(() => {});
+      .catch(() => setUsecaseCards(ONBOARDING_USECASE_FALLBACK))
+      .finally(() => setUsecaseLoading(false));
   }, [params]);
 
   const handleCreateTeam = async () => {
     if (!teamName.trim()) return;
-    await createTeam(teamName.trim());
-    setStep(4);
+    setCreatingTeam(true);
+    setStatus('');
+    try {
+      await createTeam(teamName.trim());
+      setStep(4);
+    } catch {
+      setStatus(t('onboarding.createTeamFailed'));
+    } finally {
+      setCreatingTeam(false);
+    }
   };
 
   const handleConnectOAuth = async (provider: string) => {
@@ -118,7 +117,7 @@ export default function OnboardingPage() {
   };
 
   const handleUsecaseSelect = async (cardId: string) => {
-    const templateId = USECASE_TEMPLATES[cardId as (typeof USECASE_IDS)[number]];
+    const templateId = ONBOARDING_USECASE_TEMPLATES[cardId as keyof typeof ONBOARDING_USECASE_TEMPLATES];
     setInstalling(true);
     setStatus('');
     try {
@@ -141,9 +140,9 @@ export default function OnboardingPage() {
     }
   };
 
-  const finish = async () => {
+  const finish = async (skippedIntegrations = false) => {
     await completeOnboarding();
-    logUxEvent('onboarding_complete');
+    logUxEvent(skippedIntegrations ? 'onboarding_complete_skip_integrations' : 'onboarding_complete');
     navigate('/');
   };
 
@@ -187,10 +186,12 @@ export default function OnboardingPage() {
           <PlaygroundDemo
             variant="compact"
             showContinue={demoCompleted}
-            onComplete={() => {
-              setDemoCompleted(true);
-              setDemoSuccessMsg(t('onboarding.demoSuccess'));
-              logUxEvent('onboarding_demo_completed');
+            onComplete={(result) => {
+              if (result.status === 'success' || result.status === 'completed') {
+                setDemoCompleted(true);
+                setDemoSuccessMsg(t('onboarding.demoSuccess'));
+                logUxEvent('onboarding_demo_completed');
+              }
             }}
             onContinue={() => setStep(2)}
           />
@@ -214,29 +215,33 @@ export default function OnboardingPage() {
             <p style={{ fontSize: 13, color: 'var(--success)', marginBottom: 12 }}>{usecaseSuccessMsg}</p>
           )}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 12 }}>
-            {usecaseCards.map((card) => (
-              <button
-                key={card.id}
-                type="button"
-                className="btn"
-                style={{ textAlign: 'left', display: 'block', height: 'auto', padding: 14 }}
-                onClick={() => handleUsecaseSelect(card.id)}
-                disabled={installing}
-              >
-                <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4 }}>{card.vertical}</div>
-                <strong style={{ display: 'block', marginBottom: 6 }}>{card.title}</strong>
-                <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 8 }}>{card.one_liner}</div>
-                <div style={{ fontSize: 11, color: 'var(--accent)' }}>{card.metric}</div>
-                {card.persona?.snippets?.[0] && (
-                  <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 8, fontStyle: 'italic', lineHeight: 1.4 }}>
-                    «{card.persona.snippets[0].text.slice(0, 100)}…»
-                  </div>
-                )}
-              </button>
-            ))}
+            {usecaseLoading
+              ? [1, 2, 3, 4].map((i) => (
+                  <div key={i} className="skeleton" style={{ height: 140, borderRadius: 8 }} />
+                ))
+              : usecaseCards.map((card) => (
+                  <button
+                    key={card.id}
+                    type="button"
+                    className="btn"
+                    style={{ textAlign: 'left', display: 'block', height: 'auto', padding: 14 }}
+                    onClick={() => handleUsecaseSelect(card.id)}
+                    disabled={installing}
+                  >
+                    <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4 }}>{card.vertical}</div>
+                    <strong style={{ display: 'block', marginBottom: 6 }}>{card.title}</strong>
+                    <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 8 }}>{card.one_liner}</div>
+                    <div style={{ fontSize: 11, color: 'var(--accent)' }}>{card.metric}</div>
+                    {card.persona?.snippets?.[0] && (
+                      <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 8, fontStyle: 'italic', lineHeight: 1.4 }}>
+                        «{card.persona.snippets[0].text.slice(0, 100)}…»
+                      </div>
+                    )}
+                  </button>
+                ))}
           </div>
           <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
-            <button type="button" className="btn" onClick={() => setStep(3)} disabled={installing}>
+            <button type="button" className="btn" onClick={() => setStep(3)} disabled={installing || usecaseLoading}>
               {t('onboarding.skipUsecase')}
             </button>
             {installedWfId && (
@@ -261,7 +266,9 @@ export default function OnboardingPage() {
           ) : (
             <>
               <input className="input" placeholder={t('onboarding.teamName')} value={teamName} onChange={(e) => setTeamName(e.target.value)} style={{ marginBottom: 12 }} />
-              <button type="button" className="btn btn-primary" onClick={handleCreateTeam}>{t('onboarding.createTeam')}</button>
+              <button type="button" className="btn btn-primary" onClick={handleCreateTeam} disabled={creatingTeam || !teamName.trim()}>
+                {creatingTeam ? t('common.loading') : t('onboarding.createTeam')}
+              </button>
             </>
           )}
         </div>
@@ -319,10 +326,13 @@ export default function OnboardingPage() {
               );
             })}
           </div>
-          <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
-            <button type="button" className="btn btn-primary" onClick={finish}>{t('onboarding.goToDashboard')}</button>
-            <button type="button" className="btn" onClick={finish}>{t('onboarding.skipIntegrations')}</button>
+          <div style={{ display: 'flex', gap: 8, marginTop: 16, flexWrap: 'wrap' }}>
+            <button type="button" className="btn btn-primary" onClick={() => finish(false)}>{t('onboarding.goToDashboard')}</button>
+            <button type="button" className="btn btn-ghost" onClick={() => finish(true)} title={t('onboarding.skipIntegrationsHint')}>
+              {t('onboarding.skipIntegrations')}
+            </button>
           </div>
+          <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 12, marginBottom: 0 }}>{t('onboarding.skipIntegrationsHint')}</p>
         </div>
       )}
     </div>

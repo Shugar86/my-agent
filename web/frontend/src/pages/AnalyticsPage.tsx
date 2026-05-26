@@ -12,14 +12,19 @@ function compactNumber(n: number): string {
 
 export default function AnalyticsPage() {
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [period, setPeriod] = useState<'7d' | '30d'>('7d');
   const [summary, setSummary] = useState<UsageSummary | null>(null);
   const [workflowNames, setWorkflowNames] = useState<Record<string, string>>({});
 
   useEffect(() => {
     setLoading(true);
+    setLoadError(false);
     Promise.all([
-      getUsageSummary(period).catch(() => null),
+      getUsageSummary(period).catch(() => {
+        setLoadError(true);
+        return null;
+      }),
       listWorkflows().catch(() => []),
     ])
       .then(([usage, workflows]) => {
@@ -68,6 +73,12 @@ export default function AnalyticsPage() {
           <option value="30d">{t('analytics.period30')}</option>
         </select>
       </div>
+
+      {loadError && (
+        <div className="card" style={{ padding: 16, marginBottom: 24, borderColor: 'var(--danger)' }}>
+          <p style={{ color: 'var(--danger)', fontSize: 13, margin: 0 }}>{t('analytics.loadError')}</p>
+        </div>
+      )}
 
       {hasRuns && (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 16, marginBottom: 32 }}>

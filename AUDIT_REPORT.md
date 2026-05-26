@@ -1,8 +1,8 @@
-# My Agent — Audit Report (v3.3.0)
+# My Agent — Audit Report
 
 > **Date:** 2026-05-26  
-> **Version:** 3.4.2  
-> **Scope:** Post CEO audit iteration — sales readiness + UX audit (2026-05-26)
+> **Version:** 3.4.3  
+> **Scope:** UX funnel iteration — onboarding, dashboard IA, demo polish
 
 ---
 
@@ -10,7 +10,7 @@
 
 My Agent is an **Autonomous Workflow OS**: React SPA (`/app`), FastAPI backend, 52 marketplace templates, Kimi K2.6 primary LLM, visual DAG builder (21 node types), investor demo with mock fallback.
 
-**Product maturity:** Strong as **investor/demo platform**. Sales-ready foundations added in v3.3.1: self-serve signup, template demo-run, async workflows, plan limits, API keys UI.
+**Product maturity:** Strong as **investor/demo platform**. v3.4.3 closes first-run funnel gaps: onboarding never renders empty, dashboard/landing narratives split, demo modal retry.
 
 ---
 
@@ -18,7 +18,7 @@ My Agent is an **Autonomous Workflow OS**: React SPA (`/app`), FastAPI backend, 
 
 | Metric | Value |
 |--------|------:|
-| Version | 3.4.2 |
+| Version | 3.4.3 |
 | Marketplace templates | 52 (3 draft, 3 featured demo) |
 | Workflow node types | 21 |
 | Registered agents | 10 |
@@ -41,8 +41,25 @@ My Agent is an **Autonomous Workflow OS**: React SPA (`/app`), FastAPI backend, 
 - JWT auth + workspace teams + run access checks
 - Prometheus `/metrics` + optional Grafana profile
 - RU i18n for builder, marketplace, settings
+- Onboarding use-case step with offline fallback cards
+- Offline demo animated step replay (no API required)
+- Dashboard GettingStartedBanner for empty workspaces
 
 ---
+
+## Resolved in v3.4.3 (UX funnel)
+
+| Issue | Fix |
+|-------|-----|
+| Onboarding step 2 empty without showcase JSON | `fetchWithDemoFallback` + `ONBOARDING_USECASE_FALLBACK` |
+| DemoModal closes on failed run | Close only on success; retry UI |
+| Dashboard/landing hero duplication | Split copy: landing = outcome pitch; dashboard = first workflow |
+| CTA overload on dashboard | 2 CTAs: marketplace + demo modal |
+| External `/showcase` link in sidebar confuses IA | Removed from sidebar; small link on dashboard cases |
+| Offline demo instant (not cinematic) | Timed step replay in `PlaygroundDemo` |
+| `getDemoSample()` unused | Wired into demo completion metrics |
+| Analytics silent API failure | Explicit error banner |
+| Chat beta without API key guidance | Empty state + toolbar hint → Settings → Models |
 
 ## Resolved in v3.4.2 (UX audit)
 
@@ -59,6 +76,8 @@ My Agent is an **Autonomous Workflow OS**: React SPA (`/app`), FastAPI backend, 
 | `trigger.email` / `trigger.new_lead` | Low | Hidden from builder palette |
 | Stripe billing | Medium | Plan limits in DB; no payment provider |
 | HubSpot/Airtable connectors | Low | Not in registry yet |
+| PublicTemplatePage copy link / 404 UX | Low | P2 backlog |
+| WorkflowList schedule shows raw job.id | Low | P2 backlog |
 
 ---
 
@@ -75,9 +94,7 @@ cd web/frontend && bun run build
 ## Deploy
 
 ```bash
-# Local commits ahead of origin — configure git remote then:
-git push origin main
-vds-git-link   # once per machine
+git push origin main   # or vds remote
 vds-push && vds-deploy my-agent
 ```
 

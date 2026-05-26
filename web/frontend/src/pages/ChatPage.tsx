@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import {
   listAgents,
   streamChat,
@@ -324,14 +324,21 @@ export default function ChatPage() {
           {loading ? (
             <div className="skeleton" style={{ height: 200, margin: 16 }} />
           ) : messages.length === 0 ? (
-            <EmptyState
-              title={t('chat.emptyTitle')}
-              description={t('chat.emptyDesc')}
-              actionLabel={t('chat.emptyCta')}
-              actionTo="/marketplace"
-              secondaryActionLabel={t('chat.tryDemo')}
-              secondaryOnAction={() => setDemoOpen(true)}
-            />
+            <div>
+              <EmptyState
+                title={t('chat.emptyTitle')}
+                description={`${t('chat.emptyDesc')} ${t('chat.emptyLlmHint')}`}
+                actionLabel={t('chat.emptyCta')}
+                actionTo="/marketplace"
+                secondaryActionLabel={t('chat.tryDemo')}
+                secondaryOnAction={() => setDemoOpen(true)}
+              />
+              <p style={{ textAlign: 'center', marginTop: -8 }}>
+                <Link to="/settings?tab=models" style={{ fontSize: 12, color: 'var(--accent)' }}>
+                  {t('nav.settings')} → Модели
+                </Link>
+              </p>
+            </div>
           ) : (
             messages.map(renderBubble)
           )}

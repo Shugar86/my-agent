@@ -35,7 +35,8 @@ Design tokens and component classes for the React SPA at `/app/*`.
 - **Buttons:** `.btn`, `.btn-primary`, `.btn-danger`, `.btn-ghost`
 - **Forms:** `.input`, `textarea.input`
 - **Surfaces:** `.card`, `.badge`, `.badge-featured`
-- **Status:** `.feature-tag`, `.feature-tag--live|beta|mock|coming-soon|broken` — React: `<FeatureTag />`
+- **Status:** `.feature-tag`, `.feature-tag--live|beta|mock|coming-soon|broken` — React: `<FeatureTag />`, legend: `<FeatureStatusLegend />`
+- **First-run:** `.getting-started-banner` — React: `<GettingStartedBanner />`
 - **Feedback:** `.skeleton`, `.toast`, `.empty-state`
 - **Layout:** `.page-header`, `.page-content`, `.modal-*`, `.breadcrumbs`
 - **Demo:** `.demo-stepper`, `.playground-demo`, `.playground-presets`
@@ -51,7 +52,11 @@ Design tokens and component classes for the React SPA at `/app/*`.
 | `mock` | Prerecorded / static data | Demo runs without API keys |
 | `coming-soon` | UI only | Dead showcase CTAs, Stripe billing |
 
-Registry: `src/config/featureRegistry.ts` (`NAV_FEATURE_STATUS`).
+Registry: `src/config/featureRegistry.ts` (`NAV_FEATURE_STATUS`, `PAGE_FEATURE_STATUS`).
+
+Sidebar footer shows `<FeatureStatusLegend />` explaining Live / Beta / Preview / Скоро.
+
+Onboarding fallback cards: `src/config/onboardingUseCases.ts`.
 
 ## i18n
 

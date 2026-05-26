@@ -1,7 +1,7 @@
 # My Agent — Technical Documentation
 
 > Last updated: 2026-05-26
-> Version: 3.4.2 (UX audit — honest badges, /app/demo, public share)
+> Version: 3.4.3 (UX funnel — onboarding fallback, dashboard IA, demo polish)
 > Author: AI Assistant
 
 ---
@@ -14,7 +14,7 @@ SWOT analysis → DOCX report → n8n hook. Replaces ~4 hours of analyst work.
 ```bash
 docker compose up -d --build
 # Entrypoint auto-runs seed + DOCX generation on first start
-# Open http://localhost:8020/app → "Try 90s demo"
+# Open http://localhost:8020/app → «Выбрать шаблон» or «▶ Демо за 90 сек»
 ```
 
 Manual re-seed (optional):
@@ -38,16 +38,16 @@ Mock fallback works without API keys — safe for live investor presentations.
 | URL | Назначение |
 |-----|------------|
 | `/login` | JWT + Google OAuth |
-| `/app/` | Панель (dashboard, demo hero) |
-| `/app/chat` | Чат (markdown, tool bubbles, feedback) |
+| `/app/` | Панель (action-oriented hero, GettingStartedBanner, demo modal) |
+| `/app/chat` | Чат (markdown, tool bubbles, feedback; beta + API key hint) |
 | `/app/workflows` | Список workflows + builder (`/app/workflows/:id`) — **RU UI** |
 | `/app/marketplace` | Маркетплейс шаблонов |
 | `/app/settings` | Интеграции, модели, API keys, billing, agents/knowledge/MCP (tabs) |
 | `/app/onboarding` | 4-step wizard + PlaygroundDemo (90s) |
-| `/app/showcase` | Vertical cases + **embedded PlaygroundDemo** (в sidebar) |
+| `/app/showcase` | Vertical cases + PlaygroundDemo (sidebar: «Кейсы и demo») |
 | `/app/demo` | In-app live demo (PlaygroundDemo + presets, без static HTML) |
 | `/app/share/templates/:id` | Публичный preview шаблона (**без auth**, install → login) |
-| `/` | Маркетинговый лендинг (`#problems`, `#live-demo`, marketplace preview) |
+| `/` | Маркетинговый лендинг (primary CTA → `/demo`, `#problems`, marketplace preview) |
 | `/showcase` | Demo-MVP showcase (public, no auth) |
 | `/demo` | Public Competitor Intelligence demo |
 | `/welcome` | Alias лендинга (`/` ) |
@@ -55,6 +55,22 @@ Mock fallback works without API keys — safe for live investor presentations.
 Legacy redirects: `/app/agents`, `/app/knowledge`, `/app/mcp` → `/app/settings?tab=...`
 
 Дизайн-система: [`web/frontend/DESIGN.md`](web/frontend/DESIGN.md). Сборка: `cd web/frontend && bun run build`.
+
+### Changelog 3.4.3 (2026-05-26) — UX funnel (investor + first-run)
+
+**Onboarding:** step 2 — `fetchWithDemoFallback` + bundled fallback cards (`config/onboardingUseCases.ts`); skeleton loading; `createTeam` error handling; distinct «Skip integrations» vs «Go to dashboard».
+
+**Demo UX:** `DemoModal` closes only on success + retry banner; offline demo timed step replay (~3s/node); ROI metrics from `GET /api/demo/sample` in PlaygroundDemo footer.
+
+**Dashboard vs Landing:** dashboard hero action-oriented («Ваш первый workflow за 3 минуты»); 2 CTAs (marketplace + demo modal); `GettingStartedBanner` when no workflows.
+
+**IA:** sidebar tagline «Шаблон → Workflow → Результат»; nav «Кейсы и demo»; public `/showcase` link removed from sidebar (kept on dashboard cases footer); `FeatureStatusLegend` in sidebar.
+
+**Polish:** Chat empty state — Kimi API key hint; Analytics load error state; Settings version 3.4.3; landing single primary CTA + Preview badge on live-demo iframe.
+
+**Registry:** `PAGE_FEATURE_STATUS` in `featureRegistry.ts` for section-level badges.
+
+Build: `cd web/frontend && bun run build`. E2E: `bun run test:e2e` (сервер на `:8020`).
 
 ### Changelog 3.4.2 (2026-05-26) — UX audit (investor + B2B)
 

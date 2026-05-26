@@ -4,6 +4,7 @@ import { listAgents, listTemplates, installTemplate } from '../api/appClient';
 import { listWorkflows } from '../api/workflowClient';
 import type { Workflow } from '../types/workflow';
 import DemoModal from '../components/DemoModal';
+import GettingStartedBanner from '../components/GettingStartedBanner';
 import FeatureTag from '../components/ui/FeatureTag';
 import PageHeader from '../components/ui/PageHeader';
 import { useToast } from '../components/ui/Toast';
@@ -120,19 +121,16 @@ export default function Dashboard() {
           <p className="dashboard-hero__desc">{t('dashboard.heroDesc')}</p>
         </div>
         <div className="dashboard-hero__actions">
+          <Link to="/marketplace" className="btn btn-primary">{t('dashboard.heroPrimaryCta')}</Link>
           <button type="button" className="btn" onClick={() => setDemoOpen(true)}>
             {t('dashboard.tryDemoModal')}
           </button>
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            <Link to="/demo" className="btn btn-primary">{t('dashboard.tryDemo')}</Link>
-            <Link to="/showcase" className="btn">{t('nav.showcase')}</Link>
-            <a href="/showcase" className="btn btn-ghost" target="_blank" rel="noopener noreferrer" title={t('showcase.publicVersionHint')}>
-              {t('showcase.publicVersion')}
-            </a>
-            <Link to="/marketplace" className="btn">{t('nav.marketplace')}</Link>
-          </div>
         </div>
       </section>
+
+      {stats.workflows === 0 && (
+        <GettingStartedBanner onOpenDemo={() => setDemoOpen(true)} />
+      )}
 
       <section style={{ marginBottom: 32 }}>
         <div
@@ -199,6 +197,12 @@ export default function Dashboard() {
         <Link to="/showcase" style={{ color: 'var(--accent)', fontSize: 13 }}>
           {t('dashboard.viewAllCases')}
         </Link>
+        <span style={{ fontSize: 11, color: 'var(--text-muted)', marginLeft: 12 }}>
+          ·{' '}
+          <a href="/showcase" target="_blank" rel="noopener noreferrer" title={t('showcase.publicVersionHint')}>
+            {t('showcase.publicVersionShort')}
+          </a>
+        </span>
       </section>
 
       {templates.length > 0 && (
