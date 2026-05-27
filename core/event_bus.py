@@ -1,3 +1,6 @@
+import inspect
+
+
 class EventBus:
     def __init__(self):
         self._handlers = {}
@@ -18,6 +21,22 @@ class EventBus:
         for handler in self._handlers.get(event_name, []):
             try:
                 result = handler(**kwargs)
+                results.append(result)
+            except Exception as e:
+                results.append({"error": str(e)})
+        return results
+
+    async def emit_async(self, event_name, **kwargs):
+        """Emit event and await async handlers."""
+        results = []
+        for handler in self._handlers.get(event_name, []):
+            try:
+                if inspect.iscoroutinefunction(handler):
+                    result = await handler(**kwargs)
+                else:
+                    result = handler(**kwargs)
+                    if inspect.iscoroutine(result):
+                        result = await result
                 results.append(result)
             except Exception as e:
                 results.append({"error": str(e)})

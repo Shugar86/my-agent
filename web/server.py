@@ -113,6 +113,12 @@ async def redis_rate_limit_middleware(request: Request, call_next):
     if rule:
         client_ip = request.client.host if request.client else "unknown"
         user_id = getattr(request.state, "user_id", None)
+        if not user_id:
+            token = request.cookies.get("access_token")
+            if token:
+                payload = decode_access_token(token)
+                if payload and "user_id" in payload:
+                    user_id = payload["user_id"]
         identifier = f"user:{user_id}" if user_id else client_ip
         allowed, remaining, reset_after = await RateLimiter.check(
             identifier, rule.action, limit=rule.limit, window=rule.window
@@ -190,7 +196,6 @@ class AuthMiddleware(BaseHTTPMiddleware):
                 workspace_id, team_role = None, None
             request.state.workspace_id = workspace_id
             request.state.team_role = team_role
-            ACTIVE_SESSIONS.inc()
             try:
                 if path == "/" and path != "/onboarding":
                     from core.workflow.store import workflow_store
@@ -217,8 +222,8 @@ class AuthMiddleware(BaseHTTPMiddleware):
                     wf_id = path.split("/workflows/", 1)[1]
                     return RedirectResponse(url=f"/app/workflows/{wf_id}", status_code=301)
                 return await call_next(request)
-            finally:
-                ACTIVE_SESSIONS.dec()
+            except Exception:
+                raise
 
         if path.startswith("/api/"):
             return JSONResponse(status_code=401, content={"error": "Not authenticated"})
@@ -476,11 +481,7 @@ async def get_api_keys(request: Request):
 
 store = AgentStore()
 
-config_path = os.path.join("config", "agent.json")
-if os.path.exists(config_path):
-    config = load_config(config_path)
-else:
-    config = DEFAULT_CONFIG
+config = load_config()
 
 orchestrator = Orchestrator(store)
 llm_config = config.get("model", {})
@@ -740,13 +741,15 @@ def _user_session_id(user_id: str, raw_sid: str, workspace_id: str | None = None
 @limiter.limit("10/minute")
 async def chat_endpoint(request: Request, body: ChatRequest):
     uid = getattr(request.state, "user_id", "anon")
-    session_id = _user_session_id(uid, body.agent_id)
+    workspace_id = getattr(request.state, "workspace_id", None)
+    raw_sid = body.session_id or f"chat_{uuid.uuid4().hex[:12]}"
+    session_id = _user_session_id(uid, raw_sid, workspace_id)
     set_session_context(session_id)
     try:
         if body.auto_agents:
             result = await orchestrator.run_with_auto_agents(body.message, body.agent_id, factory)
         else:
-            result = await orchestrator.run(body.message, body.agent_id)
+            result = await orchestrator.run(body.message, body.agent_id, session_id=session_id)
         return {"response": result}
     finally:
         set_session_context("")
@@ -759,6 +762,7 @@ async def chat_stream(request: Request, body: ChatRequest):
     workspace_id = getattr(request.state, "workspace_id", None)
 
     async def event_stream():
+        ACTIVE_SESSIONS.inc()
         raw_sid = body.session_id or f"stream_{uuid.uuid4().hex[:12]}"
         sid = _user_session_id(uid, raw_sid, workspace_id)
         set_session_context(body.agent_id)
@@ -805,7 +809,9 @@ async def chat_stream(request: Request, body: ChatRequest):
                     elif event["type"] == "tool_call":
                         tool_call_seen = True
                         try:
-                            args = json.loads(event["args"])
+                            args = event["args"]
+                            if isinstance(args, str):
+                                args = json.loads(args)
                             result = agent.skills.execute_tool(event["name"], **args)
                             result_str = str(result)[:2000]
                             yield f"data: {json.dumps({'type': 'tool_result', 'name': event['name'], 'content': result_str})}\n\n"
@@ -832,7 +838,7 @@ async def chat_stream(request: Request, body: ChatRequest):
                             cost_usd=estimated_cost,
                             metadata={"agent_id": body.agent_id},
                         )
-                        model_name = agent_config.get("model", {}).get("primary", "unknown").split("/")[-1]
+                        model_name = resolve_agent_model_config(agent_config).get("primary", "unknown").split("/")[-1]
                         LLM_TOKEN_COUNT.labels(model=model_name).inc(total_output_tokens)
                         break
 
@@ -845,6 +851,7 @@ async def chat_stream(request: Request, body: ChatRequest):
             LLM_ERROR_COUNT.labels(error_type=type(e).__name__).inc()
             yield f"data: {json.dumps({'type': 'error', 'content': str(e)})}\n\n"
         finally:
+            ACTIVE_SESSIONS.dec()
             set_session_context("")
 
     return StreamingResponse(event_stream(), media_type="text/event-stream")
@@ -1127,7 +1134,7 @@ async def get_stats(request: Request):
         "skills": total_skills,
         "tools": total_tools,
         "installed_skills": [dict(r) for r in installed] if installed else [],
-        "model": config.get("model", {}).get("primary", "unknown"),
+        "model": resolve_agent_model_config(config).get("primary", "unknown"),
     }
 
 
@@ -1360,6 +1367,7 @@ async def websocket_chat(websocket: WebSocket):
     if not auth:
         return
     await websocket.accept()
+    ACTIVE_SESSIONS.inc()
     current_task = None
 
     try:
@@ -1398,7 +1406,7 @@ async def websocket_chat(websocket: WebSocket):
                         await websocket.send_json({"type": "error", "message": f"Agent '{agent_id}' not found"})
                         return
 
-                    model_config = resolve_profile(model_name)
+                    model_config = resolve_profile(model_name) or resolve_agent_model_config(agent_config)
                     if not model_config:
                         await websocket.send_json({"type": "error", "message": f"Unknown model: {model_name}"})
                         return
@@ -1408,24 +1416,34 @@ async def websocket_chat(websocket: WebSocket):
                         .set_role(agent_config.get("role", ""))
                         .set_skills(agent_config.get("skills", []))
                         .set_tools(agent_config.get("tools", []))
-                        .set_memory({"enabled": True}))
+                        .set_memory(agent_config.get("memory", {"enabled": True})))
                     agent = builder.build()
+                    llm = LLMGateway(model_config)
 
-                    # Send thinking indicator
                     await websocket.send_json({"type": "thinking", "model": model_config.get("primary", "unknown")})
 
-                    # Run agent (async-native)
-                    result = await agent.run(message)
+                    session = await agent.memory.ensure_session(f"ws_{auth['user_id']}_{uuid.uuid4().hex[:8]}")
+                    session.add_user_message(message)
+                    system_prompt = agent._build_system_prompt()
+                    tools = agent.skills.get_schemas(agent.tool_names) if agent.tool_names else agent.skills.get_schemas()
+                    messages = [{"role": "system", "content": system_prompt}] + session.messages
 
-                    # Stream result in chunks for better UX
-                    chunk_size = 100
-                    for i in range(0, len(result), chunk_size):
-                        chunk = result[i:i + chunk_size]
-                        await websocket.send_json({"type": "chunk", "text": chunk})
+                    full_response = ""
+                    async for event in llm.chat_stream(messages, tools=tools if tools else None):
+                        if event["type"] == "token":
+                            chunk = event.get("content", "")
+                            full_response += chunk
+                            await websocket.send_json({"type": "chunk", "text": chunk})
+                        elif event["type"] == "done":
+                            break
+
+                    if agent.memory.enabled:
+                        session.add_assistant_message(full_response)
+                        await agent.memory.persist_session(session)
 
                     await websocket.send_json({
                         "type": "done",
-                        "text": result,
+                        "text": full_response,
                         "model": model_config.get("primary", "unknown"),
                         "agent": agent_id
                     })
@@ -1441,6 +1459,7 @@ async def websocket_chat(websocket: WebSocket):
     except Exception as e:
         logger.exception("WebSocket error")
     finally:
+        ACTIVE_SESSIONS.dec()
         if current_task and not current_task.done():
             current_task.cancel()
 

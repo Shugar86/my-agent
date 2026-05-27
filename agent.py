@@ -17,6 +17,7 @@ from core.configurator import MODEL_PROFILES
 from core.builder import AgentBuilder
 from core.agent_store import AgentStore
 from core.orchestrator import Orchestrator
+from core.async_utils import run_coro_sync
 
 import pathlib
 
@@ -249,7 +250,7 @@ def cmd_run(args):
     print(f"Запрос: {args.input}\n")
     
     try:
-        result = asyncio.run(agent.run(args.input))
+        result = run_coro_sync(agent.run(args.input))
         print(f"\nОтвет:\n{result}")
     except Exception as e:
         print(f"Ошибка: {str(e)[:300]}")

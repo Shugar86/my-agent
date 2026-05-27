@@ -30,7 +30,7 @@ class MemoryManager:
             return
 
         pg_url = get_database_url()
-        if pg_url:
+        if pg_url and pg_url.startswith(("postgresql://", "postgres://")):
             self._use_pg = True
             self._pg = PGStateManager(pg_url)
             self._db = None

@@ -74,34 +74,31 @@ def create_chart(data: dict, chart_type: str = "bar", title: str = "Chart",
         return f"Error: {str(e)}"
 
 def run_python(code: str, timeout: int = 30) -> Dict[str, Any]:
-    """Execute Python code in subprocess sandbox. No exec()."""
-    import io
-    import contextlib
-    
-    # Run in isolated subprocess instead of exec() to prevent RCE
-    try:
-        result = subprocess.run(
-            [sys.executable, "-c", code],
-            capture_output=True,
-            text=True,
-            timeout=timeout,
-            cwd=os.getcwd(),
-            # Security: restrict environment
-            env={"PYTHONPATH": os.getcwd(), "PYTHONUTF8": "1"},
-        )
-        output = {
-            "stdout": result.stdout,
-            "stderr": result.stderr,
-            "returncode": result.returncode,
-            "success": result.returncode == 0,
+    """Execute Python code in Docker sandbox only."""
+    from core.docker_sandbox import docker_sandbox
+
+    docker_result = docker_sandbox.run_python(code)
+    if docker_result.get("success"):
+        return {
+            "stdout": docker_result.get("stdout", ""),
+            "stderr": docker_result.get("stderr", ""),
+            "returncode": 0,
+            "success": True,
         }
-        if result.returncode != 0:
-            output["error"] = f"Process exited with code {result.returncode}"
-        return output
-    except subprocess.TimeoutExpired:
-        return {"stdout": "", "stderr": "", "error": f"Execution timed out after {timeout}s", "success": False}
-    except Exception as e:
-        return {"stdout": "", "stderr": "", "error": str(e), "success": False}
+    if "error" in docker_result:
+        return {
+            "stdout": docker_result.get("stdout", ""),
+            "stderr": docker_result.get("stderr", ""),
+            "error": docker_result["error"],
+            "returncode": 1,
+            "success": False,
+        }
+    return {
+        "stdout": "",
+        "stderr": "",
+        "error": "Docker sandbox unavailable. Code execution disabled.",
+        "success": False,
+    }
 
 
 def register_tools():

@@ -8,20 +8,12 @@ from core.agent_store import AgentStore
 from core.orchestrator import Orchestrator
 from core.llm_gateway import LLMGateway
 from core.config import resolve_env_vars
+from core.async_utils import run_coro_sync
 
 
 def _run_async(coro):
     """Run an async coroutine from sync code."""
-    try:
-        loop = asyncio.get_event_loop()
-        if loop.is_running():
-            # If already in async context, we can't use run_until_complete
-            import concurrent.futures
-            with concurrent.futures.ThreadPoolExecutor() as pool:
-                return pool.submit(asyncio.run, coro).result()
-        return loop.run_until_complete(coro)
-    except RuntimeError:
-        return asyncio.run(coro)
+    return run_coro_sync(coro)
 
 
 class AutoAgentFactory:

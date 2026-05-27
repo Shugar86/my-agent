@@ -24,13 +24,13 @@ def create_document(title: str, content: str, format_type: str = "html",
         try:
             docx_path = f"output/{title.replace(' ', '_')}.docx"
             results["docx"] = convert_document(doc, docx_path, "docx")
-        except:
+        except Exception:
             pass
 
         try:
             pdf_path = f"output/{title.replace(' ', '_')}.pdf"
             results["pdf"] = convert_document(doc, pdf_path, "pdf")
-        except:
+        except Exception:
             pass
 
         return results

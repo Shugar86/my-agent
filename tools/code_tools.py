@@ -57,11 +57,10 @@ def _run_python(code, timeout):
 
 
 def _run_javascript(code, timeout):
-    """Run JavaScript code in Docker sandbox (via node in bash)."""
-    # Wrap JS code for safe bash execution
+    """Run JavaScript code in Docker sandbox (node image)."""
     escaped = code.replace("'", "'\"'\"'")
     bash_code = f"node -e '{escaped}'"
-    docker_result = docker_sandbox.run_bash(bash_code)
+    docker_result = docker_sandbox.run_bash(bash_code, image="node:20-slim")
     if docker_result.get("success"):
         return {
             "stdout": docker_result.get("stdout", ""),

@@ -29,8 +29,8 @@ from rich.style import Style
 from rich import box
 
 # Project imports
-from core.config import load_agent_config, resolve_env_vars
-from core.builder import AgentBuilder
+from core.config import load_agent_config, resolve_env_vars, SKILLS_DIRS
+from core.builder import AgentBuilder, _get_cached_skill_loader
 from core.agent_store import AgentStore
 from core.state_db import StateDB
 from core.session_store import get_state_db_path
@@ -108,6 +108,7 @@ class AgentTUI:
 
     def _init_agent(self):
         """Build agent from config."""
+        _get_cached_skill_loader()
         builder = AgentBuilder()
         builder.set_model(self.model_config)
         builder.set_role(self.agent_config.get("role", ""))
@@ -722,6 +723,10 @@ class AgentTUI:
 
     def run_chat_loop(self):
         """Run interactive chat loop."""
+        asyncio.run(self._run_chat_loop_async())
+
+    async def _run_chat_loop_async(self):
+        """Async chat loop — single event loop for the whole session."""
         self.console.clear()
         self.render_welcome()
         self._create_session()
@@ -754,7 +759,7 @@ class AgentTUI:
 
             # Process
             self.render_thinking()
-            result, latency = asyncio.run(self.process_message(user_input))
+            result, latency = await self.process_message(user_input)
 
             # Render response
             self.render_assistant_message(result, latency)

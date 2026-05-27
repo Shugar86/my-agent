@@ -47,8 +47,19 @@ def register_tools():
         }},
         execute_fn=lambda text="": detect_language(text),
     )
+    registry.register(
+        name="translate_text",
+        description="Prepare a translation prompt for text from source to target language.",
+        parameters={"type": "object", "properties": {
+            "text": {"type": "string"},
+            "target_lang": {"type": "string", "description": "Target language code, e.g. en, ru"},
+            "source_lang": {"type": "string", "description": "Optional source language code"},
+        }, "required": ["text"]},
+        execute_fn=lambda text="", target_lang="en", source_lang=None: translate_text(text, target_lang, source_lang),
+    )
 
 
 def unregister_tools():
     from core.tool_registry import registry
-    registry.unregister("detect_language")
+    for name in ("detect_language", "translate_text"):
+        registry.unregister(name)

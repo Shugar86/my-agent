@@ -148,10 +148,19 @@ finally:
             if os.path.exists(script_path):
                 os.unlink(script_path)
 
-    def run_bash(self, code: str) -> Dict[str, Any]:
+    def run_bash(self, code: str, image: str | None = None) -> Dict[str, Any]:
         """Execute bash code in Docker container."""
         if not self._is_docker_available():
             return {"error": "Docker not available"}
+
+        run_image = image or self.image
+        if run_image != self.image:
+            saved_image = self.image
+            self.image = run_image
+            self._ensure_image()
+            self.image = saved_image
+        else:
+            self._ensure_image()
 
         try:
             cmd = [
@@ -160,7 +169,7 @@ finally:
                 "--memory", self.memory_limit,
                 "--cpus", self.cpu_limit,
                 "--read-only",
-                self.image,
+                run_image,
                 "bash", "-c", code,
             ]
 

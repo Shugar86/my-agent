@@ -18,7 +18,8 @@ class DBManager:
     """Unified database interface supporting SQLite and PostgreSQL."""
 
     def __init__(self, database_url: Optional[str] = None):
-        self.database_url = database_url or os.getenv("DATABASE_URL", "sqlite:///data/agent.db")
+        raw = database_url or os.getenv("DATABASE_URL") or "sqlite:///data/agent.db"
+        self.database_url = raw.strip() or "sqlite:///data/agent.db"
         self._pool = None
         self._engine = None
         self._validate_production_config()
@@ -87,6 +88,7 @@ class DBManager:
         if self.db_type == "sqlite":
             db_path = self.database_url.replace("sqlite:///", "")
             conn = sqlite3.connect(db_path, check_same_thread=False)
+            conn.execute("PRAGMA foreign_keys=ON")
             conn.row_factory = sqlite3.Row
             try:
                 yield conn

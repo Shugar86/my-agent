@@ -207,10 +207,18 @@ def run_setup_wizard():
 
     # Update agent.json
     profile_data = selected_profile[1]
+    if "neuroapi" in profile_data["base_url"]:
+        api_key = "${NEUROAPI_API_KEY}"
+    elif "openrouter" in profile_data["base_url"]:
+        api_key = "${OPENROUTER_API_KEY}"
+    elif "localhost:11434" in profile_data["base_url"] or "127.0.0.1:11434" in profile_data["base_url"]:
+        api_key = ""
+    else:
+        api_key = "${OPENROUTER_API_KEY}"
     agent_config = {
         "model": {
             "primary": profile_data["primary"],
-            "api_key": f"${{NEUROAPI_API_KEY}}" if "neuroapi" in profile_data["base_url"] else f"${{OPENROUTER_API_KEY}}",
+            "api_key": api_key,
             "base_url": profile_data["base_url"],
             "fallback": profile_data.get("fallback"),
             "fallback_api_key": f"${{OPENROUTER_API_KEY}}" if profile_data.get("fallback") and "openrouter" in str(profile_data.get("fallback_base_url", "")) else None,

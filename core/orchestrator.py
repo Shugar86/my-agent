@@ -23,7 +23,7 @@ class Orchestrator:
 
     async def run_with_auto_agents(self, user_input, agent_id, factory):
         """Async wrapper for auto-agent factory spawning."""
-        return await factory.spawn_for_task(user_input, agent_id)
+        return factory.spawn_for_task(user_input, agent_id)
 
     async def _handoff(self, user_input, agent_config, session_id=None):
         model_config = resolve_agent_model_config(agent_config)

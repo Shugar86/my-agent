@@ -2,7 +2,7 @@
 
 import os
 
-from core.config import resolve_agent_model_config
+from core.config import resolve_agent_model_config, load_agent_config
 
 
 def test_resolve_profile_name(monkeypatch) -> None:
@@ -24,4 +24,6 @@ def test_resolve_legacy_model_string() -> None:
 
 def test_resolve_defaults_from_agent_json() -> None:
     cfg = resolve_agent_model_config({})
-    assert cfg["primary"] == "openai/kimi-for-coding"
+    defaults = load_agent_config()
+    expected = defaults.get("model", {}).get("primary", "")
+    assert cfg["primary"] == expected

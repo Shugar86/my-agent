@@ -55,12 +55,19 @@ class SessionCache:
         except Exception as e:
             logger.debug("Redis session miss: %s", e)
 
-        # Fallback to SQLite
+        # Fallback to SQLite (read-only — populate Redis cache without rewriting DB)
         try:
             messages = _get_state_db().get_messages(session_id)
-            # Populate Redis
             if messages:
-                await SessionCache.set_messages(session_id, messages)
+                try:
+                    data = json.dumps(messages, ensure_ascii=False, default=str)
+                    await redis_client.set(
+                        SessionCache._messages_key(session_id),
+                        data,
+                        expire=SessionCache.DEFAULT_TTL,
+                    )
+                except Exception as cache_exc:
+                    logger.debug("Redis session cache populate failed: %s", cache_exc)
             return messages
         except Exception as e:
             logger.warning("SQLite session fallback failed: %s", e)

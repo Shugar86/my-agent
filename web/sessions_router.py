@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import os
 import uuid
 
 from fastapi import APIRouter, HTTPException, Request
@@ -12,7 +11,16 @@ from core.state_db import StateDB
 from core.session_store import get_state_db_path
 
 router = APIRouter(tags=["sessions"])
-state_db = StateDB(get_state_db_path())
+
+_state_db: StateDB | None = None
+
+
+def get_state_db() -> StateDB:
+    """Lazy-init StateDB to avoid creating tables before Alembic migrations."""
+    global _state_db
+    if _state_db is None:
+        _state_db = StateDB(get_state_db_path())
+    return _state_db
 
 
 def _full_session_id(user_id: str, workspace_id: str | None, raw_id: str) -> str:
@@ -49,6 +57,7 @@ async def list_sessions(request: Request):
     if not user_id:
         raise HTTPException(status_code=401, detail="Not authenticated")
     workspace_id = getattr(request.state, "workspace_id", None)
+    state_db = get_state_db()
     sessions = state_db.list_sessions_for_user(user_id)
     prefix = f"{workspace_id}::{user_id}::" if workspace_id else f"{user_id}::"
     scoped = [s for s in sessions if s["id"].startswith(prefix)]
@@ -76,6 +85,7 @@ async def create_session(request: Request, body: SessionCreateRequest):
     workspace_id = getattr(request.state, "workspace_id", None)
     raw_id = f"s_{uuid.uuid4().hex[:12]}"
     full_id = _full_session_id(user_id, workspace_id, raw_id)
+    state_db = get_state_db()
     state_db.create_session(full_id, source="web", user_id=user_id, model=body.agent_id)
     if body.title:
         state_db.set_session_title(full_id, body.title)
@@ -91,6 +101,7 @@ async def get_session_messages(request: Request, session_id: str):
     workspace_id = getattr(request.state, "workspace_id", None)
     full_id = _full_session_id(user_id, workspace_id, session_id)
     _assert_session_owner(user_id, workspace_id, full_id)
+    state_db = get_state_db()
     if not state_db.get_session(full_id):
         raise HTTPException(status_code=404, detail="Session not found")
     rows = state_db.get_messages(full_id)
@@ -111,6 +122,7 @@ async def delete_session(request: Request, session_id: str):
     workspace_id = getattr(request.state, "workspace_id", None)
     full_id = _full_session_id(user_id, workspace_id, session_id)
     _assert_session_owner(user_id, workspace_id, full_id)
+    state_db = get_state_db()
     if not state_db.get_session(full_id):
         raise HTTPException(status_code=404, detail="Session not found")
     state_db.delete_session(full_id)

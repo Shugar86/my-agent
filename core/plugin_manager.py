@@ -28,6 +28,8 @@ class PluginManager:
     def _load_plugin(self, path):
         module_name = "plugin_" + path.parent.name if path.name == "__init__.py" else "plugin_" + path.stem
         spec = importlib.util.spec_from_file_location(module_name, path)
+        if spec is None or spec.loader is None:
+            raise ImportError(f"Cannot load plugin from {path}")
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
 

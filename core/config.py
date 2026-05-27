@@ -29,9 +29,11 @@ SKILLS_DIRS = [
 ]
 
 
-def load_config(path="config/agent.yaml"):
-    with open(path, "r", encoding="utf-8") as f:
-        user_config = yaml.safe_load(f) or {}
+def load_config(path=None):
+    """Load merged agent config from JSON (primary) or YAML (legacy fallback)."""
+    if path is None:
+        path = "config/agent.json"
+    user_config = load_agent_config(path)
     return _merge(DEFAULT_CONFIG, user_config)
 
 

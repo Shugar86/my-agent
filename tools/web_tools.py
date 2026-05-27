@@ -20,7 +20,8 @@ def web_search(query, max_results=5):
                     "url": item.get("url", ""),
                     "snippet": item.get("content", ""),
                 })
-            return results if results else None
+            if results:
+                return results
         except Exception:
             pass  # Fallback to DuckDuckGo
 

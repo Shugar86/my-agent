@@ -30,6 +30,8 @@ def query_sqlite(db_path: str, query: str, params: list = None) -> dict:
 
 
 async def query_postgres(conn_string: str, query: str, params: list = None) -> dict:
+    if asyncpg is None:
+        return {"error": "asyncpg not installed"}
     try:
         conn = await asyncpg.connect(conn_string)
         # Security: always use prepared statements, never string-based SELECT detection

@@ -54,6 +54,8 @@ def sheets_write(
 ) -> dict[str, Any]:
     """Write values to a Google Sheet range."""
     try:
+        if not values:
+            return {"success": False, "error": "values cannot be empty"}
         service = _get_sheets_service(user_id)
         body = {"values": values if isinstance(values[0], list) else [values]}
         result = service.spreadsheets().values().update(

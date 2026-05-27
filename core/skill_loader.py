@@ -1,7 +1,11 @@
 import os
+import sys
+import logging
 import yaml
 import importlib.util
 from pathlib import Path
+
+logger = logging.getLogger(__name__)
 
 # Skills blocked in production unless explicitly enabled.
 PRODUCTION_BLOCKED_SKILLS = {"self_dev"}
@@ -46,20 +50,30 @@ class SkillLoader:
             }
             return
 
-        module = None
-        skill_py = skill_dir / "skill.py"
-        if skill_py.exists():
-            module = self._import_module(skill_py)
+        try:
+            module = None
+            skill_py = skill_dir / "skill.py"
+            if skill_py.exists():
+                module = self._import_module(skill_py)
 
-        self.skills[name] = {
-            "metadata": metadata,
-            "module": module,
-            "enabled": True,
-            "path": str(skill_dir),
-        }
+            self.skills[name] = {
+                "metadata": metadata,
+                "module": module,
+                "enabled": True,
+                "path": str(skill_dir),
+            }
 
-        if module and hasattr(module, "register_tools"):
-            module.register_tools()
+            if module and hasattr(module, "register_tools"):
+                module.register_tools()
+        except Exception as exc:
+            logger.warning("Failed to load skill %s from %s: %s", name, skill_dir, exc)
+            self.skills[name] = {
+                "metadata": metadata,
+                "module": None,
+                "enabled": False,
+                "path": str(skill_dir),
+                "error": str(exc),
+            }
 
     def _parse_skill_md(self, path):
         content = path.read_text(encoding="utf-8")
@@ -70,7 +84,12 @@ class SkillLoader:
         return {"name": path.parent.name, "description": ""}
 
     def _import_module(self, path):
+        project_root = str(Path(__file__).resolve().parent.parent)
+        if project_root not in sys.path:
+            sys.path.insert(0, project_root)
         spec = importlib.util.spec_from_file_location("skill_" + path.parent.name, path)
+        if spec is None or spec.loader is None:
+            raise ImportError(f"Cannot load module from {path}")
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
         return module

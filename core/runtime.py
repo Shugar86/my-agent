@@ -223,7 +223,7 @@ class AgentRuntime:
         messages = [{"role": "system", "content": system_prompt}] + session.messages
 
         if self.events:
-            self.events.emit("on_message", message=user_input, session=session)
+            await self.events.emit_async("on_message", message=user_input, session=session)
         if self.plugins:
             self.plugins.emit("on_message", message=user_input, session=session)
 

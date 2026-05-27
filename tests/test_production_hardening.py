@@ -66,6 +66,11 @@ class FakeLLM:
     primary = "openrouter/openai/gpt-4o-mini"
     api_key = "test-key"
 
+    async def chat(self, messages, **kwargs):
+        class Response:
+            content = "compressed summary"
+        return Response()
+
 
 @pytest.mark.asyncio
 async def test_context_compressor_async():
@@ -88,12 +93,14 @@ async def test_context_compressor_async():
 # Docker-only code execution (no subprocess fallback)
 # ---------------------------------------------------------------------------
 
-def test_execute_code_returns_error_when_docker_unavailable():
-    # In test environment Docker is usually unavailable
+def test_execute_code_returns_error_when_docker_unavailable(monkeypatch):
+    monkeypatch.setattr(
+        "core.docker_sandbox.DockerSandbox._is_docker_available",
+        lambda self: False,
+    )
     result = execute_code("python", "print(1)")
     assert "error" in result
-    # Must NOT have used subprocess fallback
-    assert "Docker sandbox unavailable" in result["error"] or "error" in result
+    assert "Docker" in result["error"]
 
 
 def test_bash_denylist_still_active():
