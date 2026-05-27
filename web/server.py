@@ -672,7 +672,7 @@ async def duplicate_agent(request: Request, agent_id: str):
 class AskRequest(BaseModel):
     question: str
     agent_id: str = "universal"
-    model: str = "kimi"
+    model: str = "balanced"
 
 
 @app.post("/api/ask")
@@ -799,7 +799,7 @@ async def chat_stream(request: Request, body: ChatRequest):
                 .set_tools(agent_config.get("tools", []))
                 .set_memory(agent_config.get("memory", {"enabled": False})))
             agent = builder.build()
-            session = agent.memory.get_session(sid)
+            session = await agent.memory.ensure_session(sid)
             session.add_user_message(body.message)
             system_prompt = agent._build_system_prompt()
             tools = agent.skills.get_schemas(agent.tool_names) if agent.tool_names else agent.skills.get_schemas()
@@ -853,7 +853,7 @@ async def chat_stream(request: Request, body: ChatRequest):
                     break
 
             if agent.memory.enabled:
-                agent.memory.save_session(session)
+                await agent.memory.persist_session(session)
         except Exception as e:
             LLM_ERROR_COUNT.labels(error_type=type(e).__name__).inc()
             yield f"data: {json.dumps({'type': 'error', 'content': str(e)})}\n\n"
@@ -1397,7 +1397,7 @@ async def websocket_chat(websocket: WebSocket):
 
             message = data.get("message", "")
             agent_id = data.get("agent_id", "universal")
-            model_name = data.get("model", "kimi")
+            model_name = data.get("model", "balanced")
 
             if not message:
                 await websocket.send_json({"type": "error", "message": "Empty message"})
@@ -1523,7 +1523,7 @@ async def websocket_collaboration(websocket: WebSocket, room_id: str):
                     agent_config = store.get_agent(agent_id)
                     if agent_config:
                         from core.configurator import resolve_profile
-                        model_config = resolve_profile(data.get("model", "kimi"))
+                        model_config = resolve_profile(data.get("model", "balanced"))
                         builder = (AgentBuilder()
                             .set_model(model_config or {})
                             .set_role(agent_config.get("role", ""))

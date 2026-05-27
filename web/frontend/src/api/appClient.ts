@@ -475,6 +475,7 @@ export interface DemoRunResult {
   mode: 'mock' | 'real';
   workflow_id: string;
   run_id: string;
+  node_order?: string[];
   expected_duration_ms?: number;
   artifact_url: string;
   summary?: { total_duration_ms?: number; total_duration_human?: string; tokens_used?: number; estimated_cost_usd?: number };
@@ -497,7 +498,7 @@ export async function startPublicDemoRun(
 export async function getPublicDemoRun(
   runId: string,
   preset: 'competitor' | 'beauty' | 'lead' = 'competitor',
-): Promise<{ status: string; logs: Array<{ node_id: string; event: string; detail?: unknown }> }> {
+): Promise<{ status: string; node_order?: string[]; logs: Array<{ node_id: string; event: string; detail?: unknown }> }> {
   const res = await fetch(`/api/demo/public/runs/${runId}?preset=${preset}`);
   if (!res.ok) throw new Error('Public demo poll failed');
   return res.json();
@@ -518,8 +519,10 @@ export async function startDemoRun(
   return res.json();
 }
 
-export async function getDemoSample(): Promise<{ summary: Record<string, unknown>; node_order: string[]; default_payload: Record<string, string> }> {
-  const res = await fetch('/api/demo/sample');
+export async function getDemoSample(
+  preset: 'competitor' | 'beauty' | 'lead' = 'competitor',
+): Promise<{ summary: Record<string, unknown>; node_order: string[]; default_payload: Record<string, string> }> {
+  const res = await fetch(`/api/demo/sample?preset=${preset}`);
   if (!res.ok) throw new Error('Demo sample fetch failed');
   return res.json();
 }

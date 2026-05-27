@@ -27,3 +27,6 @@ export const DEFAULT_DEMO_PRESETS: DemoPreset[] = [
   { id: 'slack-teams', label: 'Slack vs Teams', target: 'Slack', our_company: 'Teams' },
   { id: 'figma-sketch', label: 'Figma vs Sketch', target: 'Figma', our_company: 'Sketch' },
 ];
+
+/** Canonical investor demo — single competitor preset only. */
+export const COMPETITOR_DEMO_PRESETS: DemoPreset[] = [DEFAULT_DEMO_PRESETS[0]];

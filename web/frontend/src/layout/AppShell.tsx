@@ -14,13 +14,11 @@ const NAV_MAIN = [
   { to: APP_BASE, labelKey: 'nav.dashboard' as const, end: true },
   { to: `${APP_BASE}/marketplace`, labelKey: 'nav.marketplace' as const },
   { to: `${APP_BASE}/workflows`, labelKey: 'nav.workflows' as const },
-  { to: `${APP_BASE}/chat`, labelKey: 'nav.chat' as const },
 ];
 
 const NAV_SECONDARY = [
   { to: `${APP_BASE}/demo`, labelKey: 'nav.demo' as const },
   { to: `${APP_BASE}/showcase`, labelKey: 'nav.showcase' as const },
-  { to: `${APP_BASE}/analytics`, labelKey: 'nav.analytics' as const },
   { to: `${APP_BASE}/settings`, labelKey: 'nav.settings' as const },
 ];
 
@@ -149,20 +147,7 @@ export default function AppShell() {
           </nav>
           <FeatureStatusLegend />
           <div style={{ padding: '12px 18px', borderTop: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4 }}>{t('nav.settingsQuick')}</div>
-            <NavLink to={`${APP_BASE}/settings?tab=agents`} style={{ fontSize: 12, color: 'var(--text-muted)', textDecoration: 'none', display: 'flex', justifyContent: 'space-between' }}>
-              {t('nav.agents')}
-              <FeatureTag status="live" showDot={false} />
-            </NavLink>
-            <NavLink to={`${APP_BASE}/settings?tab=knowledge`} style={{ fontSize: 12, color: 'var(--text-muted)', textDecoration: 'none', display: 'flex', justifyContent: 'space-between' }}>
-              {t('nav.knowledge')}
-              <FeatureTag status="beta" showDot={false} />
-            </NavLink>
-            <NavLink to={`${APP_BASE}/settings?tab=mcp`} style={{ fontSize: 12, color: 'var(--text-muted)', textDecoration: 'none', display: 'flex', justifyContent: 'space-between' }}>
-              {t('nav.mcp')}
-              <FeatureTag status="beta" showDot={false} />
-            </NavLink>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{t('app.theme')}</span>
               <button
                 type="button"

@@ -1,5 +1,24 @@
 # Changelog — My Agent
 
+## 3.5.2 — 2026-05-27 (Live chat + OpenRouter + Postgres stability)
+
+### LLM & Demo
+- Primary LLM switched from Kimi to **OpenRouter** (`openrouter/owl-alpha` + `balanced` profile in `agents/registry.json` and `config/agent.json`).
+- Tavily is the default web search backend for live demo runs when `TAVILY_API_KEY` is present.
+- `core/kimi_provider.py`: `resolve_kimi_base_url()` no longer leaks `KIMI_BASE_URL` for non-Kimi models (prevents OpenRouter key being sent to Kimi endpoint).
+
+### Critical bugfix: Chat completely broken in Docker
+- Root cause: In production (`DATABASE_URL` set), `MemoryManager` selected PostgreSQL backend, but `PGStateManager._pool` was never initialized (no call to `connect()` at startup) and the live DB had a legacy `sessions` schema (`agent_id` + `messages` blob) incompatible with the current `PGStateManager` expectations.
+- Result: every `/api/chat` and orchestrator run blew up with `AttributeError: 'NoneType' object has no attribute 'acquire'` (or `UndefinedColumnError`).
+
+### Fixes
+- `core/pg_state.py`: Added `ensure_connected()` (lazy asyncpg pool initialization on first use) + `_migrate_from_legacy_if_needed()` that safely drops old tables and recreates the modern schema on first connection (chat history is ephemeral for the demo).
+- All call sites updated to use `await memory.ensure_session()` / `await memory.persist_session()`.
+- Minor runtime blockers resolved: `from ddgs import` → `from duckduckgo_search import`, f-string backslash syntax error in `skills/browser/skill.py`, `.dockerignore` now excludes `.env`.
+- Verified end-to-end inside the real Docker stack: `POST /api/chat` returns real LLM answers via OpenRouter.
+
+---
+
 ## 3.5.1 — 2026-05-27 (Documentation)
 
 - Added [docs/README.md](docs/README.md) as documentation index

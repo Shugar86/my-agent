@@ -8,6 +8,7 @@ export interface OfflinePlaygroundRun {
   artifact_url: string;
   logs: Array<{ node_id: string; event: string; detail?: unknown }>;
   status: 'running' | 'success';
+  node_order: string[];
 }
 
 const OFFLINE_ARTIFACTS: Record<'competitor' | 'beauty' | 'lead', string> = {
@@ -23,9 +24,10 @@ function buildOfflineLogs(
   target: string,
   ourCompany: string,
   preset: 'competitor' | 'beauty' | 'lead',
+  nodeOrder: string[],
   count: number,
 ): OfflinePlaygroundRun['logs'] {
-  return DEFAULT_DEMO_NODE_ORDER.slice(0, count).map((node_id) => ({
+  return nodeOrder.slice(0, count).map((node_id) => ({
     node_id,
     event: 'completed',
     detail: { target, our_company: ourCompany, preset },
@@ -37,16 +39,18 @@ export function buildOfflineDemoRun(
   target: string,
   ourCompany: string,
   preset: 'competitor' | 'beauty' | 'lead' = 'competitor',
-  options?: { animate?: boolean },
+  options?: { animate?: boolean; nodeOrder?: string[] },
 ): OfflinePlaygroundRun {
   const animate = options?.animate ?? true;
+  const nodeOrder = options?.nodeOrder?.length ? options.nodeOrder : DEFAULT_DEMO_NODE_ORDER;
   return {
     workflow_id: 'offline-demo',
     run_id: `offline-${Date.now()}`,
     mode: 'mock',
     status: animate ? 'running' : 'success',
     artifact_url: OFFLINE_ARTIFACTS[preset],
-    logs: animate ? [] : buildOfflineLogs(target, ourCompany, preset, DEFAULT_DEMO_NODE_ORDER.length),
+    node_order: nodeOrder,
+    logs: animate ? [] : buildOfflineLogs(target, ourCompany, preset, nodeOrder, nodeOrder.length),
   };
 }
 
@@ -57,14 +61,15 @@ export function advanceOfflineDemoRun(
   ourCompany: string,
   preset: 'competitor' | 'beauty' | 'lead',
 ): OfflinePlaygroundRun {
+  const nodeOrder = run.node_order.length ? run.node_order : DEFAULT_DEMO_NODE_ORDER;
   const nextIndex = run.logs.length;
-  if (nextIndex >= DEFAULT_DEMO_NODE_ORDER.length) {
+  if (nextIndex >= nodeOrder.length) {
     return { ...run, status: 'success' };
   }
   return {
     ...run,
-    logs: buildOfflineLogs(target, ourCompany, preset, nextIndex + 1),
-    status: nextIndex + 1 >= DEFAULT_DEMO_NODE_ORDER.length ? 'success' : 'running',
+    logs: buildOfflineLogs(target, ourCompany, preset, nodeOrder, nextIndex + 1),
+    status: nextIndex + 1 >= nodeOrder.length ? 'success' : 'running',
   };
 }
 
@@ -74,5 +79,6 @@ export function toDemoRunResult(offline: OfflinePlaygroundRun): DemoRunResult {
     workflow_id: offline.workflow_id,
     run_id: offline.run_id,
     artifact_url: offline.artifact_url,
+    node_order: offline.node_order,
   };
 }

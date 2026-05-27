@@ -71,8 +71,10 @@ class MemoryManager:
         return Session(session_id, messages)
 
     async def get_session_async(self, session_id):
-        if not self.enabled or not self._pg:
+        if not self.enabled:
             return Session(session_id)
+        if not self._pg:
+            return self.get_session(session_id)
 
         existing = await self._pg.get_session(session_id)
         if not existing:
@@ -108,7 +110,10 @@ class MemoryManager:
             )
 
     async def save_session_async(self, session):
-        if not self.enabled or not self._pg:
+        if not self.enabled:
+            return
+        if not self._pg:
+            self.save_session(session)
             return
 
         for msg in session.messages:
@@ -193,6 +198,14 @@ class MemoryManager:
 
     def is_postgres(self):
         return self._use_pg
+
+    async def ensure_session(self, session_id: str) -> "Session":
+        """Load or create a session using the active backend."""
+        return await self.get_session_async(session_id)
+
+    async def persist_session(self, session: "Session") -> None:
+        """Persist session messages using the active backend."""
+        await self.save_session_async(session)
 
 
 class Session:

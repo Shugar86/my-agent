@@ -216,7 +216,7 @@ class AgentRuntime:
 
     async def run(self, user_input, session_id=None):
         """Async-native agent execution loop with parallel tool execution."""
-        session = self.memory.get_session(session_id or "default")
+        session = await self.memory.ensure_session(session_id or "default")
         session.add_user_message(user_input)
 
         system_prompt = self._build_system_prompt()
@@ -271,7 +271,7 @@ class AgentRuntime:
             if hasattr(response, "content") and response.content and response.content.startswith("I encountered an error"):
                 session.add_assistant_message(response.content)
                 if self.memory.enabled:
-                    self.memory.save_session(session)
+                    await self.memory.persist_session(session)
                 return response.content
 
             # Parse tool calls: structured first, then fallback to text parsing
@@ -290,7 +290,7 @@ class AgentRuntime:
 
                 if tool_calls_raw == "loop_detected":
                     if self.memory.enabled:
-                        self.memory.save_session(session)
+                        await self.memory.persist_session(session)
                     return session.messages[-1]["content"]
 
                 # Add all tool results to messages
@@ -318,7 +318,7 @@ class AgentRuntime:
             console.print(Panel(Markdown(final_response), title="Ответ агента"))
 
             if self.memory.enabled:
-                self.memory.save_session(session)
+                await self.memory.persist_session(session)
 
             return final_response
 

@@ -27,7 +27,7 @@ export default function PublicLayout() {
             <Link to="/showcase">{t('nav.showcase')}</Link>
             <a href="/#product">{t('landing.navProduct')}</a>
             <a href="/#pricing">{t('landing.navPricing')}</a>
-            <Link to="/demo">{t('landing.navDemo')}</Link>
+            <Link to="/showcase#playground">{t('landing.navDemo')}</Link>
           </div>
           <a href={loginUrl()} className="landing-btn landing-btn-primary">
             {t('landing.navLogin')}

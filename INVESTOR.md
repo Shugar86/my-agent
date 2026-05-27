@@ -6,31 +6,34 @@ One-page cheat sheet for demos and pitch meetings.
 
 | Surface | URL | Notes |
 |---------|-----|-------|
-| Landing | `/` (`/welcome` → 301) | React landing; **primary CTA → `/demo`** |
-| **Demo-MVP showcase** | **`/showcase`** (public) or **`/app/showcase`** (auth) | **7 vertical cases + `#playground` demo** |
-| Public demo | `/demo` | Competitor Intelligence only; no login |
+| **Canonical demo** | **`/showcase#playground`** | **Competitor Intelligence 90s → DOCX; no login; mock without API keys** |
+| Demo-MVP showcase | `/showcase` | 7 vertical cases + playground |
+| Landing | `/` | React landing; primary CTA → `/showcase#playground` |
+| Public demo shortcut | `/demo` | Same playground (secondary entry) |
 | Login | `/login` | Split SaaS layout; `?next=/app/onboarding` |
-| Product | `/app` | Dashboard: «Выбрать шаблон» + demo modal; GettingStartedBanner if no workflows |
-| Showcase (auth) | `/app/showcase` | Sidebar «Кейсы и demo»; PlaygroundDemo + install similar |
+| Product | `/app` | Dashboard: demo modal + marketplace |
+| Showcase (auth) | `/app/showcase` | Authenticated mirror |
 | Dev creds | `/login?dev=1` | Shows `admin / admin` footer (internal only) |
 
 ## Env flags
 
 | Variable | Purpose |
 |----------|---------|
-| `DEMO_USER_ID` | Fixed user for public demo runs (optional) |
+| `OPENROUTER_API_KEY` | Primary LLM (OpenRouter) for live chat & real demo runs (optional) |
+| `TAVILY_API_KEY` | Real web search backend for live runs (optional) |
 | `AGENT_PASSWORD` | Default admin password |
-| `OPENROUTER_API_KEY` | Enables real demo mode (optional) |
+
+Demo works without LLM keys — public run uses prerecorded mock replay.
 
 ## 3-minute script
 
-**Recommended (Demo-MVP):** `/showcase` → scroll 7 vertical cards → playground «Запустить demo» → CTA form.
+**Recommended:** open **`/showcase#playground`** → «Запустить demo» → wait ~30s → download DOCX → optional scroll vertical cards → CTA.
 
-**Classic funnel:** `/` (CTA → `/demo`) → login → `/app/onboarding` → dashboard.
-
-**In-app first-run:** `/app` → GettingStartedBanner → marketplace install OR demo modal.
+**After login:** `/app/marketplace` → install `tpl_competitor_intelligence` → `/app/workflows/:id`.
 
 ## Showcase verticals (7 cards)
+
+Vertical cards use JSON-driven preview data (`mock` tag). Only playground is `live` backend.
 
 | # | Vertical | Status | Proof |
 |---|----------|--------|-------|
@@ -52,28 +55,14 @@ Data source: [website/data/showcase.json](website/data/showcase.json)
 - **~4 hours** analyst work replaced
 - **50+** marketplace templates
 
-## Brand copy
+## Demo-ready checklist
 
-Source: [website/BRAND.md](website/BRAND.md)
-
-- Tagline: *Autonomous Workflow OS — n8n + AI-агенты + marketplace*
-- Hero: *Конкурентный brief за 90 секунд вместо 4 часов*
-
-## Investor demo theme
-
-Before screen share, switch `/app` to **light theme** (sidebar toggle) or run:
-
-```js
-localStorage.setItem('my-agent.theme', 'light');
-location.reload();
+```bash
+docker compose up -d --build
+curl -sf http://localhost:8020/api/health
+docker compose exec -T agent python -m pytest tests/test_demo_flow.py -q
+# Browser: http://localhost:8020/showcase#playground
 ```
-
-## Pre-demo checklist
-
-1. `python scripts/seed_workflow_templates.py`
-2. `python scripts/generate_demo_artifact.py`
-3. Server on `:8020`
-4. Optional: record `website/assets/demo.mp4` for landing video block
 
 ## Public API (showcase)
 
@@ -81,13 +70,13 @@ location.reload();
 |--------|----------|------|
 | POST | `/api/demo/public/run` | No |
 | GET | `/api/demo/public/runs/{id}` | No |
+| GET | `/api/demo/artifact/competitor_brief_notion_vs_linear.docx` | No |
 | POST | `/api/leads/showcase` | No → `data/showcase_leads.jsonl` |
 
 ## E2E verification
 
 ```bash
 cd web/frontend && npx playwright test e2e/investor-funnel.spec.ts
-# Full demo run (90s) on /demo or /showcase playground:
-E2E_DEMO_RUN=1 npx playwright test e2e/investor-funnel.spec.ts -g "mock run"
-E2E_DEMO_RUN=1 npx playwright test e2e/investor-funnel.spec.ts -g "Showcase"
+# Full canonical demo run (~90s):
+E2E_DEMO_RUN=1 npx playwright test e2e/investor-funnel.spec.ts -g "Canonical demo"
 ```

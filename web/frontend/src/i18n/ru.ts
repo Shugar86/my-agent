@@ -175,6 +175,7 @@ const ru = {
     previewData: 'Preview data',
     story: 'Кейс',
     legendTitle: 'Статусы функций',
+    legendDesc: 'Live — реальный backend; Preview — стабильные данные без LLM.',
   },
   demoPage: {
     title: 'Live demo',
@@ -209,6 +210,9 @@ const ru = {
     installTemplate: 'Установить',
     installSimilar: 'Установить похожий шаблон',
     browseMarketplace: 'Смотреть решения →',
+    canonicalDesc: 'Autonomous Workflow OS: multi-agent research, visual builder и marketplace. Сейчас можно пройти один сценарий — Competitor Intelligence за 90 секунд с DOCX на выходе.',
+    canonicalCta: 'Запустить demo →',
+    verticalCasesTitle: 'Вертикальные кейсы',
   },
   onboarding: {
     title: 'Добро пожаловать в My Agent',
@@ -225,6 +229,7 @@ const ru = {
     usecaseDesc: 'Выберите вертикаль — мы подготовим стартовый шаблон под ваш сценарий.',
     usecaseHint: 'Шаблон будет установлен и откроется в конструкторе после onboarding.',
     skipUsecase: 'Пропустить выбор',
+    skipToMarketplace: 'Пропустить → Marketplace',
     workspaceTitle: 'Ваша рабочая область',
     workspaceIn: 'Вы в команде:',
     teamName: 'Название команды',

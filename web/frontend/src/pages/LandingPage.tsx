@@ -2,6 +2,9 @@ import { Link } from 'react-router-dom';
 import PlaygroundDemo from '../components/demo/PlaygroundDemo';
 import ProductNarrative from '../components/ProductNarrative';
 import TemplateCardGrid from '../components/marketplace/TemplateCardGrid';
+import FeatureTag from '../components/ui/FeatureTag';
+import { getPageFeatureStatus } from '../config/featureRegistry';
+import { COMPETITOR_DEMO_PRESETS } from '../lib/demoNodeLabels';
 import { loginUrl } from '../lib/routes';
 import { t } from '../i18n';
 
@@ -33,14 +36,15 @@ export default function LandingPage() {
             </h1>
             <p className="landing-hero-desc">{t('landing.heroDesc')}</p>
             <div className="landing-hero-actions">
-              <Link to="/demo" className="landing-btn landing-btn-primary">
+              <Link to="/showcase#playground" className="landing-btn landing-btn-primary">
                 {t('landing.heroPrimaryCta')}
               </Link>
               <Link to="/showcase" className="landing-btn landing-btn-secondary">
                 {t('landing.heroSecondaryCta')}
               </Link>
             </div>
-            <div className="landing-hero-stats">
+            <div className="landing-hero-stats" style={{ position: 'relative' }}>
+              <FeatureTag status={getPageFeatureStatus('landing.heroStats')} showDot={false} />
               <div>
                 <span className="landing-stat-value">50+</span>
                 <span className="landing-stat-label">{t('landing.statTemplates')}</span>
@@ -138,11 +142,12 @@ export default function LandingPage() {
       <section id="live-demo" className="landing-section">
         <div className="landing-section-header">
           <span className="landing-section-tag">{t('landing.liveDemoTag')}</span>
+          <FeatureTag status={getPageFeatureStatus('landing.liveDemo')} showDot={false} />
           <h2 className="landing-section-title">{t('landing.liveDemoTitle')}</h2>
           <p className="landing-section-desc">{t('landing.liveDemoDesc')}</p>
         </div>
         <div className="landing-demo-embed">
-          <PlaygroundDemo variant="compact" publicMode />
+          <PlaygroundDemo variant="compact" publicMode lockPreset="competitor" presets={COMPETITOR_DEMO_PRESETS} />
         </div>
       </section>
 
@@ -231,7 +236,7 @@ export default function LandingPage() {
       <section className="landing-footer-cta">
         <h2>{t('landing.footerCtaTitle')}</h2>
         <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
-          <Link to="/demo" className="landing-btn landing-btn-primary">{t('landing.footerCtaDemo')}</Link>
+          <Link to="/showcase#playground" className="landing-btn landing-btn-primary">{t('landing.footerCtaDemo')}</Link>
           <Link to="/showcase" className="landing-btn landing-btn-secondary">{t('landing.footerCtaCases')}</Link>
         </div>
       </section>
@@ -244,7 +249,7 @@ export default function LandingPage() {
           </Link>
           <div className="landing-footer-links">
             <Link to="/showcase">{t('nav.showcase')}</Link>
-            <Link to="/demo">{t('landing.navDemo')}</Link>
+            <Link to="/showcase#playground">{t('landing.navDemo')}</Link>
             <a href="/#pricing">{t('landing.navPricing')}</a>
             <a href={loginUrl()}>{t('landing.navLogin')}</a>
           </div>

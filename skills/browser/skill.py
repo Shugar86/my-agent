@@ -172,10 +172,11 @@ def find_element(description: str) -> dict:
         if not page:
             return {"success": False, "error": "No open page"}
         # Heuristic: query all buttons/links/inputs and filter by inner text
+        escaped_description = description.replace("'", "\\'")
         elements = page.eval_on_selector_all(
             "button, a, input, textarea, select, label, [role='button']",
             f"""elements => {{
-                const query = '{description.replace("'", "\\'")}';
+                const query = '{escaped_description}';
                 return elements
                     .map(e => ({{tag: e.tagName.toLowerCase(), text: (e.innerText || e.value || e.placeholder || '').toLowerCase(), selector: e.tagName.toLowerCase() + (e.id ? '#' + e.id : '') + (e.className ? '.' + e.className.split(' ').join('.') : '')}}))
                     .filter(e => e.text.includes(query));

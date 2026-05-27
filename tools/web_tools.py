@@ -1,6 +1,6 @@
 import os
 import requests
-from ddgs import DDGS
+from duckduckgo_search import DDGS
 from bs4 import BeautifulSoup
 from core.tool_registry import registry
 

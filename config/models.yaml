@@ -1,3 +1,5 @@
+# DEPRECATED: runtime uses core/configurator.py MODEL_PROFILES + config/agent.json.
+# Kept for reference only — not loaded by the application.
 models:
   primary:
     model: openrouter/mistralai/mistral-large

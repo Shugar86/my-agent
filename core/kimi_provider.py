@@ -18,11 +18,11 @@ def is_kimi_code_key(api_key: str | None) -> bool:
 
 def resolve_kimi_base_url(api_key: str | None, base_url: str | None = None) -> str | None:
     """Pick the correct Kimi base URL from env override or key prefix."""
-    env_base = os.environ.get("KIMI_BASE_URL", "").strip()
-    if env_base:
-        return env_base
     if base_url:
         return base_url
+    env_base = os.environ.get("KIMI_BASE_URL", "").strip()
+    if env_base and (is_kimi_code_key(api_key) or is_kimi_code_key(os.environ.get("KIMI_API_KEY"))):
+        return env_base
     if is_kimi_code_key(api_key):
         return KIMI_CODE_BASE_URL
     kimi_key = os.environ.get("KIMI_API_KEY", "").strip()

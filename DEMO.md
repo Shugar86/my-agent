@@ -38,7 +38,9 @@ Tavily keys are missing — the investor flow never breaks.
 
 ## Demo-MVP showcase (recommended for investor meetings)
 
-**URL:** `http://localhost:8020/showcase` — no login required.
+**URL:** `http://localhost:8020/showcase#playground` — no login required (canonical entry).
+
+Also: `http://localhost:8020/showcase` — full page with vertical cards + playground anchor.
 
 | Section | What investor sees |
 |---------|-------------------|
@@ -52,12 +54,12 @@ Tavily keys are missing — the investor flow never breaks.
 
 | Time | Action |
 |------|--------|
-| 0:00 | Open `/showcase` — hero metrics |
-| 0:30 | Expand 2–3 vertical cards (Mary Jewelry, DocBrain, kormoved R&D) |
-| 1:00 | Scroll to playground → «Запустить demo» → watch stepper |
+| 0:00 | Open **`/showcase#playground`** — hero + «Запустить demo» |
+| 0:30 | Optional: scroll to vertical cards, expand 2–3 personas |
+| 1:00 | Watch stepper (~30s mock replay) |
 | 1:45 | Download DOCX brief |
-| 2:00 | Show marketplace grid → «50 шаблонов» |
-| 2:30 | Optional: login → `/app/showcase` for authenticated mirror |
+| 2:00 | Scroll to marketplace preview or login → `/app/marketplace` |
+| 2:30 | Optional: login → install template → builder |
 | 3:00 | CTA form or wrap with metrics: $0.42, 18 420 tokens, ~4h saved |
 
 Authenticated mirror: `/app/showcase` (same data from `website/data/showcase.json`).
@@ -80,7 +82,7 @@ Authenticated mirror: `/app/showcase` (same data from `website/data/showcase.jso
 | 1:25  | docs node generates DOCX | Real artifact ready to download (`competitor_brief_notion_vs_linear.docx`, 38 KB) |
 | 1:35  | n8n hook triggered | (If n8n is up) execution `demo-exec-7421` starts in n8n |
 | 1:50  | Click **"Open in builder"** / **"Marketplace"** | Show marketplace with featured template + thumbnail |
-| 2:30  | Show **Onboarding** | Wizard: workspace → integrations → install → live demo run |
+| 2:30  | Show **Onboarding** | Wizard step 1: live demo run → optional marketplace |
 | 3:00  | Pitch wrap | Metrics card: $0.42 cost, 3h 58min saved, 18 420 tokens. |
 
 ---
@@ -151,7 +153,7 @@ any code.
   ([scripts/seed_workflow_templates.py](scripts/seed_workflow_templates.py)).
 - Demo route with prerecorded fallback ([data/demo/competitor_run_sample.json](data/demo/competitor_run_sample.json)).
 - Polished Dashboard hero, marketplace featured section, pulsing live nodes.
-- Onboarding now ends with a live demo run on step 4 (no separate redirect).
+- Onboarding **starts** with a live demo run on step 1 (Competitor Intelligence).
 - Optional n8n service in `docker-compose.yml` under `--profile demo`.
 
 ---

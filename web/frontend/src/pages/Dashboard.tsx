@@ -6,6 +6,7 @@ import type { Workflow } from '../types/workflow';
 import DemoModal from '../components/DemoModal';
 import GettingStartedBanner from '../components/GettingStartedBanner';
 import FeatureTag from '../components/ui/FeatureTag';
+import { getPageFeatureStatus } from '../config/featureRegistry';
 import PageHeader from '../components/ui/PageHeader';
 import { useToast } from '../components/ui/Toast';
 import { useDemoAwareFetch } from '../hooks/useDemoAwareFetch';
@@ -186,7 +187,7 @@ export default function Dashboard() {
                 </div>
               </div>
               <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 8 }}>
-                <FeatureTag status="mock" label={t('featureTag.story')} />
+                <FeatureTag status={getPageFeatureStatus('dashboard.caseCards')} label={t('featureTag.story')} />
                 <span className="badge">{card.platform}</span>
               </div>
               <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 8 }}>{card.one_liner}</p>

@@ -1,7 +1,7 @@
 # Handoff Instructions — My Agent
 
 > **Date:** 2026-05-27  
-> **Version:** 3.5.0  
+> **Version:** 3.5.2  
 > **Docs index:** [docs/README.md](./docs/README.md)
 
 ---
@@ -11,7 +11,8 @@
 ```bash
 cd my-agent
 cp .env.example .env
-# Set KIMI_API_KEY=sk-kimi-... (primary LLM)
+# Set OPENROUTER_API_KEY + TAVILY_API_KEY for live chat & real demo runs
+# (Kimi is no longer the primary)
 
 docker compose up -d --build
 # Wait ~30s — entrypoint seeds templates + demo DOCX automatically
@@ -30,8 +31,17 @@ REDIS_URL=redis://127.0.0.1:6380/0
 Run tests:
 
 ```bash
-docker compose exec -T agent python -m pytest tests/test_production_v34.py tests/test_workflow_engine.py tests/test_workspace_isolation.py -q
+docker compose exec -T agent python -m pytest tests/test_demo_flow.py -q
 ```
+
+## Demo-ready checklist
+
+1. `docker compose up -d --build`
+2. `curl -sf http://127.0.0.1:8020/api/health`
+3. Open **http://127.0.0.1:8020/showcase#playground** → «Запустить demo» → DOCX download
+4. Optional CI gate: `E2E_DEMO_RUN=1 npx playwright test e2e/investor-funnel.spec.ts -g "Canonical demo"`
+
+**Live chat is now working** (`/api/chat` + orchestrator) using real OpenRouter calls when keys are present. The previous Postgres session backend crash (legacy schema + uninitialized pool) is fixed via lazy connection + automatic migration.
 
 ---
 
@@ -39,6 +49,7 @@ docker compose exec -T agent python -m pytest tests/test_production_v34.py tests
 
 | Surface | Status |
 |---------|--------|
+| **`/showcase#playground`** | **Canonical investor demo (public, mock OK)** |
 | `/login` | Register (12+ char password) → `/app/onboarding` |
 | `/app/workflows` | List + schedule (next/last run, pause/resume) |
 | `/app/workflows/:id` | Builder RU; branch modal; `enable_memory` on agent nodes |
@@ -70,7 +81,8 @@ docker compose exec -T agent python -m pytest tests/test_production_v34.py tests
 | `ENV` | Prod | `production` enables PG + Redis requirements |
 | `DATABASE_URL` | Prod | PostgreSQL only when `ENV=production` |
 | `REDIS_URL` | Prod | Required for queue, rate limits, JWT revoke |
-| `KIMI_API_KEY` | Demo/prod | Kimi Code API |
+| `OPENROUTER_API_KEY` | Demo/prod | Primary LLM (OpenRouter) for live chat & real demo |
+| `TAVILY_API_KEY` | Demo/prod | Real web search (Tavily) in live runs |
 
 See `.env.example` for full list.
 

@@ -12,6 +12,7 @@ import {
 } from '../api/appClient';
 import ExecutionTimeline from '../components/ExecutionTimeline';
 import FeatureTag from '../components/ui/FeatureTag';
+import { getPageFeatureStatus } from '../config/featureRegistry';
 import WorkflowThumbnail from '../components/WorkflowThumbnail';
 import PageHeader from '../components/ui/PageHeader';
 import EmptyState from '../components/ui/EmptyState';
@@ -268,7 +269,7 @@ export default function MarketplacePage() {
                         {previewLoadingId === tpl.id ? t('common.loading') : t('marketplace.preview')}
                       </button>
                     </div>
-                    <FeatureTag status="mock" label={t('marketplace.demoPreviewTag')} showDot={false} className="marketplace-demo-tag" />
+                    <FeatureTag status={getPageFeatureStatus('marketplace.demoRun')} label={t('marketplace.demoPreviewTag')} showDot={false} className="marketplace-demo-tag" />
                   </div>
                 ))}
               </div>
@@ -328,7 +329,7 @@ export default function MarketplacePage() {
                 <h2 style={{ marginBottom: 4 }}>{t('marketplace.demoRunModalTitle')}</h2>
                 <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>{demoPreview.templateName}</p>
               </div>
-              <FeatureTag status="mock" label={t('marketplace.demoPreviewTag')} showDot={false} />
+              <FeatureTag status={getPageFeatureStatus('marketplace.demoRun')} label={t('marketplace.demoPreviewTag')} showDot={false} />
             </div>
             <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 12 }}>{t('marketplace.demoPreviewHint')}</p>
             <ExecutionTimeline logs={demoPreview.logs} />

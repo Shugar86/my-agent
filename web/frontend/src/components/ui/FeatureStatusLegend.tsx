@@ -19,6 +19,9 @@ export default function FeatureStatusLegend() {
       <span style={{ fontSize: 10, color: 'var(--text-muted)', width: '100%', marginBottom: 2 }}>
         {t('featureTag.legendTitle')}
       </span>
+      <span style={{ fontSize: 10, color: 'var(--text-subtle)', width: '100%', marginBottom: 4 }}>
+        {t('featureTag.legendDesc')}
+      </span>
       <FeatureTag status="live" showDot />
       <FeatureTag status="beta" showDot={false} />
       <FeatureTag status="mock" showDot={false} />

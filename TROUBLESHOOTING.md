@@ -1,7 +1,7 @@
 # Troubleshooting Guide
 
 > My Agent — Common Issues & Solutions  
-> Version: **3.5.0** · Default port: **8020** (Docker / VDS)
+> Version: **3.5.2** · Default port: **8020** (Docker / VDS)
 
 ---
 
@@ -45,6 +45,36 @@ taskkill /F /PID <PID>
 
 # Or use different port
 python -m uvicorn web.server:app --port 8001
+```
+
+#### Postgres sessions schema mismatch or uninitialized pool (Docker / production)
+
+**Symptoms:**
+```
+AttributeError: 'NoneType' object has no attribute 'acquire'
+UndefinedColumnError: column "source" of relation "sessions" does not exist
+```
+Every chat request returns "Internal server error".
+
+**Root cause (as of 3.5.2):**
+- `DATABASE_URL` present → `MemoryManager` selects the PostgreSQL backend.
+- `PGStateManager._pool` was never initialized (no startup hook called `connect()` for per-request `AgentBuilder` instances).
+- The live database contained the ancient schema (`sessions.agent_id`, `sessions.messages` as blob) instead of the columns the current `PGStateManager` expects.
+
+**Fix (already in the codebase):**
+- Lazy `ensure_connected()` on every DB method.
+- Automatic migration: on first connection the code detects the legacy schema, drops the old tables, and creates the modern structure.
+
+Just pull latest code and restart:
+```bash
+docker compose up -d --force-recreate --no-build agent
+```
+
+If you are on an older image and need to force-clean the schema manually:
+```bash
+docker exec my-agent-db psql -U agent -d agent_db \
+  -c "DROP TABLE IF EXISTS messages CASCADE; DROP TABLE IF EXISTS sessions CASCADE;"
+docker compose restart agent
 ```
 
 ---

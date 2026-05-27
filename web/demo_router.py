@@ -21,7 +21,15 @@ router = APIRouter(tags=["demo"])
 executor = WorkflowExecutor()
 
 DEMO_DIR = Path("data/demo")
-REAL_MODE_ENV_KEYS = ("KIMI_API_KEY", "OPENROUTER_API_KEY", "NEUROAPI_API_KEY")
+REAL_MODE_LLM_KEYS = ("OPENROUTER_API_KEY",)
+REAL_MODE_SEARCH_KEYS = ("TAVILY_API_KEY",)
+
+
+def _real_mode_available() -> bool:
+    """Live demo requires OpenRouter (LLM) and Tavily (web search)."""
+    llm_ok = any(os.getenv(k) for k in REAL_MODE_LLM_KEYS)
+    search_ok = any(os.getenv(k) for k in REAL_MODE_SEARCH_KEYS)
+    return llm_ok and search_ok
 
 PresetName = Literal["competitor", "beauty", "lead"]
 
@@ -229,9 +237,7 @@ async def start_demo_run(
         )
 
     payload = {"target": body.target, "our_company": body.our_company, "preset": body.preset}
-    keys_available = any(os.getenv(k) for k in REAL_MODE_ENV_KEYS)
-
-    if body.real and keys_available:
+    if body.real and _real_mode_available():
         result = await executor.run(
             workflow["id"], trigger_payload=payload, user_id=user_id
         )

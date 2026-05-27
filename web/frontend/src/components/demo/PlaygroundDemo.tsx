@@ -8,6 +8,7 @@ import {
   OFFLINE_DEMO_STEP_MS,
 } from '../../lib/offlineDemo';
 import FeatureTag from '../ui/FeatureTag';
+import { getPageFeatureStatus } from '../../config/featureRegistry';
 import DemoStepper from './DemoStepper';
 import {
   DEFAULT_DEMO_NODE_ORDER,
@@ -45,6 +46,7 @@ interface PlaygroundDemoProps {
   variant?: 'inline' | 'compact';
   presets?: DemoPreset[];
   showAdvancedPresets?: boolean;
+  lockPreset?: 'competitor' | 'beauty' | 'lead';
   publicMode?: boolean;
   onComplete?: (result: PlaygroundDemoResult) => void;
   onContinue?: () => void;
@@ -68,6 +70,7 @@ export default function PlaygroundDemo({
   variant = 'inline',
   presets = DEFAULT_DEMO_PRESETS,
   showAdvancedPresets = false,
+  lockPreset,
   publicMode = false,
   onComplete,
   onContinue,
@@ -78,7 +81,8 @@ export default function PlaygroundDemo({
   const [target, setTarget] = useState(presets[0]?.target ?? 'Notion');
   const [ourCompany, setOurCompany] = useState(presets[0]?.our_company ?? 'Linear');
   const [activePreset, setActivePreset] = useState(presets[0]?.id ?? '');
-  const [demoPreset, setDemoPreset] = useState<'competitor' | 'beauty' | 'lead'>('competitor');
+  const [demoPreset, setDemoPreset] = useState<'competitor' | 'beauty' | 'lead'>(lockPreset ?? 'competitor');
+  const [nodeOrder, setNodeOrder] = useState<string[]>(DEFAULT_DEMO_NODE_ORDER);
   const [realRun, setRealRun] = useState(false);
   const [starting, setStarting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -109,8 +113,11 @@ export default function PlaygroundDemo({
   }, [clearPoll, clearOfflineTimer]);
 
   useEffect(() => {
-    getDemoSample()
+    getDemoSample(lockPreset ?? demoPreset)
       .then((sample) => {
+        if (sample.node_order?.length) {
+          setNodeOrder(sample.node_order);
+        }
         const summary = sample.summary as Record<string, unknown>;
         setMetrics({
           tokens: Number(summary.tokens_used ?? DEFAULT_METRICS.tokens),
@@ -119,7 +126,7 @@ export default function PlaygroundDemo({
         });
       })
       .catch(() => setMetrics(DEFAULT_METRICS));
-  }, []);
+  }, [lockPreset, demoPreset]);
 
   useEffect(() => {
     if (!demoRun || demoRun.status === 'running') return undefined;
@@ -158,6 +165,9 @@ export default function PlaygroundDemo({
               }
             : prev,
         );
+        if (publicMode && 'node_order' in run && run.node_order?.length) {
+          setNodeOrder(run.node_order);
+        }
       } catch {
         clearPoll();
         setError(t('playground.pollError'));
@@ -180,6 +190,7 @@ export default function PlaygroundDemo({
             artifact_url: prev.artifact_url || '',
             logs: prev.logs,
             status: 'running',
+            node_order: nodeOrder,
           },
           target.trim() || 'Notion',
           ourCompany.trim() || 'Linear',
@@ -189,7 +200,7 @@ export default function PlaygroundDemo({
       });
     }, OFFLINE_DEMO_STEP_MS);
     return () => clearOfflineTimer();
-  }, [demoRun?.run_id, demoRun?.offline, demoRun?.status, target, ourCompany, demoPreset, clearOfflineTimer]);
+  }, [demoRun?.run_id, demoRun?.offline, demoRun?.status, target, ourCompany, demoPreset, clearOfflineTimer, nodeOrder]);
 
   const handlePreset = (preset: DemoPreset) => {
     setActivePreset(preset.id);
@@ -201,8 +212,8 @@ export default function PlaygroundDemo({
     const offline = buildOfflineDemoRun(
       target.trim() || 'Notion',
       ourCompany.trim() || 'Linear',
-      demoPreset,
-      { animate: true },
+      lockPreset ?? demoPreset,
+      { animate: true, nodeOrder },
     );
     setOfflineNotice(true);
     setDemoRun({
@@ -228,14 +239,17 @@ export default function PlaygroundDemo({
         ? await startPublicDemoRun(
             target.trim() || 'Notion',
             ourCompany.trim() || 'Linear',
-            demoPreset,
+            lockPreset ?? demoPreset,
           )
         : await startDemoRun(
             target.trim() || 'Notion',
             ourCompany.trim() || 'Linear',
             realRun,
-            demoPreset,
+            lockPreset ?? demoPreset,
           );
+      if (result.node_order?.length) {
+        setNodeOrder(result.node_order);
+      }
       setDemoRun({
         workflow_id: result.workflow_id,
         run_id: result.run_id,
@@ -283,7 +297,7 @@ export default function PlaygroundDemo({
 
       {!demoRun && (
         <>
-          {showAdvancedPresets && (
+          {showAdvancedPresets && !lockPreset && (
             <div style={{ marginBottom: 12 }}>
               <label style={{ fontSize: 12, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>
                 {t('demo.preset')}
@@ -325,7 +339,7 @@ export default function PlaygroundDemo({
                 </div>
               </>
             )}
-            {showAdvancedPresets && (
+            {showAdvancedPresets && !lockPreset && (
               <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: 'var(--text-muted)', cursor: 'pointer' }}>
                 <input type="checkbox" checked={realRun} onChange={(e) => setRealRun(e.target.checked)} />
                 {t('demo.realRun')}
@@ -344,7 +358,7 @@ export default function PlaygroundDemo({
 
       {offlineNotice && (
         <div className="demo-preview-banner" role="status">
-          <FeatureTag status="mock" reason={t('playground.previewModeReason')} showDot={false} />
+          <FeatureTag status={getPageFeatureStatus('playground.offline')} reason={t('playground.previewModeReason')} showDot={false} />
           <span>{t('playground.offlineNotice')}</span>
         </div>
       )}
@@ -364,7 +378,7 @@ export default function PlaygroundDemo({
 
           {(isRunning || isDone) && demoRun.logs.length > 0 && (
             <DemoStepper
-              nodeOrder={DEFAULT_DEMO_NODE_ORDER}
+              nodeOrder={nodeOrder}
               logs={demoRun.logs}
               status={demoRun.status}
             />

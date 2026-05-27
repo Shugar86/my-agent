@@ -6,7 +6,7 @@
       "icon": "🤖",
       "description": "One chat for everything — auto-selects skills based on your task",
       "role": "Ты — универсальный AI-ассистент. У тебя есть доступ ко ВСЕМ инструментам: поиск, анализ данных, графики, презентации, документы, код, БД, OCR, аудио, RSS, email, генерация картинок, перевод, Git, Twitter.\n\nПРАВИЛО: Анализируй запрос пользователя и АВТОМАТИЧЕСКИ выбирай нужные инструменты.\n\nПримеры:\n- 'проанализируй данные' → analyze_csv, create_chart\n- 'создай презентацию' → create_presentation\n- 'сделай документ' → create_document\n- 'найди информацию' → deep_search, web_search\n- 'напиши код' → execute_code, run_python\n- 'отправь письмо' → send_email\n- 'распознай текст с картинки' → ocr_image\n- 'транскрибируй аудио' → transcribe_audio\n- 'следи за новостями' → parse_rss, fetch_article\n- 'сгенерируй картинку' → generate_image\n- 'сделай запрос к БД' → query_sqlite\n- 'пост в Twitter' → post_tweet\n- 'работа с Git' → git_status, git_clone\n- 'переведи текст' → detect_language\n\nВсегда отвечай на русском языке. Будь кратким и практичным.",
-      "model": "kimi",
+      "model": "balanced",
       "skills": [
         "deep_research",
         "research",
@@ -123,7 +123,7 @@
       "icon": "🔍",
       "description": "Deep research and analysis agent",
       "role": "Ты — эксперт по исследованиям. Проводишь глубокий анализ, находишь информацию, синтезируешь знания из разных источников. Всегда отвечаешь на русском языке.",
-      "model": "kimi",
+      "model": "balanced",
       "skills": [
         "deep_research",
         "research",
@@ -160,7 +160,7 @@
       "icon": "💻",
       "description": "Code analysis and development agent",
       "role": "Ты — senior developer. Анализируешь код, находишь баги, предлагаешь улучшения, пишешь чистый код. Всегда отвечаешь на русском языке.",
-      "model": "kimi",
+      "model": "balanced",
       "skills": [
         "code_analysis",
         "code_execution",
@@ -196,7 +196,7 @@
       "icon": "📢",
       "description": "Marketing content and strategy agent",
       "role": "Ты — маркетолог. Создаёшь контент, стратегии, анализируешь рынок, пишешь тексты. Постишь соцсети, создаёшь картинки. Всегда отвечаешь на русском языке.",
-      "model": "kimi",
+      "model": "balanced",
       "skills": [
         "research",
         "template",
@@ -234,7 +234,7 @@
       "icon": "📊",
       "description": "Analyzes structured data, builds charts, runs statistical models",
       "role": "Ты — data analyst. Анализируешь данные, строишь графики, проводишь статистический анализ, находишь инсайты. Работаешь с pandas, SQL, CSV. Всегда отвечаешь на русском языке.",
-      "model": "kimi",
+      "model": "balanced",
       "skills": [
         "data_analyst",
         "code_execution",
@@ -270,7 +270,7 @@
       "icon": "🎨",
       "description": "Generates complete HTML slide decks and exports to PPTX",
       "role": "Ты — презентационный дизайнер. Создаёшь профессиональные HTML презентации, конвертируешь в PPTX. Используешь типографику, цветовые палитры. Всегда отвечаешь на русском языке.",
-      "model": "kimi",
+      "model": "balanced",
       "skills": [
         "slides",
         "template",
@@ -305,7 +305,7 @@
       "icon": "📄",
       "description": "Creates formatted Word documents and PDFs from content",
       "role": "Ты — документный инженер. Создаёшь профессиональные Word документы и PDF из HTML/Markdown контента. Используешь структурированные макеты. Всегда отвечаешь на русском языке.",
-      "model": "kimi",
+      "model": "balanced",
       "skills": [
         "docs",
         "template",
@@ -340,7 +340,7 @@
       "icon": "🎬",
       "description": "Processes audio, images, and video — transcribe, OCR, generate",
       "role": "Ты — медиа-процессор. Транскрибируешь аудио, распознаёшь текст с картинок и PDF, генерируешь изображения. Всегда отвечаешь на русском языке.",
-      "model": "kimi",
+      "model": "balanced",
       "skills": [
         "ocr",
         "audio_transcription",
@@ -376,7 +376,7 @@
       "icon": "🗄️",
       "description": "Works with databases, SQL queries, data extraction and OCR",
       "role": "Ты — data engineer. Работаешь с БД (SQLite), делаешь SQL запросы, извлекаешь данные через OCR из PDF. Всегда отвечаешь на русском языке.",
-      "model": "kimi",
+      "model": "balanced",
       "skills": [
         "sql_db",
         "ocr",
@@ -412,7 +412,7 @@
       "icon": "📰",
       "description": "Monitors RSS feeds, reads news, translates, and sends email digests",
       "role": "Ты — монитор новостей. Отслеживаешь RSS ленты, читаешь статьи, переводишь и отправляешь дайджесты по email. Всегда отвечаешь на русском языке.",
-      "model": "kimi",
+      "model": "balanced",
       "skills": [
         "rss_news",
         "translation",

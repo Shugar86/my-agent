@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
 import PlaygroundDemo from '../components/demo/PlaygroundDemo';
 import FeatureTag from '../components/ui/FeatureTag';
 import { SHOWCASE_CARD_TEMPLATES, showcaseCardFeatureStatus } from '../config/showcaseCards';
+import { getPageFeatureStatus } from '../config/featureRegistry';
+import { COMPETITOR_DEMO_PRESETS } from '../lib/demoNodeLabels';
 import { useDemoAwareFetch } from '../hooks/useDemoAwareFetch';
 import { loginUrl } from '../lib/routes';
 import { t } from '../i18n';
@@ -39,6 +40,19 @@ interface ShowcaseData {
 export default function PublicShowcasePage() {
   const { data, source, loading } = useDemoAwareFetch<ShowcaseData>('/welcome-assets/data/showcase.json');
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [showStickyCta, setShowStickyCta] = useState(false);
+
+  useEffect(() => {
+    const onScroll = () => {
+      const playground = document.getElementById('playground');
+      if (!playground) return;
+      const rect = playground.getBoundingClientRect();
+      setShowStickyCta(rect.top > window.innerHeight || rect.bottom < 120);
+    };
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, [loading, data]);
 
   if (loading || !data) {
     return (
@@ -57,19 +71,45 @@ export default function PublicShowcasePage() {
 
   return (
     <div className="landing-section">
+      {showStickyCta && (
+        <a
+          href="#playground"
+          className="landing-btn landing-btn-primary"
+          style={{
+            position: 'fixed',
+            bottom: 24,
+            right: 24,
+            zIndex: 100,
+            boxShadow: '0 8px 24px rgba(0,0,0,0.25)',
+          }}
+        >
+          {t('showcase.canonicalCta')}
+        </a>
+      )}
+
       <div className="landing-section-header">
         <span className="landing-section-tag">{t('nav.showcase')}</span>
+        <FeatureTag status={getPageFeatureStatus('showcase.playground')} showDot={false} />
         <h1 className="landing-section-title">{t('showcase.title')}</h1>
-        <p className="landing-section-desc">
+        <p className="landing-section-desc">{t('showcase.canonicalDesc')}</p>
+        <p className="landing-section-desc" style={{ marginTop: 8 }}>
           {t('showcase.subtitle', {
             live: meta.live_deployments,
             personas: meta.personas,
             templates: meta.templates,
           })}
         </p>
+        <a href="#playground" className="landing-btn landing-btn-primary" style={{ marginTop: 16 }}>
+          {t('showcase.canonicalCta')}
+        </a>
         {source === 'mock' && (
           <FeatureTag status="mock" label={t('featureTag.previewData')} showDot={false} />
         )}
+      </div>
+
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+        <h2 style={{ fontSize: '1rem', margin: 0 }}>{t('showcase.verticalCasesTitle')}</h2>
+        <FeatureTag status={getPageFeatureStatus('showcase.cards')} showDot={false} />
       </div>
 
       <div className="landing-cards-grid" style={{ marginBottom: 48 }}>
@@ -130,18 +170,25 @@ export default function PublicShowcasePage() {
                 {t('showcase.installSimilar')}
               </a>
             ) : (
-              <Link to="/demo" className="landing-btn landing-btn-secondary" style={{ width: '100%' }}>
+              <a href="#playground" className="landing-btn landing-btn-secondary" style={{ width: '100%' }}>
                 {t('landing.heroPrimaryCta')}
-              </Link>
+              </a>
             )}
           </article>
         ))}
       </div>
 
       <div id="playground" style={{ marginBottom: 48 }}>
-        <h2 className="landing-section-title" style={{ fontSize: '1.25rem', marginBottom: 16 }}>{t('playground.title')}</h2>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+          <h2 className="landing-section-title" style={{ fontSize: '1.25rem', margin: 0 }}>{t('playground.title')}</h2>
+          <FeatureTag status={getPageFeatureStatus('showcase.playground')} showDot={false} />
+        </div>
         <div className="landing-demo-embed">
-          <PlaygroundDemo publicMode />
+          <PlaygroundDemo
+            publicMode
+            lockPreset="competitor"
+            presets={COMPETITOR_DEMO_PRESETS}
+          />
         </div>
       </div>
 

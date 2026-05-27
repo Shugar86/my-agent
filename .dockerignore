@@ -1,0 +1,14 @@
+.env
+.env.*
+!.env.example
+__pycache__
+*.pyc
+.git
+.pytest_cache
+node_modules
+frontend/node_modules
+frontend/dist
+logs/*
+data/*
+*.md
+!README.md

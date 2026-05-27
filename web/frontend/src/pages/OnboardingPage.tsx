@@ -15,12 +15,15 @@ import {
   type Integration,
 } from '../api/appClient';
 import PlaygroundDemo from '../components/demo/PlaygroundDemo';
+import FeatureTag from '../components/ui/FeatureTag';
 import {
   filterOnboardingUsecaseCards,
   ONBOARDING_USECASE_FALLBACK,
   ONBOARDING_USECASE_TEMPLATES,
   type OnboardingUsecaseCard,
 } from '../config/onboardingUseCases';
+import { getPageFeatureStatus } from '../config/featureRegistry';
+import { COMPETITOR_DEMO_PRESETS } from '../lib/demoNodeLabels';
 import ProductNarrative from '../components/ProductNarrative';
 import { fetchWithDemoFallback } from '../lib/demoFallback';
 import { appRoute } from '../lib/routes';
@@ -172,13 +175,21 @@ export default function OnboardingPage() {
         <div className="onboarding-steps" style={{ marginTop: 12 }}>
           {STEP_KEYS.map((key, i) => {
             const idx = i + 1;
+            const stepStatus =
+              key === 'demo' ? 'live' : key === 'usecase' ? 'live' : getPageFeatureStatus(`onboarding.${key}`);
             return (
               <div
                 key={key}
                 className={`onboarding-step ${idx === step ? 'active' : ''} ${idx < step ? 'done' : ''}`}
+                style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}
               >
-                {idx < step ? '✓ ' : `${idx}. `}
-                {t(`onboarding.steps.${key}`)}
+                <span>
+                  {idx < step ? '✓ ' : `${idx}. `}
+                  {t(`onboarding.steps.${key}`)}
+                </span>
+                {stepStatus !== 'live' && idx >= step && (
+                  <FeatureTag status={stepStatus} showDot={false} />
+                )}
               </div>
             );
           })}
@@ -193,6 +204,8 @@ export default function OnboardingPage() {
           <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 16 }}>{t('onboarding.demoDesc')}</p>
           <PlaygroundDemo
             variant="compact"
+            lockPreset="competitor"
+            presets={COMPETITOR_DEMO_PRESETS}
             showContinue={demoCompleted}
             onComplete={(result) => {
               if (result.status === 'success' || result.status === 'completed') {
@@ -207,9 +220,14 @@ export default function OnboardingPage() {
             <p style={{ fontSize: 13, color: 'var(--success)', marginTop: 12 }}>{demoSuccessMsg}</p>
           )}
           {!demoCompleted && (
-            <button type="button" className="btn btn-ghost" style={{ marginTop: 12 }} onClick={() => setStep(2)}>
-              {t('common.skip')}
-            </button>
+            <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
+              <button type="button" className="btn btn-ghost" onClick={() => setStep(2)}>
+                {t('common.skip')}
+              </button>
+              <button type="button" className="btn btn-ghost" onClick={() => navigate(appRoute('/marketplace'))}>
+                {t('onboarding.skipToMarketplace')}
+              </button>
+            </div>
           )}
         </div>
       )}
@@ -284,7 +302,10 @@ export default function OnboardingPage() {
 
       {step === 4 && (
         <div className="card">
-          <h2 style={{ fontSize: 16, marginBottom: 12 }}>{t('onboarding.integrationsTitle')}</h2>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+            <h2 style={{ fontSize: 16, margin: 0 }}>{t('onboarding.integrationsTitle')}</h2>
+            <FeatureTag status={getPageFeatureStatus('onboarding.integrations')} showDot={false} />
+          </div>
           <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 16 }}>{t('onboarding.integrationsDesc')}</p>
           <div style={{ display: 'grid', gap: 12, gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))' }}>
             {integrations.filter((i) => i.fields.length > 0 || i.auth_method === 'oauth').map((integ) => {

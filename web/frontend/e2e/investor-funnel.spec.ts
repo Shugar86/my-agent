@@ -12,7 +12,7 @@ test.describe('Investor funnel', () => {
     await expect(page.locator('body')).toContainText(/50\+/);
     await expect(page.locator('body')).not.toContainText(/376 тестов/i);
     await expect(page.locator('body')).not.toContainText(/Dual Provider/i);
-    await expect(page.getByRole('link', { name: /Попробовать live/i }).first()).toHaveAttribute('href', '/demo');
+    await expect(page.getByRole('link', { name: /Попробовать live/i }).first()).toHaveAttribute('href', '/showcase#playground');
   });
 
   test('pricing section exists on landing', async ({ page }) => {
@@ -64,6 +64,18 @@ test.describe('Investor funnel', () => {
   test('landing marketplace preview section exists', async ({ page }) => {
     await page.goto('/');
     await expect(page.locator('#marketplace-preview')).toBeVisible();
+  });
+});
+
+test.describe('Canonical demo', () => {
+  test.skip(!process.env.E2E_DEMO_RUN, 'Set E2E_DEMO_RUN=1 with server on :8020');
+
+  test('competitor intelligence completes on /showcase#playground', async ({ page }) => {
+    test.setTimeout(120_000);
+    await page.goto('/showcase#playground');
+    await page.getByRole('button', { name: /Запустить demo/i }).click();
+    await expect(page.locator('.demo-stepper')).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByRole('link', { name: /DOCX|brief|скачать/i })).toBeVisible({ timeout: 90_000 });
   });
 });
 

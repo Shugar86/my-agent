@@ -21,6 +21,17 @@ def test_is_kimi_code_key() -> None:
     assert not is_kimi_code_key(None)
 
 
+def test_resolve_kimi_base_url_prefers_explicit_base() -> None:
+    import os
+
+    os.environ["KIMI_BASE_URL"] = "https://api.kimi.com/coding/v1"
+    assert (
+        resolve_kimi_base_url("sk-or-v1-test", "https://openrouter.ai/api/v1")
+        == "https://openrouter.ai/api/v1"
+    )
+    del os.environ["KIMI_BASE_URL"]
+
+
 def test_resolve_kimi_base_url_from_prefix() -> None:
     assert resolve_kimi_base_url("sk-kimi-abc") == KIMI_CODE_BASE_URL
 

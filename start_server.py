@@ -1,9 +1,13 @@
-import subprocess, time, requests, os, sys
+import subprocess
+import time
+import requests
+import os
+import sys
 
-api_key = os.environ.get("OPENROUTER_API_KEY")
-if not api_key:
-    print("ERROR: OPENROUTER_API_KEY not set. Set it in .env or environment.")
-    sys.exit(1)
+kimi_key = os.environ.get("KIMI_API_KEY")
+openrouter_key = os.environ.get("OPENROUTER_API_KEY")
+if not kimi_key and not openrouter_key:
+    print("Note: KIMI_API_KEY / OPENROUTER_API_KEY not set — chat will fail, but demo mock flow works.")
 
 print("Starting server...")
 proc = subprocess.Popen(
@@ -15,20 +19,24 @@ time.sleep(4)
 
 print("Testing server...")
 try:
-    r = requests.get("http://127.0.0.1:8000/api/agents")
-    print(f"GET /api/agents: {r.status_code}")
+    r = requests.get("http://127.0.0.1:8000/api/health", timeout=10)
+    print(f"GET /api/health: {r.status_code}")
 
-    r = requests.post("http://127.0.0.1:8000/api/chat",
-                      json={"message": "test", "agent_id": "researcher"})
-    print(f"POST /api/chat: {r.status_code}")
+    r = requests.post(
+        "http://127.0.0.1:8000/api/demo/public/run",
+        json={"target": "Notion", "our_company": "Linear", "preset": "competitor"},
+        timeout=30,
+    )
+    print(f"POST /api/demo/public/run: {r.status_code}")
     if r.status_code == 200:
-        print(f"Response: {r.json().get('response', '')[:100]}")
+        data = r.json()
+        print(f"Demo mode: {data.get('mode')}, run_id: {data.get('run_id')}")
         print("SUCCESS! Server is working!")
-        print("Open: http://127.0.0.1:8000/chat")
+        print("Open canonical demo: http://127.0.0.1:8000/showcase#playground")
     else:
         print(f"Error: {r.text[:200]}")
-except Exception as e:
-    print(f"Error: {e}")
+except requests.RequestException as exc:
+    print(f"Error: {exc}")
 
 input("Press Enter to stop server...")
 proc.terminate()

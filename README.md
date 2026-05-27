@@ -4,7 +4,7 @@
 
 | | |
 |---|---|
-| **Версия** | 3.5.0 |
+| **Версия** | 3.5.2 |
 | **Стек** | Python 3.11 · FastAPI · React 18 · PostgreSQL · Redis |
 | **Документация** | [docs/README.md](docs/README.md) — полный индекс |
 
@@ -23,8 +23,9 @@ docker compose up -d --build
 | URL | Назначение |
 |-----|------------|
 | http://localhost:8020/ | Публичный лендинг (React) |
-| http://localhost:8020/demo | Demo Competitor Intelligence |
+| **http://localhost:8020/showcase#playground** | **Канонический demo** — Competitor Intelligence 90s → DOCX |
 | http://localhost:8020/showcase | 7 вертикальных кейсов + playground |
+| http://localhost:8020/demo | Shortcut на тот же playground (вторичный) |
 | http://localhost:8020/app/ | Продукт (после login) |
 | http://localhost:8020/login | JWT + Google OAuth |
 
@@ -93,16 +94,16 @@ cd web/frontend && bun install && bun run build
 ### Тесты
 
 ```bash
-python -m pytest tests/ -q
-# E2E (нужен сервер на :8020):
-cd web/frontend && bun run test:e2e
+python -m pytest tests/test_demo_flow.py tests/test_marketplace.py -q
+# E2E canonical demo (нужен сервер на :8020):
+cd web/frontend && E2E_DEMO_RUN=1 npx playwright test e2e/investor-funnel.spec.ts -g "Canonical demo"
 ```
 
 Smoke после деплоя:
 
 ```bash
 curl -s http://127.0.0.1:8020/api/health
-docker compose exec -T agent python -m pytest tests/test_production_v34.py tests/test_marketplace.py -q
+docker compose exec -T agent python -m pytest tests/test_demo_flow.py -q
 ```
 
 ---
@@ -111,7 +112,7 @@ docker compose exec -T agent python -m pytest tests/test_production_v34.py tests
 
 | Маршрут | Описание |
 |---------|----------|
-| `/`, `/demo`, `/showcase` | Публичные (без auth) |
+| `/`, `/showcase`, `/demo` | Публичные (без auth); **канонический demo:** `/showcase#playground` |
 | `/login` | Вход / регистрация |
 | `/app/` | Dashboard, activation hero |
 | `/app/chat` | Чат с агентами |

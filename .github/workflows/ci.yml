@@ -23,7 +23,7 @@ jobs:
           pip install -e ".[dev]" || pip install -e .
           pip install pytest pytest-asyncio httpx
       - name: Run tests
-        run: pytest tests/test_workflow_engine.py tests/test_marketplace.py tests/test_dod_closure.py tests/test_teams.py tests/test_usage.py tests/test_google_auth.py tests/test_security.py -v
+        run: pytest tests/test_workflow_engine.py tests/test_marketplace.py tests/test_dod_closure.py tests/test_teams.py tests/test_usage.py tests/test_google_auth.py tests/test_security.py tests/test_demo_flow.py -v
         env:
           ENV: test
 
@@ -39,3 +39,29 @@ jobs:
         run: |
           npm ci 2>/dev/null || npm install
           npm run build
+
+  demo-e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Start demo stack
+        run: |
+          cp .env.example .env
+          docker compose up -d --build
+          for i in $(seq 1 60); do
+            curl -sf http://localhost:8020/api/health && exit 0
+            sleep 5
+          done
+          echo "Server failed to start" && exit 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Canonical demo Playwright
+        working-directory: web/frontend
+        env:
+          E2E_DEMO_RUN: "1"
+          PLAYWRIGHT_BASE_URL: http://127.0.0.1:8020
+        run: |
+          npm ci 2>/dev/null || npm install
+          npx playwright install chromium
+          npx playwright test e2e/investor-funnel.spec.ts -g "Canonical demo"
