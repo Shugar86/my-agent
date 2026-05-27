@@ -56,10 +56,17 @@ class TestExecuteCode:
             assert result.get("returncode", 0) != 0 or "error" in result
 
     def test_javascript_execution(self):
-        with patch("core.docker_sandbox.docker_sandbox.run_bash", return_value={"success": True, "stdout": "1", "stderr": "", "returncode": 0}) as mock:
+        with patch("core.docker_sandbox.docker_sandbox.run_javascript", return_value={"success": True, "stdout": "1", "stderr": "", "returncode": 0}) as mock:
             result = execute_code("javascript", "console.log(1)")
             mock.assert_called_once()
             assert "stdout" in result
+
+    def test_javascript_no_shell_injection(self):
+        """Malicious JS must not be passed through bash -c."""
+        payload = "'); echo PWNED; ('"
+        with patch("core.docker_sandbox.docker_sandbox.run_javascript", return_value={"success": True, "stdout": "", "stderr": "", "returncode": 0}) as mock:
+            execute_code("javascript", payload)
+            mock.assert_called_once_with(payload, timeout=30)
 
     def test_bash_dangerous_blocked(self):
         result = execute_code("bash", "rm -rf /")

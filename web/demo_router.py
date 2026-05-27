@@ -20,7 +20,8 @@ logger = logging.getLogger(__name__)
 router = APIRouter(tags=["demo"])
 executor = WorkflowExecutor()
 
-DEMO_DIR = Path("data/demo")
+_PROJECT_ROOT = Path(__file__).resolve().parent.parent
+DEMO_DIR = _PROJECT_ROOT / "data" / "demo"
 REAL_MODE_LLM_KEYS = ("OPENROUTER_API_KEY",)
 REAL_MODE_SEARCH_KEYS = ("TAVILY_API_KEY",)
 
@@ -205,9 +206,10 @@ def _ensure_artifact_exists(filename: str) -> None:
         import sys
 
         subprocess.run(
-            [sys.executable, "scripts/generate_demo_artifact.py"],
+            [sys.executable, str(_PROJECT_ROOT / "scripts" / "generate_demo_artifact.py")],
             check=False,
-            cwd=str(Path.cwd()),
+            cwd=str(_PROJECT_ROOT),
+            timeout=120,
         )
     if not path.exists():
         raise HTTPException(status_code=404, detail="Artifact not found")

@@ -26,11 +26,9 @@ def test_jittered_backoff():
     print("Testing jittered_backoff...")
     d1 = jittered_backoff(1, base_delay=1.0, max_delay=10.0)
     d2 = jittered_backoff(1, base_delay=1.0, max_delay=10.0)
-    # Same attempt but different jitter
+    # Same attempt — values stay within configured bounds (jitter is non-deterministic)
     assert 1.0 <= d1 <= 10.0
     assert 1.0 <= d2 <= 10.0
-    # Decorrelation: two calls should rarely be identical
-    assert d1 != d2 or True  # statistical, so just check range
 
     # Exponential growth
     d3 = jittered_backoff(3, base_delay=1.0, max_delay=100.0)

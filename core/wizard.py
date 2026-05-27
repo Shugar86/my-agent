@@ -178,8 +178,8 @@ def run_setup_wizard():
         default="",
     )
     if len(admin_password) < 12:
-        console.print("[yellow]⚠️ Пароль короткий — будет использован 'admin'[/yellow]")
-        admin_password = "admin"
+        console.print("[red]Пароль должен быть не менее 12 символов. Повторите настройку.[/red]")
+        raise SystemExit(1)
 
     # Save configuration
     config = {

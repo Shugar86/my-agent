@@ -4,7 +4,7 @@
 
 | | |
 |---|---|
-| **Версия** | 3.5.2 |
+| **Версия** | 3.5.3 |
 | **Стек** | Python 3.11 · FastAPI · React 18 · PostgreSQL · Redis |
 | **Документация** | [docs/README.md](docs/README.md) — полный индекс |
 
@@ -29,7 +29,7 @@ docker compose up -d --build
 | http://localhost:8020/app/ | Продукт (после login) |
 | http://localhost:8020/login | JWT + Google OAuth |
 
-Логин по умолчанию: `admin` / `admin` (сменить `AGENT_PASSWORD` в `.env`).
+Логин по умолчанию: `admin` / `admin` (dev). В **production** задайте `AGENT_PASSWORD` ≥ 12 символов — иначе bootstrap admin не создастся.
 
 Демо с n8n: `docker compose --profile demo up -d --build` → [DEMO.md](DEMO.md).
 
@@ -74,7 +74,7 @@ my-agent/
 
 ```bash
 python -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt
+pip install -e ".[dev]"   # предпочтительно; requirements.txt — legacy
 cp .env.example .env
 
 # PostgreSQL + Redis (или docker compose up db redis -d)
@@ -83,6 +83,8 @@ export REDIS_URL=redis://127.0.0.1:6380/0
 
 python -m uvicorn web.server:app --host 0.0.0.0 --port 8020 --reload
 ```
+
+`execute_code` (Python/JS/Bash) требует **Docker на хосте**. В prod-контейнере — mount `docker.sock` (см. [DEPLOYMENT.md](DEPLOYMENT.md)).
 
 ### Frontend
 
@@ -94,6 +96,15 @@ cd web/frontend && bun install && bun run build
 ### Тесты
 
 ```bash
+# Gate после security/remediation fixes (60 tests)
+pytest tests/test_code_tools.py tests/test_file_tools.py \
+       tests/test_security_improvements.py tests/test_async_utils.py \
+       tests/test_db_manager.py tests/test_production_hardening.py \
+       tests/test_all.py::test_memory_manager -q
+
+bash scripts/check-secrets.sh   # CI: .github/workflows/secrets-check.yml
+uv build                        # pyproject setuptools packages.find
+
 python -m pytest tests/test_demo_flow.py tests/test_marketplace.py -q
 # E2E canonical demo (нужен сервер на :8020):
 cd web/frontend && E2E_DEMO_RUN=1 npx playwright test e2e/investor-funnel.spec.ts -g "Canonical demo"
@@ -136,7 +147,9 @@ docker compose exec -T agent python -m pytest tests/test_demo_flow.py -q
 | `OPENROUTER_API_KEY` | Fallback LLM |
 | `DATABASE_URL` | PostgreSQL (обязателен в production) |
 | `REDIS_URL` | Кэш, rate limits, workflow queue |
-| `AGENT_PASSWORD` / `AGENT_SECRET_KEY` | Админ и JWT |
+| `AGENT_PASSWORD` / `AGENT_SECRET_KEY` | Админ и JWT (prod: пароль ≥ 12 символов) |
+| `CORS_ORIGINS` | Доп. origins через запятую (localhost всегда в dev) |
+| `AGENT_WORKSPACE` | Корень для `file_read` / `file_write` (default: cwd) |
 | `TAVILY_API_KEY` | Веб-поиск (опционально) |
 
 Полный список: [.env.example](.env.example).
@@ -152,6 +165,6 @@ docker compose exec -T agent python -m pytest tests/test_demo_flow.py -q
 | Безопасность | [SECURITY.md](SECURITY.md) |
 | Демо инвесторам | [DEMO.md](DEMO.md) · [INVESTOR.md](INVESTOR.md) |
 | Изменения | [CHANGELOG.md](CHANGELOG.md) |
-| Проблемы | [TROUBLESHOOTING.md](TROUBLESHOOTING.md) |
+| Проблемы | [TROUBLES.md](TROUBLES.md) · [TROUBLESHOOTING.md](TROUBLESHOOTING.md) |
 
 **Лицензия:** MIT

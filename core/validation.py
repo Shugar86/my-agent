@@ -18,20 +18,23 @@ def validate_file_exists(path: str, name: str = "file") -> bool:
     return os.path.exists(path) and os.path.isfile(path)
 
 
+def _allowed_roots() -> tuple[str, str]:
+    """Return workspace root and output directory for path validation."""
+    workspace = os.path.abspath(os.environ.get("AGENT_WORKSPACE") or os.getcwd())
+    output_dir = os.path.abspath(os.path.join(workspace, "output"))
+    return workspace, output_dir
+
+
 def validate_safe_path(path: str, name: str = "path") -> bool:
-    """Ensure path doesn't traverse outside working directory."""
+    """Ensure path doesn't traverse outside workspace directory."""
     if not validate_not_empty(path, name):
         return False
     abs_path = os.path.abspath(path)
-    cwd = os.path.abspath(os.getcwd())
-    output_dir = os.path.abspath("output")
-    # Allow paths within cwd or output directory
-    if not abs_path.startswith(cwd) and not abs_path.startswith(output_dir):
+    workspace, output_dir = _allowed_roots()
+    if not abs_path.startswith(workspace) and not abs_path.startswith(output_dir):
         return False
-    # Block parent directory traversal
     if ".." in path or "~" in path:
         return False
-    # Block null bytes and dangerous chars
     if "\x00" in path or ";" in path or "|" in path:
         return False
     return True
@@ -121,10 +124,9 @@ def validate_safe_path_or_error(path: str, name: str = "path") -> Optional[str]:
     if not (path and str(path).strip()):
         return f"{name} path cannot be empty"
     abs_path = os.path.abspath(path)
-    cwd = os.path.abspath(os.getcwd())
-    output_dir = os.path.abspath("output")
-    if not abs_path.startswith(cwd) and not abs_path.startswith(output_dir):
-        return f"{name} must be within project directory"
+    workspace, output_dir = _allowed_roots()
+    if not abs_path.startswith(workspace) and not abs_path.startswith(output_dir):
+        return f"{name} must be within workspace directory"
     if ".." in path or "~" in path:
         return f"{name} contains invalid traversal characters"
     if "\x00" in path or ";" in path or "|" in path:

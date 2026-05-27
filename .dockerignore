@@ -5,9 +5,12 @@ __pycache__
 *.pyc
 .git
 .pytest_cache
+**/node_modules
 node_modules
+web/frontend/node_modules
 frontend/node_modules
 frontend/dist
+web/frontend/dist
 logs/*
 data/*
 *.md

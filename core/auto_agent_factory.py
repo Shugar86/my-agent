@@ -34,10 +34,14 @@ class AutoAgentFactory:
         for sa in sub_agents:
             config = self._create_temp_config(sa, parent_agent_id)
             temp_id = self.store.save_agent(config)
-            temp_ids.append(temp_id)
+            if self.store.get_agent(temp_id):
+                temp_ids.append(temp_id)
+
+        if not temp_ids:
+            return _run_async(self.orchestrator.run(task_description, parent_agent_id or "researcher"))
 
         results = {}
-        sub_configs = [self.store.get_agent(tid) for tid in temp_ids if self.store.get_agent(tid)]
+        sub_configs = [self.store.get_agent(tid) for tid in temp_ids]
 
         if len(sub_configs) == 1:
             results[temp_ids[0]] = _run_async(self.orchestrator.run(task_description, temp_ids[0]))

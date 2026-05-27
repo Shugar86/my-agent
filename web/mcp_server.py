@@ -146,11 +146,17 @@ async def _read_resource(uri: str) -> Dict:
         }
     
     if uri.startswith("skill://"):
-        skill_name = uri.replace("skill://", "")
-        skill_path = f"skills/{skill_name}/README.md"
+        skill_name = uri.replace("skill://", "").strip("/")
+        if not skill_name or ".." in skill_name or "/" in skill_name or "\\" in skill_name:
+            raise MCPError(MCPError.INVALID_PARAMS, f"Invalid skill URI: {uri}")
+        from pathlib import Path
+
+        skills_root = Path("skills").resolve()
+        skill_path = (skills_root / skill_name / "README.md").resolve()
+        if not str(skill_path).startswith(str(skills_root)):
+            raise MCPError(MCPError.INVALID_PARAMS, f"Invalid skill URI: {uri}")
         try:
-            with open(skill_path, "r", encoding="utf-8") as f:
-                text = f.read()
+            text = skill_path.read_text(encoding="utf-8")
         except FileNotFoundError:
             text = f"No README for skill: {skill_name}"
         return {

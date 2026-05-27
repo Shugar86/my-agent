@@ -198,7 +198,7 @@ class RateLimiter:
 
         Returns: (allowed, remaining, reset_after)
         """
-        key = f"ratelimit:{action}:{identifier}"
+        key = f"{action}:{identifier}"
         allowed, remaining = await redis_client.check_rate_limit(key, limit, window)
         reset_after = window if not allowed else 0
         return allowed, remaining, reset_after

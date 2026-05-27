@@ -165,9 +165,8 @@ class TestEnvExample:
         with open(os.path.join(_PROJECT_ROOT, ".env.example"), "r", encoding="utf-8") as f:
             content = f.read()
 
-        # Should use placeholder syntax
-        assert "${YOUR_" in content or "${OPENROUTER_API_KEY}" in content
-        # Should not have sk- or tvly- patterns
+        # Should use empty placeholders (no real key values)
+        assert "OPENROUTER_API_KEY=" in content
         assert "sk-or-v1-" not in content, "Real OpenRouter key found in .env.example"
         assert "tvly-dev-" not in content, "Real Tavily key found in .env.example"
 

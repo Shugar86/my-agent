@@ -68,8 +68,11 @@ class DockerSandbox:
         except (subprocess.TimeoutExpired, subprocess.CalledProcessError, FileNotFoundError):
             return False
 
-    def run_python(self, code: str) -> Dict[str, Any]:
+    def run_python(self, code: str, timeout: int | None = None) -> Dict[str, Any]:
         """Execute Python code in Docker container."""
+        run_timeout = timeout if timeout is not None else self.timeout
+        saved_timeout = self.timeout
+        self.timeout = run_timeout
         if not self._is_docker_available():
             return {"error": "Docker not available. Falling back to subprocess sandbox."}
 
@@ -145,11 +148,74 @@ finally:
         except Exception as e:
             return {"stdout": "", "stderr": "", "error": str(e), "success": False}
         finally:
+            self.timeout = saved_timeout
             if os.path.exists(script_path):
                 os.unlink(script_path)
 
-    def run_bash(self, code: str, image: str | None = None) -> Dict[str, Any]:
+    def run_javascript(self, code: str, timeout: int | None = None) -> Dict[str, Any]:
+        """Execute JavaScript in Docker via file mount (no shell interpolation)."""
+        run_timeout = timeout if timeout is not None else self.timeout
+        if not self._is_docker_available():
+            return {"error": "Docker not available"}
+
+        js_image = "node:20-slim"
+        saved_image = self.image
+        self.image = js_image
+        if not self._ensure_image():
+            self.image = saved_image
+            return {"error": "Docker not available"}
+        self.image = saved_image
+
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".js", delete=False) as f:
+            f.write(code)
+            script_path = f.name
+
+        try:
+            with tempfile.TemporaryDirectory() as tmpdir:
+                script_in_tmp = os.path.join(tmpdir, "script.js")
+                with open(script_path, "r") as src, open(script_in_tmp, "w") as dst:
+                    dst.write(src.read())
+
+                cmd = [
+                    "docker", "run", "--rm",
+                    "--network", "none",
+                    "--memory", self.memory_limit,
+                    "--cpus", self.cpu_limit,
+                    "--read-only",
+                    "-v", f"{tmpdir}:/code:ro",
+                    js_image,
+                    "node", "/code/script.js",
+                ]
+
+                result = subprocess.run(
+                    cmd,
+                    capture_output=True,
+                    text=True,
+                    timeout=run_timeout + 5,
+                )
+
+                return {
+                    "stdout": result.stdout,
+                    "stderr": result.stderr,
+                    "returncode": result.returncode,
+                    "success": result.returncode == 0,
+                }
+        except subprocess.TimeoutExpired:
+            return {
+                "stdout": "",
+                "stderr": "",
+                "error": f"Docker execution timed out after {run_timeout}s",
+                "success": False,
+            }
+        except OSError as e:
+            return {"stdout": "", "stderr": "", "error": str(e), "success": False}
+        finally:
+            if os.path.exists(script_path):
+                os.unlink(script_path)
+
+    def run_bash(self, code: str, image: str | None = None, timeout: int | None = None) -> Dict[str, Any]:
         """Execute bash code in Docker container."""
+        run_timeout = timeout if timeout is not None else self.timeout
         if not self._is_docker_available():
             return {"error": "Docker not available"}
 
@@ -177,7 +243,7 @@ finally:
                 cmd,
                 capture_output=True,
                 text=True,
-                timeout=self.timeout + 5,
+                timeout=run_timeout + 5,
             )
 
             return {
@@ -187,7 +253,7 @@ finally:
                 "success": result.returncode == 0,
             }
         except subprocess.TimeoutExpired:
-            return {"stdout": "", "stderr": "", "error": f"Docker bash timed out after {self.timeout}s", "success": False}
+            return {"stdout": "", "stderr": "", "error": f"Docker bash timed out after {run_timeout}s", "success": False}
         except Exception as e:
             return {"stdout": "", "stderr": "", "error": str(e), "success": False}
 

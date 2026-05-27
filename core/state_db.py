@@ -352,6 +352,75 @@ class StateDB:
             conn.execute("DELETE FROM chat_sessions WHERE id = ?", (session_id,))
         self._execute_write(_do)
 
+    def replace_messages(self, session_id: str, messages: List[Dict[str, Any]]) -> None:
+        """Atomically replace all messages for a session (no duplicate accumulation)."""
+
+        def _do(conn):
+            conn.execute("DELETE FROM chat_messages WHERE session_id = ?", (session_id,))
+            now = time.time()
+            for msg in messages:
+                tool_calls = msg.get("tool_calls")
+                tool_calls_json = json.dumps(tool_calls) if tool_calls is not None else None
+                conn.execute(
+                    """INSERT INTO chat_messages
+                       (session_id, role, content, tool_call_id, tool_calls, tool_name, timestamp, finish_reason)
+                       VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
+                    (
+                        session_id,
+                        msg.get("role", "user"),
+                        msg.get("content"),
+                        msg.get("tool_call_id"),
+                        tool_calls_json,
+                        msg.get("tool_name"),
+                        now,
+                        msg.get("finish_reason"),
+                    ),
+                )
+            conn.execute(
+                "UPDATE chat_sessions SET message_count = ? WHERE id = ?",
+                (len(messages), session_id),
+            )
+
+        self._execute_write(_do)
+
+    def compress_session_atomic(
+        self,
+        session_id: str,
+        new_messages: List[Dict[str, Any]],
+        source: str = "agent",
+    ) -> None:
+        """Atomically replace session messages after compression."""
+
+        def _do(conn):
+            conn.execute("DELETE FROM chat_messages WHERE session_id = ?", (session_id,))
+            conn.execute("DELETE FROM chat_sessions WHERE id = ?", (session_id,))
+            conn.execute(
+                """INSERT INTO chat_sessions (id, source, started_at, message_count)
+                   VALUES (?, ?, ?, ?)""",
+                (session_id, source, time.time(), len(new_messages)),
+            )
+            now = time.time()
+            for msg in new_messages:
+                tool_calls = msg.get("tool_calls")
+                tool_calls_json = json.dumps(tool_calls) if tool_calls is not None else None
+                conn.execute(
+                    """INSERT INTO chat_messages
+                       (session_id, role, content, tool_call_id, tool_calls, tool_name, timestamp, finish_reason)
+                       VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
+                    (
+                        session_id,
+                        msg.get("role", "user"),
+                        msg.get("content"),
+                        msg.get("tool_call_id"),
+                        tool_calls_json,
+                        msg.get("tool_name"),
+                        now,
+                        msg.get("finish_reason"),
+                    ),
+                )
+
+        self._execute_write(_do)
+
     # ------------------------------------------------------------------
     # Messages
     # ------------------------------------------------------------------
@@ -412,7 +481,20 @@ class StateDB:
     # ------------------------------------------------------------------
 
     def search_messages(self, query: str, limit: int = 20) -> List[Dict[str, Any]]:
-        """Full-text search across all messages using FTS5."""
+        """Full-text search across all messages using FTS5 with LIKE fallback."""
+
+        def _like_search() -> List[Dict[str, Any]]:
+            rows = self._conn.execute(
+                """SELECT m.session_id, s.title, m.content, m.timestamp
+                   FROM chat_messages m
+                   JOIN chat_sessions s ON m.session_id = s.id
+                   WHERE m.content LIKE ?
+                   ORDER BY m.timestamp DESC
+                   LIMIT ?""",
+                (f"%{query}%", limit),
+            ).fetchall()
+            return [dict(r) for r in rows]
+
         with self._lock:
             try:
                 rows = self._conn.execute(
@@ -425,19 +507,11 @@ class StateDB:
                        LIMIT ?""",
                     (query, limit),
                 ).fetchall()
-                return [dict(r) for r in rows]
+                if rows:
+                    return [dict(r) for r in rows]
             except sqlite3.OperationalError:
-                # FTS5 not available or query malformed — fall back to LIKE
-                rows = self._conn.execute(
-                    """SELECT m.session_id, s.title, m.content, m.timestamp
-                       FROM chat_messages m
-                       JOIN chat_sessions s ON m.session_id = s.id
-                       WHERE m.content LIKE ?
-                       ORDER BY m.timestamp DESC
-                       LIMIT ?""",
-                    (f"%{query}%", limit),
-                ).fetchall()
-                return [dict(r) for r in rows]
+                pass
+            return _like_search()
 
     # ------------------------------------------------------------------
     # Compression helpers

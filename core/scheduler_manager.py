@@ -295,7 +295,11 @@ async def _execute_email_poll(workflow_id: str, node_id: str, job_id: str):
             return
 
         owner_id = wf.get("owner_id")
-        from skills.gmail.skill import gmail_list_unread
+        try:
+            from skills.gmail.skill import gmail_list_unread
+        except ImportError as exc:
+            logger.warning("Gmail skill unavailable for %s: %s", workflow_id, exc)
+            return
 
         result = gmail_list_unread(max_results=10, user_id=owner_id)
         if not result.get("success"):

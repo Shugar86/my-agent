@@ -1,22 +1,42 @@
 import os
+
 from core.tool_registry import registry
+from core.validation import validate_safe_path_or_error
+
+
+def _resolve_path(path: str) -> str:
+    """Resolve relative paths against AGENT_WORKSPACE (or cwd)."""
+    if os.path.isabs(path):
+        return path
+    workspace = os.environ.get("AGENT_WORKSPACE") or os.getcwd()
+    return os.path.join(workspace, path)
 
 
 def file_read(path):
+    resolved = _resolve_path(path)
+    err = validate_safe_path_or_error(resolved, "file")
+    if err:
+        return {"error": err}
     try:
-        with open(path, "r", encoding="utf-8") as f:
+        with open(resolved, "r", encoding="utf-8") as f:
             return f.read()
-    except Exception as e:
+    except OSError as e:
         return {"error": str(e)}
 
 
 def file_write(path, content):
+    resolved = _resolve_path(path)
+    err = validate_safe_path_or_error(resolved, "file")
+    if err:
+        return {"error": err}
     try:
-        os.makedirs(os.path.dirname(path) if os.path.dirname(path) else ".", exist_ok=True)
-        with open(path, "w", encoding="utf-8") as f:
+        parent = os.path.dirname(resolved)
+        if parent:
+            os.makedirs(parent, exist_ok=True)
+        with open(resolved, "w", encoding="utf-8") as f:
             f.write(content)
-        return f"Written {len(content)} chars to {path}"
-    except Exception as e:
+        return f"Written {len(content)} chars to {resolved}"
+    except OSError as e:
         return {"error": str(e)}
 
 

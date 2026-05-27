@@ -4,15 +4,30 @@ Stores user thumbs up/down on assistant responses for future fine-tuning.
 Uses SQLite via db_manager.
 """
 import json
+import logging
 import uuid
 import time
 from datetime import datetime, timezone
 from typing import Dict, List, Optional
-from core.db_manager import db
+
+from core.db_manager import DBManager
+
+logger = logging.getLogger(__name__)
+
+_db: DBManager | None = None
+
+
+def _get_db() -> DBManager:
+    """Lazy DBManager singleton — avoids import-time connection failures."""
+    global _db
+    if _db is None:
+        _db = DBManager()
+    return _db
 
 
 def _ensure_table() -> None:
     """Ensure feedback table exists (Alembic primary, SQLite dev fallback)."""
+    db = _get_db()
     if db.table_exists("feedback"):
         return
     db.execute(
@@ -46,35 +61,46 @@ def submit_feedback(
     metadata: Dict = None,
 ) -> Dict:
     """Submit user feedback on a response."""
-    _ensure_table()
+    try:
+        _ensure_table()
+    except (RuntimeError, OSError) as exc:
+        logger.error("Feedback DB unavailable: %s", exc)
+        return {"success": False, "error": "Feedback storage unavailable"}
+
     feedback_id = f"fb-{uuid.uuid4().hex[:12]}"
     now = datetime.now(timezone.utc).isoformat()
 
-    db.execute(
-        """
-        INSERT INTO feedback (id, session_id, message_id, query, response, rating, agent_id, model, tools_used, metadata, created_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """,
-        (
-            feedback_id,
-            session_id,
-            message_id,
-            query,
-            response,
-            rating,
-            agent_id,
-            model,
-            json.dumps(tools_used or [], ensure_ascii=False),
-            json.dumps(metadata or {}, ensure_ascii=False),
-            now,
-        ),
-    )
+    try:
+        _get_db().execute(
+            """
+            INSERT INTO feedback (id, session_id, message_id, query, response, rating, agent_id, model, tools_used, metadata, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                feedback_id,
+                session_id,
+                message_id,
+                query,
+                response,
+                rating,
+                agent_id,
+                model,
+                json.dumps(tools_used or [], ensure_ascii=False),
+                json.dumps(metadata or {}, ensure_ascii=False),
+                now,
+            ),
+        )
+    except (RuntimeError, OSError) as exc:
+        logger.error("Failed to save feedback: %s", exc)
+        return {"success": False, "error": str(exc)}
+
     return {"success": True, "feedback_id": feedback_id}
 
 
 def get_feedback_stats(session_id: str = None, agent_id: str = None) -> Dict:
     """Get aggregated feedback statistics."""
     _ensure_table()
+    db = _get_db()
     where = []
     params = []
     if session_id:
@@ -113,6 +139,7 @@ def get_feedback_stats(session_id: str = None, agent_id: str = None) -> Dict:
 def list_feedback(limit: int = 100, offset: int = 0, rating: int = None) -> List[Dict]:
     """List feedback entries."""
     _ensure_table()
+    db = _get_db()
     where = []
     params = []
     if rating is not None:
@@ -129,11 +156,11 @@ def list_feedback(limit: int = 100, offset: int = 0, rating: int = None) -> List
         d = dict(row)
         try:
             d["tools_used"] = json.loads(d.get("tools_used", "[]"))
-        except Exception:
+        except json.JSONDecodeError:
             d["tools_used"] = []
         try:
             d["metadata"] = json.loads(d.get("metadata", "{}"))
-        except Exception:
+        except json.JSONDecodeError:
             d["metadata"] = {}
         result.append(d)
     return result
@@ -145,7 +172,7 @@ def export_training_dataset(format: str = "jsonl") -> str:
     Returns path to exported file.
     """
     _ensure_table()
-    rows = db.fetchall(
+    rows = _get_db().fetchall(
         "SELECT query, response, rating FROM feedback WHERE rating != 0 ORDER BY created_at DESC"
     )
 
@@ -154,10 +181,8 @@ def export_training_dataset(format: str = "jsonl") -> str:
         query = row["query"]
         response = row["response"]
         rating = row["rating"]
-        # Include only positive feedback for training, negative for DPO
         if format == "jsonl":
             if rating == 1:
-                # Standard instruction format
                 lines.append(json.dumps({
                     "messages": [
                         {"role": "user", "content": query},
@@ -165,7 +190,6 @@ def export_training_dataset(format: str = "jsonl") -> str:
                     ]
                 }, ensure_ascii=False))
             elif rating == -1:
-                # Rejected response for DPO
                 lines.append(json.dumps({
                     "prompt": query,
                     "rejected": response,
@@ -183,5 +207,5 @@ def export_training_dataset(format: str = "jsonl") -> str:
 def get_feedback_count() -> int:
     """Get total number of feedback entries."""
     _ensure_table()
-    row = db.fetchone("SELECT COUNT(*) as count FROM feedback")
+    row = _get_db().fetchone("SELECT COUNT(*) as count FROM feedback")
     return row["count"] if row else 0

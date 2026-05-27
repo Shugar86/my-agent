@@ -39,7 +39,7 @@ def execute_code(language, code, timeout=30):
 
 def _run_python(code, timeout):
     """Run Python code in Docker sandbox only."""
-    docker_result = docker_sandbox.run_python(code)
+    docker_result = docker_sandbox.run_python(code, timeout=timeout)
     if docker_result.get("success"):
         return {
             "stdout": docker_result.get("stdout", ""),
@@ -57,10 +57,8 @@ def _run_python(code, timeout):
 
 
 def _run_javascript(code, timeout):
-    """Run JavaScript code in Docker sandbox (node image)."""
-    escaped = code.replace("'", "'\"'\"'")
-    bash_code = f"node -e '{escaped}'"
-    docker_result = docker_sandbox.run_bash(bash_code, image="node:20-slim")
+    """Run JavaScript code in Docker sandbox (node image, file-based — no shell)."""
+    docker_result = docker_sandbox.run_javascript(code, timeout=timeout)
     if docker_result.get("success"):
         return {
             "stdout": docker_result.get("stdout", ""),
@@ -82,7 +80,7 @@ def _run_bash(code, timeout):
     if err:
         return {"error": err}
 
-    docker_result = docker_sandbox.run_bash(code)
+    docker_result = docker_sandbox.run_bash(code, timeout=timeout)
     if docker_result.get("success"):
         return {
             "stdout": docker_result.get("stdout", ""),

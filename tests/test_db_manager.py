@@ -90,12 +90,18 @@ class TestDBManagerPostgreSQL:
             mock_pool.assert_called_once()
 
     def test_fallback_to_sqlite_when_postgres_driver_missing(self):
-        with patch.dict("os.environ", {"DATABASE_URL": "postgresql://localhost/db"}):
-            with patch("core.db_manager.DBManager._init_postgres", side_effect=ImportError("psycopg2 not found")):
-                # Since we patch _init_postgres directly, the fallback logic won't trigger as written.
-                # Instead test via __init__ behavior by mocking import
-                with patch("builtins.__import__", side_effect=lambda name, *args, **kwargs: __import__(name, *args, **kwargs)):
-                    pass  # Placeholder; actual fallback tested in integration
+        import builtins
+
+        real_import = builtins.__import__
+
+        def _import(name, globals=None, locals=None, fromlist=(), level=0):
+            if name in ("psycopg2", "asyncpg") or (fromlist and fromlist[0] in ("psycopg2", "asyncpg")):
+                raise ImportError(f"{name} not available")
+            return real_import(name, globals, locals, fromlist, level)
+
+        with patch("builtins.__import__", side_effect=_import):
+            manager = DBManager("postgresql://localhost/db")
+            assert manager.db_type == "sqlite"
 
     def test_postgres_table_exists(self):
         with patch("psycopg2.pool.ThreadedConnectionPool") as mock_pool:

@@ -1,3 +1,4 @@
+import copy
 import json
 import os
 import yaml
@@ -50,7 +51,7 @@ def save_config(config, path):
 
 
 def _merge(default, override):
-    result = default.copy()
+    result = copy.deepcopy(default)
     for key, value in override.items():
         if key in result and isinstance(result[key], dict) and isinstance(value, dict):
             result[key] = _merge(result[key], value)

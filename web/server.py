@@ -16,6 +16,32 @@ from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 
+def get_client_ip(request: Request) -> str:
+    """Resolve client IP behind reverse proxy (Caddy/nginx)."""
+    forwarded = request.headers.get("X-Forwarded-For")
+    if forwarded:
+        return forwarded.split(",")[0].strip()
+    real_ip = request.headers.get("X-Real-IP")
+    if real_ip:
+        return real_ip.strip()
+    return get_remote_address(request)
+
+
+def _cors_origins() -> list[str]:
+    """Localhost defaults plus optional CORS_ORIGINS env (comma-separated)."""
+    origins = [
+        "http://localhost:3000",
+        "http://localhost:5173",
+        "http://localhost:8020",
+        "http://127.0.0.1:8020",
+        "http://localhost:8000",
+        "http://127.0.0.1:8000",
+    ]
+    extra = os.environ.get("CORS_ORIGINS", "")
+    if extra:
+        origins.extend(part.strip() for part in extra.split(",") if part.strip())
+    return list(dict.fromkeys(origins))
+
 from core.agent_store import AgentStore
 from core.orchestrator import Orchestrator
 from core.auto_agent_factory import AutoAgentFactory
@@ -26,6 +52,7 @@ from core.builder import AgentBuilder
 from core.auth import create_access_token, decode_access_token, set_auth_cookie
 from core.user_manager import UserManager
 from core.db_manager import db
+from core.api_keys import save_api_key, get_api_key, list_api_keys, delete_api_key, load_all_keys_to_env
 from tools.vector_tools import _get_db as get_vector_db
 from core.mcp_manager import MCPServerManager
 from core.redis_client import redis_client
@@ -56,7 +83,7 @@ ACTIVE_SESSIONS = Gauge("active_sessions", "Number of active user sessions", reg
 LLM_TOKEN_COUNT = Counter("llm_tokens_total", "Total LLM tokens generated", ["model"], registry=_prom_registry)
 LLM_ERROR_COUNT = Counter("llm_errors_total", "Total LLM errors", ["error_type"], registry=_prom_registry)
 
-limiter = Limiter(key_func=get_remote_address)
+limiter = Limiter(key_func=get_client_ip)
 
 app = FastAPI(title="My Agent Web UI")
 app.state.limiter = limiter
@@ -81,17 +108,10 @@ app.include_router(teams_router)
 app.include_router(auth_router)
 app.include_router(usage_router)
 
-# CORS — allow localhost origins
+# CORS — localhost + optional CORS_ORIGINS from env
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",
-        "http://localhost:5173",
-        "http://localhost:8020",
-        "http://127.0.0.1:8020",
-        "http://localhost:8000",
-        "http://127.0.0.1:8000",
-    ],
+    allow_origins=_cors_origins(),
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE"],
     allow_headers=["*"],
@@ -101,9 +121,27 @@ app.add_middleware(
 async def limit_request_size(request: Request, call_next):
     max_size = 10 * 1024 * 1024  # 10 MB
     content_length = request.headers.get("content-length")
-    if content_length and int(content_length) > max_size:
-        return JSONResponse(status_code=413, content={"error": "Request too large"})
+    if content_length:
+        try:
+            if int(content_length) > max_size:
+                return JSONResponse(status_code=413, content={"error": "Request too large"})
+        except ValueError:
+            return JSONResponse(status_code=400, content={"error": "Invalid Content-Length header"})
     return await call_next(request)
+
+
+@app.middleware("http")
+async def prometheus_middleware(request: Request, call_next):
+    """Record request count and latency for Prometheus."""
+    import time
+
+    start = time.perf_counter()
+    response = await call_next(request)
+    elapsed = time.perf_counter() - start
+    endpoint = request.url.path
+    REQUEST_COUNT.labels(request.method, endpoint, str(response.status_code)).inc()
+    REQUEST_LATENCY.observe(elapsed)
+    return response
 
 
 @app.middleware("http")
@@ -111,7 +149,7 @@ async def redis_rate_limit_middleware(request: Request, call_next):
     """Redis sliding-window rate limiting for LLM-cost API endpoints."""
     rule = resolve_rate_limit(request.url.path, request.method)
     if rule:
-        client_ip = request.client.host if request.client else "unknown"
+        client_ip = get_client_ip(request)
         user_id = getattr(request.state, "user_id", None)
         if not user_id:
             token = request.cookies.get("access_token")
@@ -249,6 +287,7 @@ async def startup():
     await scheduler_manager.start()
     await user_manager.connect()
     await user_manager.create_default_admin()
+    _init_agent_runtime()
     from core.workflow.executor import rehydrate_all_triggers
     await rehydrate_all_triggers()
     from core.workflow import run_queue
@@ -315,6 +354,7 @@ async def login_page():
 @app.get("/api/health")
 @limiter.limit("60/minute")
 async def health(request: Request):
+    _init_agent_runtime()
     agents = store.list_agents()
     redis_ok = await redis_client.ping()
     return {
@@ -338,11 +378,6 @@ async def metrics():
 # ---------------------------------------------------------------------------
 # API Keys Management
 # ---------------------------------------------------------------------------
-
-from core.api_keys import save_api_key, get_api_key, list_api_keys, delete_api_key, load_all_keys_to_env
-
-# Load saved keys on startup
-load_all_keys_to_env()
 
 
 @app.get("/api/keys")
@@ -479,13 +514,21 @@ async def get_api_keys(request: Request):
     return {"keys": keys}
 
 
-store = AgentStore()
-
+store: AgentStore | None = None
+orchestrator: Orchestrator | None = None
+factory: AutoAgentFactory | None = None
 config = load_config()
 
-orchestrator = Orchestrator(store)
-llm_config = config.get("model", {})
-factory = AutoAgentFactory(store, llm_config)
+
+def _init_agent_runtime() -> None:
+    """Lazy-init agent runtime (deferred from import to startup)."""
+    global store, orchestrator, factory
+    if store is not None:
+        return
+    load_all_keys_to_env()
+    store = AgentStore()
+    orchestrator = Orchestrator(store)
+    factory = AutoAgentFactory(store, config.get("model", {}))
 
 
 class ChatRequest(BaseModel):
@@ -873,9 +916,15 @@ async def update_config(request: Request):
     if getattr(request.state, "user_role", "") != "admin":
         raise HTTPException(status_code=403, detail="Admin only")
     body = await request.json()
+    if not isinstance(body, dict):
+        raise HTTPException(status_code=400, detail="Config must be a JSON object")
+    from core.config import _merge
+
+    global config
+    config = _merge(config, body)
     config_path = os.path.join("config", "agent.json")
     with open(config_path, "w", encoding="utf-8") as f:
-        json.dump(body, f, indent=2, ensure_ascii=False)
+        json.dump(config, f, indent=2, ensure_ascii=False)
     return {"status": "updated"}
 
 

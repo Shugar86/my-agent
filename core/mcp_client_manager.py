@@ -8,6 +8,7 @@ import json
 import uuid
 import asyncio
 import subprocess
+import threading
 from typing import Dict, List, Optional, Any
 from pathlib import Path
 
@@ -36,6 +37,7 @@ class MCPClientConnection:
         self._process: Optional[subprocess.Popen] = None
         self._http_session = None
         self._initialized = False
+        self._stdio_lock = threading.Lock()
 
     async def initialize(self) -> bool:
         """Initialize the connection and discover capabilities."""
@@ -89,24 +91,26 @@ class MCPClientConnection:
 
     def _send_stdio(self, data: str):
         """Send JSON-RPC line to stdio subprocess."""
-        if self._process and self._process.stdin:
-            self._process.stdin.write(data + "\n")
-            self._process.stdin.flush()
+        with self._stdio_lock:
+            if self._process and self._process.stdin:
+                self._process.stdin.write(data + "\n")
+                self._process.stdin.flush()
 
     def _recv_stdio(self, timeout: int = 10) -> Optional[Dict]:
         """Receive single JSON-RPC response from stdio subprocess (blocking)."""
-        if not self._process or not self._process.stdout:
-            return None
-        try:
-            line = self._process.stdout.readline()
-            if not line:
+        with self._stdio_lock:
+            if not self._process or not self._process.stdout:
                 return None
-            return json.loads(line)
-        except json.JSONDecodeError:
-            return None
-        except OSError as e:
-            print(f"[MCP Client] stdio recv error: {e}")
-            return None
+            try:
+                line = self._process.stdout.readline()
+                if not line:
+                    return None
+                return json.loads(line)
+            except json.JSONDecodeError:
+                return None
+            except OSError as e:
+                print(f"[MCP Client] stdio recv error: {e}")
+                return None
 
     async def _send_stdio_async(self, data: str) -> None:
         """Send JSON-RPC without blocking the event loop."""

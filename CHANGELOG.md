@@ -1,5 +1,30 @@
 # Changelog — My Agent
 
+## 3.5.3 — 2026-05-27 (TROUBLES remediation + re-audit)
+
+### Security & build
+- **pyproject.toml**: `[tool.setuptools.packages.find]` — `uv build` / `pip install -e .` работают.
+- **JS execution**: `run_javascript()` через file mount в Docker (без shell injection).
+- **file_tools**: sandbox `AGENT_WORKSPACE` + `validate_safe_path_or_error`.
+- **CI**: `scripts/check-secrets.sh` + GitHub workflow `secrets-check.yml`.
+
+### Runtime & production
+- **user_manager**: SQLite через `asyncio.to_thread`; fail-closed admin при `ENV=production` без `AGENT_PASSWORD`.
+- **feedback**: lazy `_get_db()` вместо import-time singleton.
+- **web/server.py**: `_init_agent_runtime()` на startup; `CORS_ORIGINS`; `get_client_ip()` (X-Forwarded-For); Prometheus request metrics middleware.
+- **memory_manager**: `replace_messages` / atomic compress — без дубликатов сообщений.
+- **alembic/env.py**: миграции читают `DATABASE_URL`.
+- **wizard**: отклонение пароля &lt; 12 символов.
+
+### Fixes (medium backlog)
+- MCP skill URI path traversal; demo_router CWD; MCP stdio lock; session_cache rate-limit key; agent_store KeyError guard; docker-compose без deprecated `version:`.
+
+### Docs & tests
+- Re-audit gate **60/60 PASS** — см. [TROUBLES.md](TROUBLES.md) § Re-audit post-remediation.
+- `tests/conftest.py`, `tests/test_file_tools.py`.
+
+---
+
 ## 3.5.2 — 2026-05-27 (Live chat + OpenRouter + Postgres stability)
 
 ### LLM & Demo

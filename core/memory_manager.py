@@ -94,21 +94,22 @@ class MemoryManager:
             messages.append(msg)
         return Session(session_id, messages)
 
+    @staticmethod
+    def _tool_calls_json(msg: dict) -> str | None:
+        tool_calls = msg.get("tool_calls")
+        if tool_calls is None:
+            return None
+        return json.dumps(tool_calls)
+
     def save_session(self, session):
         if not self.enabled:
             return
         if self._use_pg:
             raise RuntimeError("Use save_session_async for PostgreSQL backend")
 
-        for msg in session.messages:
-            tool_calls = json.dumps(msg.get("tool_calls")) if msg.get("tool_calls") else None
-            self._db.add_message(
-                session_id=session.id,
-                role=msg.get("role", "user"),
-                content=msg.get("content"),
-                tool_call_id=msg.get("tool_call_id"),
-                tool_calls=tool_calls,
-            )
+        if not self._db.get_session(session.id):
+            self._db.create_session(session.id, source="agent")
+        self._db.replace_messages(session.id, session.messages)
 
     async def save_session_async(self, session):
         if not self.enabled:
@@ -117,14 +118,7 @@ class MemoryManager:
             self.save_session(session)
             return
 
-        for msg in session.messages:
-            await self._pg.add_message(
-                session_id=session.id,
-                role=msg.get("role", "user"),
-                content=msg.get("content"),
-                tool_call_id=msg.get("tool_call_id"),
-                tool_calls=msg.get("tool_calls"),
-            )
+        await self._pg.replace_messages(session.id, session.messages)
 
     def search(self, query):
         if not self.enabled or self._use_pg:
@@ -181,20 +175,7 @@ class MemoryManager:
 
         # New message list: head + summary + tail
         new_messages = head + [summary_msg] + tail
-
-        # Replace messages in the SQLite DB
-        # Delete existing session data and recreate fresh session entry
-        self._db.delete_session(session_id)
-        self._db.create_session(session_id, source="agent")
-        for msg in new_messages:
-            tool_calls = json.dumps(msg.get("tool_calls")) if msg.get("tool_calls") else None
-            self._db.add_message(
-                session_id=session_id,
-                role=msg.get("role", "user"),
-                content=msg.get("content"),
-                tool_call_id=msg.get("tool_call_id"),
-                tool_calls=tool_calls,
-            )
+        self._db.compress_session_atomic(session.id, new_messages, source="agent")
 
 
     def is_postgres(self):

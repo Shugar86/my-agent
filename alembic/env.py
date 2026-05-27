@@ -4,6 +4,7 @@ Schema changes must use hand-written migrations (001-005+).
 Autogenerate is for additive ORM tables only; include_object prevents
 accidental DROP proposals for DB-only tables not in core.models.
 """
+import os
 from logging.config import fileConfig
 from sqlalchemy import engine_from_config, pool
 from alembic import context
@@ -28,7 +29,19 @@ def include_object(object, name, type_, reflected, compare_to):
     return True
 
 
+def _resolve_db_url() -> str:
+    """Prefer DATABASE_URL from environment over alembic.ini default."""
+    return os.getenv("DATABASE_URL") or config.get_main_option("sqlalchemy.url")
+
+
+def _apply_db_url() -> None:
+    url = _resolve_db_url()
+    if url:
+        config.set_main_option("sqlalchemy.url", url)
+
+
 def run_migrations_offline() -> None:
+    _apply_db_url()
     url = config.get_main_option("sqlalchemy.url")
     context.configure(
         url=url,
@@ -41,6 +54,7 @@ def run_migrations_offline() -> None:
         context.run_migrations()
 
 def run_migrations_online() -> None:
+    _apply_db_url()
     connectable = engine_from_config(
         config.get_section(config.config_ini_section, {}),
         prefix="sqlalchemy.",

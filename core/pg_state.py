@@ -112,11 +112,41 @@ class PGStateManager:
                 role,
                 content,
                 kwargs.get("tool_call_id"),
-                json.dumps(kwargs.get("tool_calls")) if kwargs.get("tool_calls") else None,
+                json.dumps(kwargs.get("tool_calls")) if kwargs.get("tool_calls") is not None else None,
                 kwargs.get("tool_name"),
                 time.time(),
                 kwargs.get("finish_reason"),
             )
+
+    async def replace_messages(self, session_id: str, messages: list) -> None:
+        """Atomically replace all messages for a session."""
+        await self.ensure_connected()
+        async with self._pool.acquire() as conn:
+            async with conn.transaction():
+                await conn.execute(
+                    "DELETE FROM chat_messages WHERE session_id = $1", session_id
+                )
+                now = time.time()
+                for msg in messages:
+                    tool_calls = msg.get("tool_calls")
+                    await conn.execute(
+                        """INSERT INTO chat_messages (session_id, role, content, tool_call_id, tool_calls,
+                           tool_name, timestamp, finish_reason)
+                           VALUES ($1, $2, $3, $4, $5, $6, $7, $8)""",
+                        session_id,
+                        msg.get("role", "user"),
+                        msg.get("content"),
+                        msg.get("tool_call_id"),
+                        json.dumps(tool_calls) if tool_calls is not None else None,
+                        msg.get("tool_name"),
+                        now,
+                        msg.get("finish_reason"),
+                    )
+                await conn.execute(
+                    "UPDATE chat_sessions SET message_count = $1 WHERE id = $2",
+                    len(messages),
+                    session_id,
+                )
 
     async def get_messages(self, session_id: str, limit: int = None) -> list:
         await self.ensure_connected()

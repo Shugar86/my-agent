@@ -1,11 +1,14 @@
 """User Manager — multi‑user support with PostgreSQL and SQLite fallback."""
 
+import asyncio
 import os
 import json
 import uuid
 import logging
 import re
+import sqlite3
 from datetime import datetime, timezone
+from typing import Any, Callable
 
 import bcrypt
 
@@ -20,7 +23,7 @@ class UserManager:
     """Manage users, login, registration, and per‑user API keys.
 
     Uses PostgreSQL (async) when DATABASE_URL is set, otherwise falls back
-    to a local SQLite store (sync).
+    to a local SQLite store (sync calls wrapped in asyncio.to_thread).
     """
 
     def __init__(self):
@@ -32,6 +35,10 @@ class UserManager:
             and self._db_url.startswith(("postgresql://", "postgres://"))
         )
 
+    async def _run_sqlite(self, fn: Callable[[], Any]) -> Any:
+        """Run a blocking SQLite operation off the event loop."""
+        return await asyncio.to_thread(fn)
+
     async def connect(self):
         if self._use_pg:
             import asyncpg
@@ -40,22 +47,25 @@ class UserManager:
             )
             await self._init_pg()
         else:
-            import sqlite3
             from pathlib import Path
 
             url = self._db_url or "sqlite:///data/agent.db"
             db_path = url.replace("sqlite:///", "", 1)
-            Path(db_path).parent.mkdir(parents=True, exist_ok=True)
-            self._sqlite_conn = sqlite3.connect(db_path, check_same_thread=False)
-            self._sqlite_conn.row_factory = sqlite3.Row
+
+            def _connect() -> sqlite3.Connection:
+                Path(db_path).parent.mkdir(parents=True, exist_ok=True)
+                conn = sqlite3.connect(db_path, check_same_thread=False)
+                conn.row_factory = sqlite3.Row
+                return conn
+
+            self._sqlite_conn = await self._run_sqlite(_connect)
+            await self._init_sqlite()
 
     async def close(self):
         if self._pool:
             await self._pool.close()
         if self._sqlite_conn:
-            self._sqlite_conn.close()
-
-    # --- Schema ---
+            await self._run_sqlite(self._sqlite_conn.close)
 
     async def _init_pg(self):
         async with self._pool.acquire() as conn:
@@ -78,11 +88,21 @@ class UserManager:
             user["password"] = user["password_hash"]
         return user
 
-    def _init_sqlite(self):
-        """Schema managed by Alembic — no runtime DDL."""
-        pass
+    async def _init_sqlite(self):
+        """Ensure SQLite has columns expected by OAuth flows."""
 
-    # --- User CRUD ---
+        def _ddl() -> None:
+            for stmt in (
+                "ALTER TABLE users ADD COLUMN auth_provider TEXT DEFAULT 'local'",
+                "ALTER TABLE users ADD COLUMN email TEXT",
+            ):
+                try:
+                    self._sqlite_conn.execute(stmt)
+                except sqlite3.OperationalError:
+                    pass
+            self._sqlite_conn.commit()
+
+        await self._run_sqlite(_ddl)
 
     async def create_user(self, username: str, password: str, role: str = "user") -> dict | None:
         existing = await self.get_user_by_username(username)
@@ -101,11 +121,15 @@ class UserManager:
                     user_id, username, pwd_hash, role, "{}",
                 )
         else:
-            self._sqlite_conn.execute(
-                "INSERT INTO users (id, username, password_hash, role, api_keys, created_at) VALUES (?,?,?,?,?,?)",
-                (user_id, username, pwd_hash, role, "{}", now),
-            )
-            self._sqlite_conn.commit()
+            def _insert() -> None:
+                self._sqlite_conn.execute(
+                    "INSERT INTO users (id, username, password_hash, role, api_keys, created_at) "
+                    "VALUES (?,?,?,?,?,?)",
+                    (user_id, username, pwd_hash, role, "{}", now),
+                )
+                self._sqlite_conn.commit()
+
+            await self._run_sqlite(_insert)
 
         return {"id": user_id, "username": username, "role": role}
 
@@ -123,8 +147,13 @@ class UserManager:
                 row = await conn.fetchrow("SELECT * FROM users WHERE username = $1", username)
                 return self._normalize_user(dict(row) if row else None)
         if self._sqlite_conn:
-            cur = self._sqlite_conn.execute("SELECT * FROM users WHERE username = ?", (username,))
-            row = cur.fetchone()
+            def _fetch():
+                cur = self._sqlite_conn.execute(
+                    "SELECT * FROM users WHERE username = ?", (username,)
+                )
+                return cur.fetchone()
+
+            row = await self._run_sqlite(_fetch)
             return self._normalize_user(dict(row) if row else None)
         return None
 
@@ -134,8 +163,13 @@ class UserManager:
                 row = await conn.fetchrow("SELECT * FROM users WHERE id = $1", user_id)
                 return self._normalize_user(dict(row) if row else None)
         if self._sqlite_conn:
-            cur = self._sqlite_conn.execute("SELECT * FROM users WHERE id = ?", (user_id,))
-            row = cur.fetchone()
+            def _fetch():
+                cur = self._sqlite_conn.execute(
+                    "SELECT * FROM users WHERE id = ?", (user_id,)
+                )
+                return cur.fetchone()
+
+            row = await self._run_sqlite(_fetch)
             return self._normalize_user(dict(row) if row else None)
         return None
 
@@ -145,8 +179,13 @@ class UserManager:
             async with self._pool.acquire() as conn:
                 await conn.execute("UPDATE users SET api_keys = $1 WHERE id = $2", payload, user_id)
         else:
-            self._sqlite_conn.execute("UPDATE users SET api_keys = ? WHERE id = ?", (payload, user_id))
-            self._sqlite_conn.commit()
+            def _update() -> None:
+                self._sqlite_conn.execute(
+                    "UPDATE users SET api_keys = ? WHERE id = ?", (payload, user_id)
+                )
+                self._sqlite_conn.commit()
+
+            await self._run_sqlite(_update)
 
     async def get_api_keys(self, user_id: str) -> dict:
         user = await self.get_user_by_id(user_id)
@@ -162,7 +201,17 @@ class UserManager:
         admin = await self.get_user_by_username("admin")
         if admin:
             return admin
-        return await self.create_user("admin", os.environ.get("AGENT_PASSWORD", "admin"), role="admin")
+
+        password = os.environ.get("AGENT_PASSWORD", "")
+        if os.environ.get("ENV") == "production":
+            if not password or len(password) < 12:
+                raise RuntimeError(
+                    "AGENT_PASSWORD must be set and at least 12 characters in production"
+                )
+        elif not password:
+            password = "admin"
+
+        return await self.create_user("admin", password, role="admin")
 
     async def get_user_by_email(self, email: str) -> dict | None:
         if self._pool:
@@ -170,9 +219,14 @@ class UserManager:
                 row = await conn.fetchrow("SELECT * FROM users WHERE email = $1", email.lower())
                 return self._normalize_user(dict(row) if row else None)
         if self._sqlite_conn:
-            cur = self._sqlite_conn.execute("SELECT * FROM users WHERE email = ?", (email.lower(),))
-            row = cur.fetchone()
-            return dict(row) if row else None
+            def _fetch():
+                cur = self._sqlite_conn.execute(
+                    "SELECT * FROM users WHERE email = ?", (email.lower(),)
+                )
+                return cur.fetchone()
+
+            row = await self._run_sqlite(_fetch)
+            return self._normalize_user(dict(row) if row else None)
         return None
 
     async def get_or_create_from_google(self, email: str, name: str | None = None) -> dict | None:
@@ -203,13 +257,16 @@ class UserManager:
                     user_id, username, pwd_hash, "user", "{}", email.lower(), "google",
                 )
         else:
-            self._sqlite_conn.execute(
-                """INSERT INTO users
-                   (id, username, password_hash, role, api_keys, created_at, email, auth_provider)
-                   VALUES (?,?,?,?,?,?,?,?)""",
-                (user_id, username, pwd_hash, "user", "{}", now, email.lower(), "google"),
-            )
-            self._sqlite_conn.commit()
+            def _insert() -> None:
+                self._sqlite_conn.execute(
+                    """INSERT INTO users
+                       (id, username, password_hash, role, api_keys, created_at, email, auth_provider)
+                       VALUES (?,?,?,?,?,?,?,?)""",
+                    (user_id, username, pwd_hash, "user", "{}", now, email.lower(), "google"),
+                )
+                self._sqlite_conn.commit()
+
+            await self._run_sqlite(_insert)
 
         return {
             "id": user_id,
@@ -226,8 +283,11 @@ class UserManager:
                     "SELECT id, username, role, email, auth_provider, created_at FROM users ORDER BY created_at"
                 )
                 return [dict(r) for r in rows]
-        else:
+
+        def _fetch():
             cur = self._sqlite_conn.execute(
                 "SELECT id, username, role, email, auth_provider, created_at FROM users ORDER BY created_at"
             )
             return [dict(r) for r in cur.fetchall()]
+
+        return await self._run_sqlite(_fetch)

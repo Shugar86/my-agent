@@ -31,7 +31,7 @@ class AgentStore:
     def get_agent(self, agent_id):
         data = self._load()
         for agent in data.get("agents", []):
-            if agent["id"] == agent_id:
+            if agent.get("id") == agent_id:
                 return deepcopy(agent)
         return None
 
