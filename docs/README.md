@@ -12,6 +12,7 @@
 | [PROJECT_GUIDE.md](../PROJECT_GUIDE.md) | RU | Установка, CLI, навыки, troubleshooting |
 | [DEMO.md](../DEMO.md) | Демо / инвесторы | Сценарий 90 сек, Competitor Intelligence |
 | [INVESTOR.md](../INVESTOR.md) | Питч | URL, env, 3-минутный скрипт |
+| [website/BRAND.md](../website/BRAND.md) | Маркетинг | Positioning, CTAs, FeatureTag |
 
 ---
 
@@ -49,7 +50,7 @@
 | [AUDIT_PRODUCTION_2026.md](../AUDIT_PRODUCTION_2026.md) | Production readiness (3.4) |
 | [AUDIT_PRODUCT_2026.md](../AUDIT_PRODUCT_2026.md) | Product depth |
 | [AUDIT_2026.md](../AUDIT_2026.md) | Общий аудит 2026 |
-| [AUDIT_REPORT.md](../AUDIT_REPORT.md) | Метрики |
+| [AUDIT_REPORT.md](../AUDIT_REPORT.md) | UX/metrics snapshot (3.5.0) |
 | [ROADMAP_90_DAYS.md](../ROADMAP_90_DAYS.md) | Дорожная карта |
 | [.planning/](../.planning/) | Внутреннее планирование |
 
@@ -60,5 +61,6 @@
 | Путь | Причина |
 |------|---------|
 | `website/*.html` | Статический лендинг заменён React SPA — см. [website/README-DEPRECATED.md](../website/README-DEPRECATED.md) |
+| `AI_SKILLS.md` (удалён) | Сводка перенесена в `skills/*/SKILL.md` и [PROJECT_GUIDE.md](../PROJECT_GUIDE.md) |
 | `web/static/*.html` (кроме login) | Legacy HTML; продукт в `/app/*` |
 | Порт **8000** в старых заметках | Актуальный порт Docker/VDS: **8020** |
