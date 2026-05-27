@@ -19,6 +19,7 @@ router = APIRouter(prefix="/api/a2a", tags=["a2a"])
 
 # Fallback when Redis is unavailable (dev/test)
 _memory_queue: list[dict[str, Any]] = []
+_MEMORY_QUEUE_MAX = 1000
 
 A2A_QUEUE_PREFIX = "a2a:queue:"
 A2A_BROADCAST_KEY = "a2a:broadcast"
@@ -40,35 +41,64 @@ def _queue_key(recipient: str) -> str:
 
 
 async def _enqueue(message: dict[str, Any]) -> None:
+    global _memory_queue
     payload = json.dumps(message, ensure_ascii=False)
     if message.get("type") == "broadcast" or message.get("recipient") == "*":
         pushed = await redis_client.queue_push(A2A_BROADCAST_KEY, payload)
         if not pushed:
             _memory_queue.append(message)
+            if len(_memory_queue) > _MEMORY_QUEUE_MAX:
+                _memory_queue = _memory_queue[-_MEMORY_QUEUE_MAX:]
         return
     recipient = message.get("recipient", "")
     pushed = await redis_client.queue_push(_queue_key(recipient), payload)
     if not pushed:
         _memory_queue.append(message)
+        if len(_memory_queue) > _MEMORY_QUEUE_MAX:
+            _memory_queue = _memory_queue[-_MEMORY_QUEUE_MAX:]
+
+
+def _message_matches_recipient(msg: dict[str, Any], recipient: str) -> bool:
+    return msg.get("recipient") in (recipient, "*") or msg.get("type") == "broadcast"
+
+
+async def _pop_from_redis_key(key: str, recipient: str, max_items: int = 200) -> list[dict[str, Any]]:
+    """Destructively pop messages from a Redis queue key."""
+    messages: list[dict[str, Any]] = []
+    is_broadcast_key = key == A2A_BROADCAST_KEY
+
+    for _ in range(max_items):
+        raw = await redis_client.queue_pop(key)
+        if raw is None:
+            break
+        try:
+            msg = json.loads(raw)
+        except json.JSONDecodeError:
+            continue
+        if is_broadcast_key and not _message_matches_recipient(msg, recipient):
+            await redis_client.queue_push(key, raw)
+            continue
+        messages.append(msg)
+    return messages
 
 
 async def _dequeue_for_recipient(recipient: str) -> list[dict[str, Any]]:
+    global _memory_queue
     keys = [_queue_key(recipient), A2A_BROADCAST_KEY]
     messages: list[dict[str, Any]] = []
 
     if await redis_client.ping():
         for key in keys:
-            raw_items = await redis_client.queue_range(key, 0, 199)
-            for raw in raw_items:
-                try:
-                    messages.append(json.loads(raw))
-                except json.JSONDecodeError:
-                    continue
+            messages.extend(await _pop_from_redis_key(key, recipient))
         return messages
 
+    kept: list[dict[str, Any]] = []
     for msg in _memory_queue:
-        if msg.get("recipient") in (recipient, "*") or msg.get("type") == "broadcast":
+        if _message_matches_recipient(msg, recipient):
             messages.append(msg)
+        else:
+            kept.append(msg)
+    _memory_queue = kept
     return messages
 
 

@@ -8,12 +8,16 @@ class FakePage:
     def __init__(self):
         self.url = "https://example.com"
         self.title_val = "Example"
+        self.closed = False
 
     def goto(self, url, wait_until=None, timeout=None):
         self.url = url
 
     def title(self):
         return self.title_val
+
+    def close(self):
+        self.closed = True
 
     def click(self, selector, timeout=None):
         pass
@@ -51,10 +55,12 @@ def reset_browser():
     skill_mod._browser_context = None
     skill_mod._browser = None
     skill_mod._playwright = None
+    skill_mod._active_page = None
     yield
     skill_mod._browser_context = None
     skill_mod._browser = None
     skill_mod._playwright = None
+    skill_mod._active_page = None
 
 
 def test_navigate():
@@ -122,3 +128,23 @@ def test_screenshot():
 def test_close_browser():
     result = close_browser()
     assert result["success"] is True
+
+
+def test_navigate_closes_previous_page():
+    import skills.browser.skill as skill_mod
+
+    with patch("skills.browser.skill.sync_playwright") as mock_pw:
+        mock_ctx = FakeContext()
+        mock_browser = MagicMock()
+        mock_browser.new_context.return_value = mock_ctx
+        pw_instance = MagicMock()
+        pw_instance.chromium.launch.return_value = mock_browser
+        pw_instance.start.return_value = pw_instance
+        mock_pw.return_value = pw_instance
+
+        navigate("https://example.com")
+        first_page = skill_mod._active_page
+        navigate("https://example.org")
+        assert first_page.closed is True
+        assert skill_mod._active_page is not first_page
+        assert skill_mod._active_page.closed is False

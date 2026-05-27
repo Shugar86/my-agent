@@ -195,6 +195,16 @@ class RedisClient:
             logger.warning("Redis queue_range failed: %s", e)
             return []
 
+    async def queue_pop(self, queue_key: str) -> Optional[str]:
+        """Pop the oldest message from a Redis list (FIFO with LPUSH)."""
+        if not self._available or not self._client:
+            return None
+        try:
+            return await self._client.rpop(queue_key)
+        except Exception as e:
+            logger.warning("Redis queue_pop failed: %s", e)
+            return None
+
     async def queue_trim(self, queue_key: str, start: int, end: int) -> bool:
         """Trim a Redis list queue."""
         if not self._available or not self._client:

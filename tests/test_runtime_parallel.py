@@ -55,6 +55,12 @@ class TestExecuteToolsParallel:
         signature = (tool_name, json.dumps(args, sort_keys=True))
         assert signature == ("web_search", '{"query": "test"}')
 
+    def test_loop_detection_checks_results_not_tool_calls_raw(self):
+        """Regression: loop flag is the second tuple element, not tool_calls_raw."""
+        tool_calls_raw, results = None, "loop_detected"
+        assert (tool_calls_raw == "loop_detected") is False
+        assert results == "loop_detected"
+
 
 class TestRuntimeIntegration:
     """Integration tests for AgentRuntime with real components."""

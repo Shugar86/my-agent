@@ -72,7 +72,7 @@ echo   [1] Start Chat (default model)
 echo   [2] Start Chat with Smart Model
 echo   [3] Start Chat with Fast Model
 echo   [4] System Status
-echo   [5] Create Desktop Shortcut
+echo   [5] Create Desktop Shortcut (not available)
 echo   [6] Add to PATH
 echo   [7] Edit API Keys
 echo   [8] Exit
@@ -111,9 +111,9 @@ pause
 goto MENU
 
 :SHORTCUT
-cd /d "%~dp0"
-python "%~dp0scripts\create_shortcut.py"
-echo  [OK] Shortcut created!
+echo.
+echo  [!] Desktop shortcut creation is not supported in this repo.
+echo  Use: python agent.py chat
 pause
 goto MENU
 

@@ -288,7 +288,7 @@ class AgentRuntime:
                     tool_calls, session, recent_tool_calls, budget
                 )
 
-                if tool_calls_raw == "loop_detected":
+                if results == "loop_detected":
                     if self.memory.enabled:
                         await self.memory.persist_session(session)
                     return session.messages[-1]["content"]

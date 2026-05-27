@@ -17,6 +17,7 @@ except Exception:  # pragma: no cover
 _playwright = None
 _browser = None
 _browser_context = None
+_active_page = None
 
 
 def _get_browser():
@@ -34,8 +35,25 @@ def _get_browser():
     return _browser_context
 
 
+def _get_active_page():
+    """Return the current active page, if any."""
+    global _active_page
+    if _active_page is not None:
+        return _active_page
+    ctx = _browser_context
+    if ctx and ctx.pages:
+        return ctx.pages[0]
+    return None
+
+
 def _close_browser():
-    global _playwright, _browser, _browser_context
+    global _playwright, _browser, _browser_context, _active_page
+    if _active_page is not None:
+        try:
+            _active_page.close()
+        except Exception:
+            pass
+        _active_page = None
     if _browser_context:
         _browser_context.close()
         _browser_context = None
@@ -49,9 +67,17 @@ def _close_browser():
 
 def navigate(url: str, wait_until: str = "networkidle") -> dict:
     """Navigate to a URL and wait for page load."""
+    global _active_page
     try:
         ctx = _get_browser()
+        if _active_page is not None:
+            try:
+                _active_page.close()
+            except Exception:
+                pass
+            _active_page = None
         page = ctx.new_page()
+        _active_page = page
         page.goto(url, wait_until=wait_until, timeout=30000)
         title = page.title()
         return {"success": True, "title": title, "url": page.url}
@@ -62,8 +88,7 @@ def navigate(url: str, wait_until: str = "networkidle") -> dict:
 def click(selector: str) -> dict:
     """Click an element by CSS selector."""
     try:
-        ctx = _get_browser()
-        page = ctx.pages[0] if ctx.pages else None
+        page = _get_active_page()
         if not page:
             return {"success": False, "error": "No open page"}
         page.click(selector, timeout=10000)
@@ -75,8 +100,7 @@ def click(selector: str) -> dict:
 def fill_form(selector: str, text: str) -> dict:
     """Fill a form field by CSS selector."""
     try:
-        ctx = _get_browser()
-        page = ctx.pages[0] if ctx.pages else None
+        page = _get_active_page()
         if not page:
             return {"success": False, "error": "No open page"}
         page.fill(selector, text, timeout=10000)
@@ -88,8 +112,7 @@ def fill_form(selector: str, text: str) -> dict:
 def press_key(key: str) -> dict:
     """Press a keyboard key (Enter, ArrowDown, etc.)."""
     try:
-        ctx = _get_browser()
-        page = ctx.pages[0] if ctx.pages else None
+        page = _get_active_page()
         if not page:
             return {"success": False, "error": "No open page"}
         page.keyboard.press(key)
@@ -101,8 +124,7 @@ def press_key(key: str) -> dict:
 def extract_text(selector: Optional[str] = None) -> dict:
     """Extract text from the page or a specific element."""
     try:
-        ctx = _get_browser()
-        page = ctx.pages[0] if ctx.pages else None
+        page = _get_active_page()
         if not page:
             return {"success": False, "error": "No open page"}
         if selector:
@@ -118,8 +140,7 @@ def extract_text(selector: Optional[str] = None) -> dict:
 def extract_links() -> dict:
     """Extract all links from the current page."""
     try:
-        ctx = _get_browser()
-        page = ctx.pages[0] if ctx.pages else None
+        page = _get_active_page()
         if not page:
             return {"success": False, "error": "No open page"}
         links = page.eval_on_selector_all("a", "elements => elements.map(e => ({text: e.innerText, href: e.href}))")
@@ -131,8 +152,7 @@ def extract_links() -> dict:
 def screenshot(full_page: bool = False, selector: Optional[str] = None) -> dict:
     """Take a screenshot. Returns base64 PNG."""
     try:
-        ctx = _get_browser()
-        page = ctx.pages[0] if ctx.pages else None
+        page = _get_active_page()
         if not page:
             return {"success": False, "error": "No open page"}
         if selector:
@@ -151,8 +171,7 @@ def screenshot(full_page: bool = False, selector: Optional[str] = None) -> dict:
 def scroll(direction: str = "down", amount: int = 300) -> dict:
     """Scroll the page."""
     try:
-        ctx = _get_browser()
-        page = ctx.pages[0] if ctx.pages else None
+        page = _get_active_page()
         if not page:
             return {"success": False, "error": "No open page"}
         if direction == "down":
@@ -167,8 +186,7 @@ def scroll(direction: str = "down", amount: int = 300) -> dict:
 def find_element(description: str) -> dict:
     """Semantic element search (simple heuristic: find by text content)."""
     try:
-        ctx = _get_browser()
-        page = ctx.pages[0] if ctx.pages else None
+        page = _get_active_page()
         if not page:
             return {"success": False, "error": "No open page"}
         # Heuristic: query all buttons/links/inputs and filter by inner text

@@ -80,9 +80,9 @@ async def _call_tool(name: str, arguments: Dict[str, Any]) -> Any:
     if not meta:
         raise MCPError(MCPError.METHOD_NOT_FOUND, f"Tool not found: {name}")
     
-    fn = meta.get("execute_fn")
+    fn = meta.get("execute")
     if not fn:
-        raise MCPError(MCPError.INTERNAL_ERROR, f"Tool {name} has no execute_fn")
+        raise MCPError(MCPError.INTERNAL_ERROR, f"Tool {name} has no execute handler")
     
     try:
         if asyncio.iscoroutinefunction(fn):

@@ -358,6 +358,11 @@ def _add_generic_slide(slide, slide_data, theme):
 def save_slide_html(deck: Dict[str, Any], output_dir: str = "output/slides") -> str:
     """Save slide deck as HTML files."""
     os.makedirs(output_dir, exist_ok=True)
+
+    deck_meta = {k: v for k, v in deck.items() if k != "html"}
+    deck_json_path = os.path.join(output_dir, "deck.json")
+    with open(deck_json_path, "w", encoding="utf-8") as f:
+        json.dump(deck_meta, f, ensure_ascii=False, indent=2)
     
     # Save full deck
     deck_path = os.path.join(output_dir, "deck.html")

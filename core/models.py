@@ -1,4 +1,9 @@
-"""SQLAlchemy models for agent.db (Alembic-managed)."""
+"""SQLAlchemy models for agent.db (Alembic-managed).
+
+Only workflow/marketplace tables are modeled here. Other tables (chat_sessions,
+users, teams, etc.) are managed via hand-written Alembic migrations only.
+Do not run autogenerate without reviewing include_object in alembic/env.py.
+"""
 
 from datetime import datetime
 

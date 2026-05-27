@@ -1,4 +1,9 @@
-"""Alembic environment configuration."""
+"""Alembic environment configuration.
+
+Schema changes must use hand-written migrations (001-005+).
+Autogenerate is for additive ORM tables only; include_object prevents
+accidental DROP proposals for DB-only tables not in core.models.
+"""
 from logging.config import fileConfig
 from sqlalchemy import engine_from_config, pool
 from alembic import context
@@ -15,6 +20,14 @@ from core.models import Base
 
 target_metadata = Base.metadata
 
+
+def include_object(object, name, type_, reflected, compare_to):
+    """Skip autogenerate DROP for tables present in DB but not in ORM metadata."""
+    if type_ == "table" and reflected and compare_to is None:
+        return False
+    return True
+
+
 def run_migrations_offline() -> None:
     url = config.get_main_option("sqlalchemy.url")
     context.configure(
@@ -22,6 +35,7 @@ def run_migrations_offline() -> None:
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
+        include_object=include_object,
     )
     with context.begin_transaction():
         context.run_migrations()
@@ -34,7 +48,9 @@ def run_migrations_online() -> None:
     )
     with connectable.connect() as connection:
         context.configure(
-            connection=connection, target_metadata=target_metadata
+            connection=connection,
+            target_metadata=target_metadata,
+            include_object=include_object,
         )
         with context.begin_transaction():
             context.run_migrations()
