@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import logging
 import uuid
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
 from fastapi import APIRouter, HTTPException, Request
@@ -22,7 +22,7 @@ _memory_queue: list[dict[str, Any]] = []
 _MEMORY_QUEUE_MAX = 1000
 
 A2A_QUEUE_PREFIX = "a2a:queue:"
-A2A_BROADCAST_KEY = "a2a:broadcast"
+A2A_DELIVERED_PREFIX = "a2a:delivered:"
 
 
 class A2AMessage(BaseModel):
@@ -36,36 +36,76 @@ class A2AMessage(BaseModel):
     ttl: int = 3600
 
 
+def _now_iso() -> str:
+    return datetime.now(timezone.utc).isoformat()
+
+
+def _expires_at_iso(ttl_seconds: int) -> str:
+    return (datetime.now(timezone.utc) + timedelta(seconds=ttl_seconds)).isoformat()
+
+
+def _is_expired(msg: dict[str, Any]) -> bool:
+    expires_at = msg.get("expires_at")
+    if not expires_at:
+        return False
+    return expires_at < _now_iso()
+
+
 def _queue_key(recipient: str) -> str:
     return f"{A2A_QUEUE_PREFIX}{recipient}"
 
 
+def _list_agent_ids() -> list[str]:
+    from core.agent_store import AgentStore
+
+    return [a["id"] for a in AgentStore().list_agents()]
+
+
+async def _fanout_broadcast(message: dict[str, Any]) -> None:
+    """Deliver broadcast copies to each agent inbox (no shared broadcast queue)."""
+    global _memory_queue
+    agent_ids = _list_agent_ids()
+    if not agent_ids:
+        agent_ids = ["*"]
+
+    for agent_id in agent_ids:
+        copy = {**message, "recipient": agent_id, "type": "broadcast"}
+        payload = json.dumps(copy, ensure_ascii=False)
+        pushed = await redis_client.queue_push(_queue_key(agent_id), payload)
+        if not pushed:
+            _memory_queue.append(copy)
+            if len(_memory_queue) > _MEMORY_QUEUE_MAX:
+                _memory_queue[:] = _memory_queue[-_MEMORY_QUEUE_MAX:]
+
+
 async def _enqueue(message: dict[str, Any]) -> None:
     global _memory_queue
-    payload = json.dumps(message, ensure_ascii=False)
     if message.get("type") == "broadcast" or message.get("recipient") == "*":
-        pushed = await redis_client.queue_push(A2A_BROADCAST_KEY, payload)
-        if not pushed:
-            _memory_queue.append(message)
-            if len(_memory_queue) > _MEMORY_QUEUE_MAX:
-                _memory_queue = _memory_queue[-_MEMORY_QUEUE_MAX:]
+        await _fanout_broadcast(message)
         return
+
     recipient = message.get("recipient", "")
+    payload = json.dumps(message, ensure_ascii=False)
     pushed = await redis_client.queue_push(_queue_key(recipient), payload)
     if not pushed:
         _memory_queue.append(message)
         if len(_memory_queue) > _MEMORY_QUEUE_MAX:
-            _memory_queue = _memory_queue[-_MEMORY_QUEUE_MAX:]
+            _memory_queue[:] = _memory_queue[-_MEMORY_QUEUE_MAX:]
 
 
 def _message_matches_recipient(msg: dict[str, Any], recipient: str) -> bool:
     return msg.get("recipient") in (recipient, "*") or msg.get("type") == "broadcast"
 
 
+async def _mark_delivered(message_id: str) -> None:
+    """Optional delivery audit trail in Redis (24h TTL)."""
+    key = f"{A2A_DELIVERED_PREFIX}{message_id}"
+    await redis_client.set(key, _now_iso(), expire=86400)
+
+
 async def _pop_from_redis_key(key: str, recipient: str, max_items: int = 200) -> list[dict[str, Any]]:
-    """Destructively pop messages from a Redis queue key."""
+    """Destructively pop messages from a Redis per-agent queue."""
     messages: list[dict[str, Any]] = []
-    is_broadcast_key = key == A2A_BROADCAST_KEY
 
     for _ in range(max_items):
         raw = await redis_client.queue_pop(key)
@@ -75,8 +115,9 @@ async def _pop_from_redis_key(key: str, recipient: str, max_items: int = 200) ->
             msg = json.loads(raw)
         except json.JSONDecodeError:
             continue
-        if is_broadcast_key and not _message_matches_recipient(msg, recipient):
-            await redis_client.queue_push(key, raw)
+        if not _message_matches_recipient(msg, recipient):
+            continue
+        if _is_expired(msg):
             continue
         messages.append(msg)
     return messages
@@ -84,16 +125,16 @@ async def _pop_from_redis_key(key: str, recipient: str, max_items: int = 200) ->
 
 async def _dequeue_for_recipient(recipient: str) -> list[dict[str, Any]]:
     global _memory_queue
-    keys = [_queue_key(recipient), A2A_BROADCAST_KEY]
     messages: list[dict[str, Any]] = []
 
     if await redis_client.ping():
-        for key in keys:
-            messages.extend(await _pop_from_redis_key(key, recipient))
+        messages.extend(await _pop_from_redis_key(_queue_key(recipient), recipient))
         return messages
 
     kept: list[dict[str, Any]] = []
     for msg in _memory_queue:
+        if _is_expired(msg):
+            continue
         if _message_matches_recipient(msg, recipient):
             messages.append(msg)
         else:
@@ -102,23 +143,29 @@ async def _dequeue_for_recipient(recipient: str) -> list[dict[str, Any]]:
     return messages
 
 
-@router.post("/send")
-async def a2a_send(request: Request, msg: A2AMessage) -> dict[str, str]:
-    """Send a message to another agent."""
-    message_id = f"a2a-{uuid.uuid4().hex[:12]}"
-    message: dict[str, Any] = {
+def _build_message(msg: A2AMessage, *, message_id: str, msg_type: str | None = None) -> dict[str, Any]:
+    ttl = max(1, msg.ttl)
+    return {
         "id": message_id,
         "sender": msg.sender,
         "recipient": msg.recipient,
-        "type": msg.type,
+        "type": msg_type or msg.type,
         "content": msg.content,
         "task_id": msg.task_id or message_id,
         "skills": msg.skills or [],
         "tools": msg.tools or [],
-        "ttl": msg.ttl,
-        "timestamp": datetime.utcnow().isoformat(),
+        "ttl": ttl,
+        "expires_at": _expires_at_iso(ttl),
+        "timestamp": _now_iso(),
         "status": "pending",
     }
+
+
+@router.post("/send")
+async def a2a_send(request: Request, msg: A2AMessage) -> dict[str, str]:
+    """Send a message to another agent."""
+    message_id = f"a2a-{uuid.uuid4().hex[:12]}"
+    message = _build_message(msg, message_id=message_id)
 
     await _enqueue(message)
 
@@ -150,7 +197,9 @@ async def a2a_send(request: Request, msg: A2AMessage) -> dict[str, str]:
                     "type": "response",
                     "content": result,
                     "task_id": message["task_id"],
-                    "timestamp": datetime.utcnow().isoformat(),
+                    "ttl": message["ttl"],
+                    "expires_at": message["expires_at"],
+                    "timestamp": _now_iso(),
                     "status": "completed",
                 }
                 await _enqueue(response_msg)
@@ -179,8 +228,6 @@ async def a2a_receive(request: Request, body: dict[str, Any]) -> dict[str, Any]:
     all_messages = await _dequeue_for_recipient(recipient)
     messages: list[dict[str, Any]] = []
     for msg in all_messages:
-        if msg.get("ttl", 3600) <= 0:
-            continue
         if msg.get("recipient") not in (recipient, "*") and msg.get("type") != "broadcast":
             continue
         if msg_type and msg.get("type") != msg_type:
@@ -192,6 +239,7 @@ async def a2a_receive(request: Request, body: dict[str, Any]) -> dict[str, Any]:
     for msg in messages:
         if msg.get("status") == "pending":
             msg["status"] = "delivered"
+            await _mark_delivered(msg.get("id", ""))
 
     return {"messages": messages, "count": len(messages)}
 
@@ -221,18 +269,17 @@ async def a2a_list_agents(request: Request) -> dict[str, Any]:
 async def a2a_broadcast(request: Request, msg: A2AMessage) -> dict[str, str]:
     """Broadcast a message to all agents."""
     message_id = f"a2a-broadcast-{uuid.uuid4().hex[:12]}"
-    message = {
-        "id": message_id,
-        "sender": msg.sender,
-        "recipient": "*",
-        "type": "broadcast",
-        "content": msg.content,
-        "task_id": msg.task_id or message_id,
-        "skills": msg.skills or [],
-        "tools": msg.tools or [],
-        "timestamp": datetime.utcnow().isoformat(),
-        "status": "pending",
-    }
+    broadcast_msg = A2AMessage(
+        sender=msg.sender,
+        recipient="*",
+        type="broadcast",
+        content=msg.content,
+        task_id=msg.task_id or message_id,
+        skills=msg.skills,
+        tools=msg.tools,
+        ttl=msg.ttl,
+    )
+    message = _build_message(broadcast_msg, message_id=message_id, msg_type="broadcast")
     await _enqueue(message)
     return {
         "message_id": message_id,

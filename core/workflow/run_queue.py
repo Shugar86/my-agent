@@ -49,16 +49,18 @@ async def enqueue_run(
 
 
 async def recover_stale_jobs() -> int:
-    """Move processing-list jobs back to pending after restart."""
+    """Move processing-list jobs back to pending after restart (atomic per job)."""
     if not await redis_client.ping():
         return 0
-    stale = await redis_client.queue_range(PROCESSING_KEY)
-    for item in stale:
-        await redis_client.queue_push(PENDING_KEY, item)
-    if stale:
-        await redis_client.delete(PROCESSING_KEY)
-        logger.info("Recovered %d stale workflow jobs from processing queue", len(stale))
-    return len(stale)
+    recovered = 0
+    while True:
+        item = await redis_client.queue_rpoplpush(PROCESSING_KEY, PENDING_KEY)
+        if not item:
+            break
+        recovered += 1
+    if recovered:
+        logger.info("Recovered %d stale workflow jobs from processing queue", recovered)
+    return recovered
 
 
 async def mark_orphaned_runs_failed() -> int:

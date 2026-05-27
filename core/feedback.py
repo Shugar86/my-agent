@@ -6,14 +6,32 @@ Uses SQLite via db_manager.
 import json
 import uuid
 import time
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Dict, List, Optional
 from core.db_manager import db
 
 
-def _ensure_table():
-    """Feedback table is created by Alembic migration 005_unified_schema."""
-    pass
+def _ensure_table() -> None:
+    """Ensure feedback table exists (Alembic primary, SQLite dev fallback)."""
+    if db.table_exists("feedback"):
+        return
+    db.execute(
+        """
+        CREATE TABLE IF NOT EXISTS feedback (
+            id TEXT PRIMARY KEY,
+            session_id TEXT,
+            message_id TEXT,
+            query TEXT,
+            response TEXT,
+            rating INTEGER,
+            agent_id TEXT,
+            model TEXT,
+            tools_used TEXT,
+            metadata TEXT,
+            created_at TEXT
+        )
+        """
+    )
 
 
 def submit_feedback(
@@ -30,7 +48,7 @@ def submit_feedback(
     """Submit user feedback on a response."""
     _ensure_table()
     feedback_id = f"fb-{uuid.uuid4().hex[:12]}"
-    now = datetime.utcnow().isoformat()
+    now = datetime.now(timezone.utc).isoformat()
 
     db.execute(
         """

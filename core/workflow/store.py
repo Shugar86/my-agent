@@ -271,11 +271,23 @@ class WorkflowStore:
     def set_onboarding_complete(self, user_id: str, complete: bool = True) -> None:
         """Mark user onboarding as complete."""
         profile = self.get_user_profile(user_id)
-        _db().execute(
-            """INSERT OR REPLACE INTO user_profiles
-               (user_id, onboarding_complete, settings_json) VALUES (?, ?, ?)""",
-            (user_id, 1 if complete else 0, json.dumps(profile.get("settings", {}))),
-        )
+        settings_json = json.dumps(profile.get("settings", {}))
+        flag = 1 if complete else 0
+        if _db().db_type == "postgres":
+            _db().execute(
+                """INSERT INTO user_profiles (user_id, onboarding_complete, settings_json)
+                   VALUES (?, ?, ?)
+                   ON CONFLICT (user_id) DO UPDATE SET
+                     onboarding_complete = EXCLUDED.onboarding_complete,
+                     settings_json = EXCLUDED.settings_json""",
+                (user_id, flag, settings_json),
+            )
+        else:
+            _db().execute(
+                """INSERT OR REPLACE INTO user_profiles
+                   (user_id, onboarding_complete, settings_json) VALUES (?, ?, ?)""",
+                (user_id, flag, settings_json),
+            )
 
     @staticmethod
     def _row_to_workflow(row) -> dict[str, Any]:

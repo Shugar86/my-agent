@@ -205,6 +205,16 @@ class RedisClient:
             logger.warning("Redis queue_pop failed: %s", e)
             return None
 
+    async def queue_rpoplpush(self, source_key: str, dest_key: str) -> Optional[str]:
+        """Atomically move one message from source tail to dest head."""
+        if not self._available or not self._client:
+            return None
+        try:
+            return await self._client.rpoplpush(source_key, dest_key)
+        except Exception as e:
+            logger.warning("Redis queue_rpoplpush failed: %s", e)
+            return None
+
     async def queue_trim(self, queue_key: str, start: int, end: int) -> bool:
         """Trim a Redis list queue."""
         if not self._available or not self._client:

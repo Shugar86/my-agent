@@ -7,7 +7,7 @@ import os
 import json
 import logging
 from typing import Optional
-from datetime import datetime
+from datetime import datetime, timezone
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.jobstores.sqlalchemy import SQLAlchemyJobStore
@@ -156,12 +156,15 @@ class SchedulerManager:
 
         jobs = self._scheduler.get_jobs()
         result: list[dict] = []
+        log_available = _dm.db.table_exists("scheduled_jobs_log")
         for job in jobs:
-            last_row = _dm.db.fetchone(
-                """SELECT executed_at, status FROM scheduled_jobs_log
-                   WHERE job_id = ? ORDER BY executed_at DESC LIMIT 1""",
-                (job.id,),
-            )
+            last_row = None
+            if log_available:
+                last_row = _dm.db.fetchone(
+                    """SELECT executed_at, status FROM scheduled_jobs_log
+                       WHERE job_id = ? ORDER BY executed_at DESC LIMIT 1""",
+                    (job.id,),
+                )
             paused = job.next_run_time is None
             result.append(
                 {
@@ -192,6 +195,32 @@ class SchedulerManager:
 scheduler_manager = SchedulerManager()
 
 
+def _now_iso() -> str:
+    return datetime.now(timezone.utc).isoformat()
+
+
+def _log_scheduled_job(
+    job_id: str,
+    description: str,
+    result: str,
+    status: str,
+) -> None:
+    """Persist scheduler execution log; skip gracefully if table missing."""
+    from core.db_manager import db
+
+    if not db.table_exists("scheduled_jobs_log"):
+        logger.warning("scheduled_jobs_log table missing; skipping job log for %s", job_id)
+        return
+    try:
+        db.execute(
+            "INSERT INTO scheduled_jobs_log (job_id, description, result, status, executed_at) "
+            "VALUES (?, ?, ?, ?, ?)",
+            (job_id, description, result[:2000], status, _now_iso()),
+        )
+    except Exception as exc:
+        logger.warning("Failed to write scheduled_jobs_log for %s: %s", job_id, exc)
+
+
 def _run_scheduled_task(description: str, agent_role: str, job_id: str):
     """Callback executed by APScheduler."""
     import asyncio
@@ -213,19 +242,10 @@ async def _execute_scheduled(description: str, agent_role: str, job_id: str):
         agent = builder.build()
         result = await agent.run(description)
         logger.info("Scheduled job %s completed. Result length: %s", job_id, len(result))
-        # Persist execution log in DB
-        from core.db_manager import db
-        db.execute(
-            "INSERT INTO scheduled_jobs_log (job_id, description, result, status, executed_at) VALUES (?, ?, ?, ?, ?)",
-            (job_id, description, result[:2000], "success", datetime.utcnow().isoformat()),
-        )
+        _log_scheduled_job(job_id, description, result, "success")
     except Exception as e:
         logger.exception("Scheduled job %s failed", job_id)
-        from core.db_manager import db
-        db.execute(
-            "INSERT INTO scheduled_jobs_log (job_id, description, result, status, executed_at) VALUES (?, ?, ?, ?, ?)",
-            (job_id, description, str(e)[:2000], "error", datetime.utcnow().isoformat()),
-        )
+        _log_scheduled_job(job_id, description, str(e), "error")
 
 
 def _run_workflow_task(workflow_id: str, job_id: str):
@@ -242,21 +262,15 @@ def _run_workflow_task(workflow_id: str, job_id: str):
 async def _execute_workflow(workflow_id: str, job_id: str):
     """Execute a workflow from scheduler."""
     from core.workflow.executor import WorkflowExecutor
-    from core.db_manager import db
+
     try:
         executor = WorkflowExecutor()
         result = await executor.run(workflow_id, trigger_payload={"scheduled": True, "job_id": job_id})
         status = "success" if result.get("success") else "error"
-        db.execute(
-            "INSERT INTO scheduled_jobs_log (job_id, description, result, status, executed_at) VALUES (?, ?, ?, ?, ?)",
-            (job_id, f"workflow:{workflow_id}", str(result)[:2000], status, datetime.utcnow().isoformat()),
-        )
+        _log_scheduled_job(job_id, f"workflow:{workflow_id}", str(result), status)
     except Exception as e:
         logger.exception("Workflow job %s failed", job_id)
-        db.execute(
-            "INSERT INTO scheduled_jobs_log (job_id, description, result, status, executed_at) VALUES (?, ?, ?, ?, ?)",
-            (job_id, f"workflow:{workflow_id}", str(e)[:2000], "error", datetime.utcnow().isoformat()),
-        )
+        _log_scheduled_job(job_id, f"workflow:{workflow_id}", str(e), "error")
 
 
 def _run_email_poll_task(workflow_id: str, node_id: str, job_id: str):
@@ -275,8 +289,6 @@ async def _execute_email_poll(workflow_id: str, node_id: str, job_id: str):
     from core.workflow.executor import WorkflowExecutor
     from core.workflow.store import workflow_store
     from core.workflow.state import load_state, save_state
-    from core.db_manager import db
-
     try:
         wf = workflow_store.get_workflow(workflow_id)
         if not wf or wf.get("status") != "active":
@@ -308,13 +320,7 @@ async def _execute_email_poll(workflow_id: str, node_id: str, job_id: str):
             user_id=owner_id,
         )
         status = "success" if run_result.get("success") else "error"
-        db.execute(
-            "INSERT INTO scheduled_jobs_log (job_id, description, result, status, executed_at) VALUES (?, ?, ?, ?, ?)",
-            (job_id, f"email_poll:{workflow_id}", str(run_result)[:2000], status, datetime.utcnow().isoformat()),
-        )
+        _log_scheduled_job(job_id, f"email_poll:{workflow_id}", str(run_result), status)
     except Exception as e:
         logger.exception("Email poll job %s failed", job_id)
-        db.execute(
-            "INSERT INTO scheduled_jobs_log (job_id, description, result, status, executed_at) VALUES (?, ?, ?, ?, ?)",
-            (job_id, f"email_poll:{workflow_id}", str(e)[:2000], "error", datetime.utcnow().isoformat()),
-        )
+        _log_scheduled_job(job_id, f"email_poll:{workflow_id}", str(e), "error")

@@ -12,7 +12,16 @@ from core.redis_client import redis_client
 from core.state_db import StateDB
 
 logger = logging.getLogger(__name__)
-state_db = StateDB()
+
+_state_db: StateDB | None = None
+
+
+def _get_state_db() -> StateDB:
+    """Lazy StateDB singleton — avoids import-time failure if data/ is missing."""
+    global _state_db
+    if _state_db is None:
+        _state_db = StateDB()
+    return _state_db
 
 
 class SessionCache:
@@ -48,7 +57,7 @@ class SessionCache:
 
         # Fallback to SQLite
         try:
-            messages = state_db.get_messages(session_id)
+            messages = _get_state_db().get_messages(session_id)
             # Populate Redis
             if messages:
                 await SessionCache.set_messages(session_id, messages)
@@ -71,7 +80,7 @@ class SessionCache:
             logger.debug("Redis session store failed: %s", e)
             # Fallback to SQLite
             try:
-                state_db.save_messages(session_id, messages)
+                _get_state_db().save_messages(session_id, messages)
                 return False
             except Exception as e2:
                 logger.warning("SQLite session store failed: %s", e2)
@@ -92,7 +101,7 @@ class SessionCache:
         except Exception:
             pass
         try:
-            state_db.clear_session(session_id)
+            _get_state_db().clear_session(session_id)
         except Exception:
             pass
         return True

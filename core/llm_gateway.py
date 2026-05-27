@@ -143,18 +143,10 @@ class LLMGateway:
         # Phase 2: Try fallback model (different provider ideally)
         if self.fallback and last_error is not None:
             logger.info("Trying fallback model: %s", self.fallback)
+            fallback_kwargs = self._build_kwargs(messages, tools, model=self.fallback, **extra_kwargs)
             for attempt in range(1, 3):  # 2 attempts on fallback
                 try:
-                    kwargs["model"] = self.fallback
-                    if self.fallback_api_key:
-                        kwargs["api_key"] = self.fallback_api_key
-                    fb_base = resolve_kimi_base_url(self.fallback_api_key, self.fallback_base_url)
-                    if fb_base:
-                        kwargs["api_base"] = fb_base
-                    elif self.fallback_base_url:
-                        kwargs["api_base"] = self.fallback_base_url
-                    apply_kimi_headers(kwargs)
-                    response = await litellm.acompletion(**kwargs)
+                    response = await litellm.acompletion(**fallback_kwargs)
                     return self._normalize_message(response.choices[0].message)
                 except Exception as e:
                     category, should_retry = APIErrorClassifier.classify_error(e)
@@ -180,19 +172,15 @@ class LLMGateway:
             yield {"type": "error", "content": str(last_error or "Stream failed")}
             return
         logger.info("Stream fallback to model: %s", self.fallback)
+        fallback_kwargs = self._build_kwargs(
+            kwargs.get("messages", []),
+            kwargs.get("tools"),
+            model=self.fallback,
+        )
+        fallback_kwargs["stream"] = True
         for attempt in range(1, 3):
             try:
-                kwargs["model"] = self.fallback
-                kwargs["stream"] = True
-                if self.fallback_api_key:
-                    kwargs["api_key"] = self.fallback_api_key
-                fb_base = resolve_kimi_base_url(self.fallback_api_key, self.fallback_base_url)
-                if fb_base:
-                    kwargs["api_base"] = fb_base
-                elif self.fallback_base_url:
-                    kwargs["api_base"] = self.fallback_base_url
-                apply_kimi_headers(kwargs)
-                response = await litellm.acompletion(**kwargs)
+                response = await litellm.acompletion(**fallback_kwargs)
                 async for chunk in response:
                     delta = chunk.choices[0].delta if chunk.choices else None
                     if delta:
@@ -280,20 +268,30 @@ class LLMGateway:
             message.content = content
         return message
 
-    def _build_kwargs(self, messages, tools=None, **extra_kwargs):
+    def _build_kwargs(self, messages, tools=None, model: str | None = None, **extra_kwargs):
+        target_model = model or self.primary
         kwargs = {
-            "model": self.primary,
+            "model": target_model,
             "messages": messages,
             **self.params,
             **extra_kwargs,
         }
-        if self.api_key:
-            kwargs["api_key"] = self.api_key
-        resolved_base = resolve_kimi_base_url(self.api_key, self.base_url)
-        if resolved_base:
-            kwargs["api_base"] = resolved_base
-        elif self.base_url:
-            kwargs["api_base"] = self.base_url
+        if model == self.fallback or (model is None and target_model == self.fallback):
+            if self.fallback_api_key:
+                kwargs["api_key"] = self.fallback_api_key
+            fb_base = resolve_kimi_base_url(self.fallback_api_key, self.fallback_base_url)
+            if fb_base:
+                kwargs["api_base"] = fb_base
+            elif self.fallback_base_url:
+                kwargs["api_base"] = self.fallback_base_url
+        else:
+            if self.api_key:
+                kwargs["api_key"] = self.api_key
+            resolved_base = resolve_kimi_base_url(self.api_key, self.base_url)
+            if resolved_base:
+                kwargs["api_base"] = resolved_base
+            elif self.base_url:
+                kwargs["api_base"] = self.base_url
         if tools:
             kwargs["tools"] = tools
         return apply_kimi_headers(kwargs)

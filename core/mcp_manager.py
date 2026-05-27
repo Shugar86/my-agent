@@ -90,14 +90,18 @@ class MCPServerHandle:
         try:
             tools_result = await self.session.list_tools()
             count = 0
+            server_handle = self
             for tool in tools_result.tools:
                 mcp_name = f"mcp_{self.name}_{tool.name}"
                 schema = getattr(tool, 'inputSchema', None) or getattr(tool, 'input_schema', {"type": "object", "properties": {}})
                 desc = tool.description or tool.name
 
-                async def _execute(tool_name=tool.name, s=self.session):
+                async def _execute(tool_name=tool.name, **kwargs):
+                    session = server_handle.session
+                    if not session:
+                        return "MCP error: server not connected"
                     try:
-                        result = await s.call_tool(tool_name, {})
+                        result = await session.call_tool(tool_name, kwargs)
                         if hasattr(result, 'content'):
                             texts = []
                             for item in result.content:

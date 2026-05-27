@@ -76,13 +76,12 @@ def ensure_dirs():
     Path("data").mkdir(parents=True, exist_ok=True)
 
 def setup_logging():
+    """Configure CLI logging with secret redaction on stderr."""
     ensure_dirs()
-    log_file = Path(f"data/logs/agent_{datetime.now().strftime('%Y-%m-%d')}.log")
-    logging.basicConfig(
-        level=logging.INFO,
-        format='%(asctime)s | %(levelname)-8s | %(message)s',
-        handlers=[logging.FileHandler(log_file, encoding='utf-8'), logging.StreamHandler()]
-    )
+    from core.logging_setup import setup_logging as setup_core_logging, setup_verbose_logging
+
+    setup_core_logging(mode="agent", log_level="INFO", force=True)
+    setup_verbose_logging()
 
 def check_first_run():
     if not Path("config/agent.json").exists():

@@ -1,6 +1,9 @@
 import concurrent.futures
 import threading
 import logging
+from functools import partial
+
+from core.async_utils import invoke_execute_fn
 
 logger = logging.getLogger(__name__)
 
@@ -53,7 +56,7 @@ class ToolRegistry:
         logger.info("Tool execute: %s(args=%s)", name, {k: v for k, v in kwargs.items() if k not in ("password", "api_key", "token", "secret")})
         
         with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
-            future = pool.submit(tool["execute"], **kwargs)
+            future = pool.submit(partial(invoke_execute_fn, tool["execute"]), **kwargs)
             try:
                 return future.result(timeout=timeout)
             except concurrent.futures.TimeoutError:

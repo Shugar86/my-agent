@@ -46,6 +46,7 @@ async def run_parallel_agents_async(user_input, agent_configs):
 def run_parallel_agents(user_input, agent_configs):
     """Synchronous parallel agent execution (backward compatibility).
 
-    Delegates to async version via asyncio.run().
+    Delegates to async version via run_coro_sync when a loop is already running.
     """
-    return asyncio.run(run_parallel_agents_async(user_input, agent_configs))
+    from core.async_utils import run_coro_sync
+    return run_coro_sync(run_parallel_agents_async(user_input, agent_configs))

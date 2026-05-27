@@ -2,13 +2,15 @@ import logging
 import os
 from datetime import datetime
 
+from core.logging_setup import RedactingFormatter
+
 
 def setup_logger(name="agent", level="INFO", log_file=None):
     logger = logging.getLogger(name)
     logger.setLevel(getattr(logging, level.upper(), logging.INFO))
 
     if not logger.handlers:
-        formatter = logging.Formatter(
+        formatter = RedactingFormatter(
             "%(asctime)s [%(levelname)s] %(name)s: %(message)s",
             datefmt="%Y-%m-%d %H:%M:%S",
         )

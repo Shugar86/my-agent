@@ -71,12 +71,14 @@ class MCPClientConnection:
                     "clientInfo": {"name": "my-agent", "version": "2.0.0"},
                 },
             }
-            self._send_stdio(json.dumps(init_req))
-            response = self._recv_stdio(timeout=10)
+            await self._send_stdio_async(json.dumps(init_req))
+            response = await self._recv_stdio_async(timeout=10)
             if not response:
                 return False
             # Send initialized notification
-            self._send_stdio(json.dumps({"jsonrpc": "2.0", "method": "notifications/initialized"}))
+            await self._send_stdio_async(
+                json.dumps({"jsonrpc": "2.0", "method": "notifications/initialized"})
+            )
             # Discover tools
             await self._discover_stdio()
             self._initialized = True
@@ -92,47 +94,45 @@ class MCPClientConnection:
             self._process.stdin.flush()
 
     def _recv_stdio(self, timeout: int = 10) -> Optional[Dict]:
-        """Receive single JSON-RPC response from stdio subprocess."""
-        import select
+        """Receive single JSON-RPC response from stdio subprocess (blocking)."""
         if not self._process or not self._process.stdout:
             return None
         try:
-            # Simple blocking read with timeout
-            import threading
-            result = {}
-            def read_line():
-                line = self._process.stdout.readline()
-                if line:
-                    try:
-                        result["data"] = json.loads(line)
-                    except json.JSONDecodeError:
-                        pass
-            t = threading.Thread(target=read_line)
-            t.daemon = True
-            t.start()
-            t.join(timeout=timeout)
-            return result.get("data")
-        except Exception as e:
+            line = self._process.stdout.readline()
+            if not line:
+                return None
+            return json.loads(line)
+        except json.JSONDecodeError:
+            return None
+        except OSError as e:
             print(f"[MCP Client] stdio recv error: {e}")
             return None
+
+    async def _send_stdio_async(self, data: str) -> None:
+        """Send JSON-RPC without blocking the event loop."""
+        await asyncio.to_thread(self._send_stdio, data)
+
+    async def _recv_stdio_async(self, timeout: int = 10) -> Optional[Dict]:
+        """Receive JSON-RPC without blocking the event loop."""
+        return await asyncio.to_thread(self._recv_stdio, timeout)
 
     async def _discover_stdio(self):
         """Discover tools, resources, prompts via stdio."""
         req = {"jsonrpc": "2.0", "id": str(uuid.uuid4()), "method": "tools/list"}
-        self._send_stdio(json.dumps(req))
-        resp = self._recv_stdio(timeout=5)
+        await self._send_stdio_async(json.dumps(req))
+        resp = await self._recv_stdio_async(timeout=5)
         if resp and "result" in resp:
             self._tools = resp["result"].get("tools", [])
         # Resources
         req = {"jsonrpc": "2.0", "id": str(uuid.uuid4()), "method": "resources/list"}
-        self._send_stdio(json.dumps(req))
-        resp = self._recv_stdio(timeout=5)
+        await self._send_stdio_async(json.dumps(req))
+        resp = await self._recv_stdio_async(timeout=5)
         if resp and "result" in resp:
             self._resources = resp["result"].get("resources", [])
         # Prompts
         req = {"jsonrpc": "2.0", "id": str(uuid.uuid4()), "method": "prompts/list"}
-        self._send_stdio(json.dumps(req))
-        resp = self._recv_stdio(timeout=5)
+        await self._send_stdio_async(json.dumps(req))
+        resp = await self._recv_stdio_async(timeout=5)
         if resp and "result" in resp:
             self._prompts = resp["result"].get("prompts", [])
 
@@ -195,8 +195,8 @@ class MCPClientConnection:
             "params": {"name": tool_name, "arguments": arguments},
         }
         if self.transport == "stdio":
-            self._send_stdio(json.dumps(req))
-            resp = self._recv_stdio(timeout=30)
+            await self._send_stdio_async(json.dumps(req))
+            resp = await self._recv_stdio_async(timeout=30)
             return resp.get("result", {}) if resp else {"error": "No response from MCP server"}
         elif self.transport == "http":
             try:
@@ -326,10 +326,8 @@ def register_mcp_tools_with_agent(registry):
         # Create a proxy execute function
         def make_proxy(srv, tname):
             def proxy(**kwargs):
-                import asyncio
-                return asyncio.get_event_loop().run_until_complete(
-                    mcp_client_manager.call_tool(srv, tname, kwargs)
-                )
+                from core.async_utils import run_coro_sync
+                return run_coro_sync(mcp_client_manager.call_tool(srv, tname, kwargs))
             return proxy
         registry.register(
             name=f"mcp_{server}_{tool_name}",

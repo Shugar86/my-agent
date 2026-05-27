@@ -238,7 +238,9 @@ async def startup():
             "Redis unavailable in production. Set REDIS_URL=redis://127.0.0.1:6380/0 "
             "and ensure my-agent-redis is running."
         )
-    run_migrations()
+    import asyncio
+
+    await asyncio.to_thread(run_migrations)
     await scheduler_manager.start()
     await user_manager.connect()
     await user_manager.create_default_admin()

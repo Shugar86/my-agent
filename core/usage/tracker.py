@@ -81,16 +81,27 @@ class UsageTracker:
                ORDER BY day ASC""",
             (team_id, since),
         )
-        top_wf = _db().fetchall(
-            """SELECT json_extract(metadata_json, '$.workflow_id') AS workflow_id,
-                      COUNT(*) AS runs
-               FROM usage_events
-               WHERE team_id = ? AND action = 'workflow_run' AND created_at >= ?
-               GROUP BY workflow_id
-               ORDER BY runs DESC
-               LIMIT 5""",
-            (team_id, since),
-        )
+        if _db().db_type == "postgres":
+            top_wf_sql = """
+                SELECT metadata_json->>'workflow_id' AS workflow_id,
+                       COUNT(*) AS runs
+                FROM usage_events
+                WHERE team_id = ? AND action = 'workflow_run' AND created_at >= ?
+                GROUP BY metadata_json->>'workflow_id'
+                ORDER BY runs DESC
+                LIMIT 5
+            """
+        else:
+            top_wf_sql = """
+                SELECT json_extract(metadata_json, '$.workflow_id') AS workflow_id,
+                       COUNT(*) AS runs
+                FROM usage_events
+                WHERE team_id = ? AND action = 'workflow_run' AND created_at >= ?
+                GROUP BY workflow_id
+                ORDER BY runs DESC
+                LIMIT 5
+            """
+        top_wf = _db().fetchall(top_wf_sql, (team_id, since))
         return {
             "team_id": team_id,
             "period_days": period_days,

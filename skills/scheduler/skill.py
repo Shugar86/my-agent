@@ -1,17 +1,7 @@
 """Scheduler skill tools."""
+from core.async_utils import run_coro_sync
 from core.tool_registry import registry
 from core.scheduler_manager import scheduler_manager
-
-
-def _run_async(coro):
-    """Run an async coroutine from a sync context safely."""
-    import asyncio
-    try:
-        loop = asyncio.get_running_loop()
-    except RuntimeError:
-        return asyncio.run(coro)
-    # Already inside an event loop (e.g., during async tests) — use nest_asyncio approach fallback
-    return loop.run_until_complete(coro)
 
 
 def schedule_task(description: str, trigger_type: str = "interval",
@@ -51,25 +41,22 @@ def schedule_task(description: str, trigger_type: str = "interval",
     else:
         return {"success": False, "error": f"Unknown trigger_type: {trigger_type}"}
 
-    return _run_async(
+    return run_coro_sync(
         scheduler_manager.add_job(job_id, description, trigger_type, trigger_args, agent_role)
     )
 
 
 def cancel_scheduled_task(job_id: str) -> dict:
-    return _run_async(scheduler_manager.remove_job(job_id))
+    return run_coro_sync(scheduler_manager.remove_job(job_id))
 
 
 def list_scheduled_tasks() -> dict:
-    jobs = _run_async(scheduler_manager.list_jobs())
+    jobs = run_coro_sync(scheduler_manager.list_jobs())
     return {"success": True, "jobs": jobs}
 
 
 def get_scheduled_task(job_id: str) -> dict:
-    import asyncio
-    job = asyncio.get_event_loop().run_until_complete(
-        scheduler_manager.get_job(job_id)
-    )
+    job = run_coro_sync(scheduler_manager.get_job(job_id))
     if job:
         return {"success": True, "job": job}
     return {"success": False, "error": "Job not found"}

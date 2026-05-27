@@ -1,5 +1,9 @@
-import asyncio
-import litellm
+import logging
+
+from core.async_utils import run_coro_sync
+from core.kimi_provider import extract_message_content
+
+logger = logging.getLogger(__name__)
 
 
 class ContextCompressor:
@@ -24,27 +28,12 @@ class ContextCompressor:
         recent_msgs = messages[-keep_last:]
 
         combined = self._format_messages(to_compress)
-        summary = self._summarize_sync(combined)
+        summary = run_coro_sync(self._summarize_async(combined))
 
         compressed = [system_msg, {"role": "system", "content": f"Summary of earlier conversation: {summary}"}]
         compressed.extend(recent_msgs)
 
         return compressed
-
-    def _summarize_sync(self, text):
-        try:
-            response = litellm.completion(
-                model=self.llm.primary,
-                messages=[
-                    {"role": "system", "content": "Summarize this conversation in 3-5 sentences. Keep key decisions and context."},
-                    {"role": "user", "content": text[:8000]},
-                ],
-                api_key=self.llm.api_key,
-                max_tokens=500,
-            )
-            return response.choices[0].message.content
-        except Exception:
-            return text[:2000]
 
     # ------------------------------------------------------------------
     # Async-native API
@@ -65,19 +54,24 @@ class ContextCompressor:
 
         return compressed
 
-    async def _summarize_async(self, text):
+    async def _summarize_async(self, text: str) -> str:
         try:
-            response = await litellm.acompletion(
-                model=self.llm.primary,
-                messages=[
-                    {"role": "system", "content": "Summarize this conversation in 3-5 sentences. Keep key decisions and context."},
+            response = await self.llm.chat(
+                [
+                    {
+                        "role": "system",
+                        "content": (
+                            "Summarize this conversation in 3-5 sentences. "
+                            "Keep key decisions and context."
+                        ),
+                    },
                     {"role": "user", "content": text[:8000]},
                 ],
-                api_key=self.llm.api_key,
                 max_tokens=500,
             )
-            return response.choices[0].message.content
-        except Exception:
+            return extract_message_content(response)
+        except (RuntimeError, ValueError, OSError) as exc:
+            logger.warning("Context compression summarize failed: %s", exc)
             return text[:2000]
 
     def _format_messages(self, messages):

@@ -2,6 +2,7 @@
 import os
 import json
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
 from rich.console import Console
 from rich.panel import Panel
@@ -188,7 +189,7 @@ def run_setup_wizard():
         "skills": selected_skills,
         "api_keys": api_keys,
         "admin_password": admin_password,
-        "setup_date": str(Path.home()),
+        "setup_date": datetime.now(timezone.utc).isoformat(),
     }
 
     # Save to .env

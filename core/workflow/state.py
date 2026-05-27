@@ -12,6 +12,12 @@ def _db():
     return _dm.db
 
 
+def _updated_at_sql() -> str:
+    if _db().db_type == "postgres":
+        return "NOW() AT TIME ZONE 'UTC'"
+    return "datetime('now')"
+
+
 def load_state(workflow_id: str) -> dict[str, Any]:
     """Load all key-value state for a workflow."""
     rows = _db().fetchall(
@@ -37,7 +43,8 @@ def save_state(workflow_id: str, state: dict[str, Any]) -> None:
         val_json = json.dumps(value)
         if existing:
             _db().execute(
-                "UPDATE workflow_state SET value_json = ?, updated_at = datetime('now') WHERE workflow_id = ? AND key = ?",
+                f"UPDATE workflow_state SET value_json = ?, updated_at = {_updated_at_sql()} "
+                "WHERE workflow_id = ? AND key = ?",
                 (val_json, workflow_id, key),
             )
         else:

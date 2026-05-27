@@ -250,7 +250,7 @@ class AgentRuntime:
 
             if self.compressor and self.compressor.needs_compression(messages):
                 console.print("[dim]Сжатие контекста...[/dim]")
-                messages = self.compressor.compress(messages)
+                messages = await self.compressor.compress_async(messages)
 
             # Get all available tools
             all_tools = self.skills.get_schemas(self.tool_names) if self.tool_names else self.skills.get_schemas()
