@@ -208,12 +208,10 @@ def _run_scheduled_task(description: str, agent_role: str, job_id: str):
 async def _execute_scheduled(description: str, agent_role: str, job_id: str):
     """Run the agent for a scheduled task."""
     from core.builder import AgentBuilder
-    from core.runtime import Runtime
     try:
         builder = AgentBuilder().set_role(agent_role)
         agent = builder.build()
-        runtime = Runtime(agent)
-        result = await runtime.run(description)
+        result = await agent.run(description)
         logger.info("Scheduled job %s completed. Result length: %s", job_id, len(result))
         # Persist execution log in DB
         from core.db_manager import db

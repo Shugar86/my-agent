@@ -33,6 +33,7 @@ from core.config import load_agent_config, resolve_env_vars
 from core.builder import AgentBuilder
 from core.agent_store import AgentStore
 from core.state_db import StateDB
+from core.session_store import get_state_db_path
 from core.llm_gateway import LLMGateway
 
 # Auto UTF-8
@@ -56,7 +57,7 @@ class AgentTUI:
         self.agent_id = agent_id
         self.model_profile = model_profile
         self.store = AgentStore()
-        self.state_db = StateDB("data/cli_sessions.db")
+        self.state_db = StateDB(get_state_db_path())
 
         # Agent config
         self.agent_config = self.store.get_agent(agent_id) or {}

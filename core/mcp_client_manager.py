@@ -12,6 +12,17 @@ from typing import Dict, List, Optional, Any
 from pathlib import Path
 
 
+def _resolve_env(env: dict) -> dict:
+    """Substitute ${VAR} placeholders from os.environ."""
+    resolved = {}
+    for key, val in env.items():
+        if isinstance(val, str) and val.startswith("${") and val.endswith("}"):
+            resolved[key] = os.environ.get(val[2:-1], "")
+        else:
+            resolved[key] = val
+    return resolved
+
+
 class MCPClientConnection:
     """A single connection to an external MCP server."""
 
@@ -38,7 +49,7 @@ class MCPClientConnection:
         """Start stdio subprocess and perform MCP handshake."""
         command = self.config.get("command")
         args = self.config.get("args", [])
-        env = {**os.environ, **self.config.get("env", {})}
+        env = {**os.environ, **_resolve_env(self.config.get("env", {}))}
         try:
             self._process = subprocess.Popen(
                 [command, *args],

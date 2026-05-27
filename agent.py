@@ -212,11 +212,11 @@ def cmd_serve(args):
     print("\n" + "="*60)
     print("  Starting Web Server")
     print("="*60)
-    print("  URL: http://localhost:8000")
-    print("  API: http://localhost:8000/docs")
+    print("  URL: http://localhost:8020")
+    print("  API: http://localhost:8020/docs")
     print("  Press Ctrl+C to stop")
     print("="*60 + "\n")
-    uvicorn.run("web.server:app", host="0.0.0.0", port=8000, reload=False)
+    uvicorn.run("web.server:app", host="0.0.0.0", port=8020, reload=False)
 
 def cmd_run(args):
     """Run agent once."""

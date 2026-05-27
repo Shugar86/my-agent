@@ -17,7 +17,7 @@ async def client(monkeypatch, tmp_path):
     from core.db_migrate import run_migrations
     dm.db = dm.DBManager(f"sqlite:///{db_path}")
     run_migrations(f"sqlite:///{db_path}")
-    dm.db.create_tables()
+    monkeypatch.setenv("DATABASE_URL", f"sqlite:///{db_path}")
     import web.server as ws
     ws.db = dm.db
     ws.user_manager = UserManager()

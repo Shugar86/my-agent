@@ -13,6 +13,7 @@ from datetime import datetime
 
 from core.state_db import StateDB
 from core.pg_state import PGStateManager, get_database_url
+from core.session_store import get_state_db_path, ensure_state_db_dir
 
 logger = logging.getLogger(__name__)
 
@@ -35,8 +36,8 @@ class MemoryManager:
             self._db = None
             logger.info("MemoryManager: PostgreSQL backend")
         else:
-            db_path = config.get("path", "data/state.db")
-            os.makedirs(os.path.dirname(db_path), exist_ok=True)
+            db_path = config.get("path") or get_state_db_path()
+            ensure_state_db_dir(db_path)
             self._db = StateDB(db_path)
             logger.info("MemoryManager: SQLite backend (%s)", db_path)
 

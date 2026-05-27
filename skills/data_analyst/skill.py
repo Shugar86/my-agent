@@ -143,45 +143,6 @@ def unregister_tools():
     from tools import data_tools
     data_tools.unregister_tools()
 
-def run_python_code(code: str) -> Dict[str, Any]:
-    """Execute Python code in isolated environment and return results."""
-    import io
-    import contextlib
-    
-    stdout_capture = io.StringIO()
-    stderr_capture = io.StringIO()
-    
-    result = {
-        "stdout": "",
-        "stderr": "",
-        "result": None,
-        "error": None
-    }
-    
-    try:
-        # Create restricted globals
-        safe_globals = {
-            "__builtins__": __builtins__,
-            "pd": __import__('pandas'),
-            "np": __import__('numpy'),
-            "plt": __import__('matplotlib.pyplot'),
-            "sns": __import__('seaborn'),
-            "json": json,
-            "os": os,
-        }
-        
-        with contextlib.redirect_stdout(stdout_capture):
-            with contextlib.redirect_stderr(stderr_capture):
-                exec(code, safe_globals)
-        
-        result["stdout"] = stdout_capture.getvalue()
-        result["stderr"] = stderr_capture.getvalue()
-        
-    except Exception as e:
-        result["error"] = str(e)
-        result["stderr"] = stderr_capture.getvalue()
-    
-    return result
 
 def generate_insights(data_summary: Dict[str, Any]) -> str:
     """Generate plain-language insights from data analysis results."""

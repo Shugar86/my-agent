@@ -9,9 +9,10 @@ from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel
 
 from core.state_db import StateDB
+from core.session_store import get_state_db_path
 
 router = APIRouter(tags=["sessions"])
-state_db = StateDB(os.environ.get("STATE_DB_PATH", "data/state.db"))
+state_db = StateDB(get_state_db_path())
 
 
 def _full_session_id(user_id: str, workspace_id: str | None, raw_id: str) -> str:

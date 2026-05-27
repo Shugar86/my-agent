@@ -11,7 +11,7 @@ if not kimi_key and not openrouter_key:
 
 print("Starting server...")
 proc = subprocess.Popen(
-    [sys.executable, "-m", "uvicorn", "web.server:app", "--host", "127.0.0.1", "--port", "8000"],
+    [sys.executable, "-m", "uvicorn", "web.server:app", "--host", "127.0.0.1", "--port", "8020"],
     cwd=os.path.dirname(os.path.abspath(__file__)),
 )
 
@@ -19,11 +19,11 @@ time.sleep(4)
 
 print("Testing server...")
 try:
-    r = requests.get("http://127.0.0.1:8000/api/health", timeout=10)
+    r = requests.get("http://127.0.0.1:8020/api/health", timeout=10)
     print(f"GET /api/health: {r.status_code}")
 
     r = requests.post(
-        "http://127.0.0.1:8000/api/demo/public/run",
+        "http://127.0.0.1:8020/api/demo/public/run",
         json={"target": "Notion", "our_company": "Linear", "preset": "competitor"},
         timeout=30,
     )
@@ -32,7 +32,7 @@ try:
         data = r.json()
         print(f"Demo mode: {data.get('mode')}, run_id: {data.get('run_id')}")
         print("SUCCESS! Server is working!")
-        print("Open canonical demo: http://127.0.0.1:8000/showcase#playground")
+        print("Open canonical demo: http://127.0.0.1:8020/showcase#playground")
     else:
         print(f"Error: {r.text[:200]}")
 except requests.RequestException as exc:

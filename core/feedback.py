@@ -12,31 +12,8 @@ from core.db_manager import db
 
 
 def _ensure_table():
-    """Create feedback table if not exists."""
-    db.execute("""
-        CREATE TABLE IF NOT EXISTS feedback (
-            id TEXT PRIMARY KEY,
-            session_id TEXT,
-            message_id TEXT,
-            query TEXT,
-            response TEXT,
-            rating INTEGER,  -- 1 = thumbs up, -1 = thumbs down, 0 = neutral
-            agent_id TEXT,
-            model TEXT,
-            tools_used TEXT,  -- JSON list
-            metadata TEXT,    -- JSON dict
-            created_at TEXT
-        )
-    """)
-    db.execute("""
-        CREATE INDEX IF NOT EXISTS idx_feedback_session ON feedback(session_id)
-    """)
-    db.execute("""
-        CREATE INDEX IF NOT EXISTS idx_feedback_rating ON feedback(rating)
-    """)
-    db.execute("""
-        CREATE INDEX IF NOT EXISTS idx_feedback_created ON feedback(created_at)
-    """)
+    """Feedback table is created by Alembic migration 005_unified_schema."""
+    pass
 
 
 def submit_feedback(

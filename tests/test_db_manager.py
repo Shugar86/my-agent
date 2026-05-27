@@ -5,6 +5,7 @@ import tempfile
 from unittest.mock import patch, MagicMock
 
 from core.db_manager import DBManager, db
+from core.db_migrate import run_migrations
 
 
 class TestDBManagerSQLite:
@@ -12,8 +13,8 @@ class TestDBManagerSQLite:
     def sqlite_db(self):
         with tempfile.NamedTemporaryFile(suffix=".db", delete=False) as f:
             path = f.name
+        run_migrations(f"sqlite:///{path}")
         manager = DBManager(f"sqlite:///{path}")
-        manager.create_tables()
         yield manager
         manager.close()
         os.unlink(path)
@@ -110,7 +111,4 @@ class TestDBManagerPostgreSQL:
 
 class TestDBManagerSingleton:
     def test_default_singleton(self):
-        # The singleton should auto-init with sqlite default
-        db.create_tables()
         assert db.db_type == "sqlite"
-        assert db.table_exists("sessions")

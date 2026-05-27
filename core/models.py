@@ -22,6 +22,7 @@ class Workflow(Base):
     definition_json: Mapped[str] = mapped_column(Text, nullable=False, default="{}")
     status: Mapped[str] = mapped_column(String(32), nullable=False, default="draft")
     owner_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    workspace_id: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
     source_template_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
     webhook_token: Mapped[str | None] = mapped_column(String(128), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
@@ -55,6 +56,11 @@ class WorkflowTemplate(Base):
     definition_json: Mapped[str] = mapped_column(Text, nullable=False, default="{}")
     tags_json: Mapped[str] = mapped_column(Text, nullable=False, default="[]")
     installs_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    author_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    rating_avg: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
+    rating_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    published: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    created_by: Mapped[str | None] = mapped_column(String(64), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 
 

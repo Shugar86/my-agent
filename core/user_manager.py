@@ -27,7 +27,10 @@ class UserManager:
         self._db_url = _get_db_url()
         self._pool = None
         self._sqlite_conn = None
-        self._use_pg = bool(self._db_url)
+        self._use_pg = bool(
+            self._db_url
+            and self._db_url.startswith(("postgresql://", "postgres://"))
+        )
 
     async def connect(self):
         if self._use_pg:
@@ -38,9 +41,13 @@ class UserManager:
             await self._init_pg()
         else:
             import sqlite3
-            self._sqlite_conn = sqlite3.connect("data/users.db", check_same_thread=False)
+            from pathlib import Path
+
+            url = self._db_url or "sqlite:///data/agent.db"
+            db_path = url.replace("sqlite:///", "", 1)
+            Path(db_path).parent.mkdir(parents=True, exist_ok=True)
+            self._sqlite_conn = sqlite3.connect(db_path, check_same_thread=False)
             self._sqlite_conn.row_factory = sqlite3.Row
-            self._init_sqlite()
 
     async def close(self):
         if self._pool:
@@ -60,7 +67,7 @@ class UserManager:
             )
 
     def _password_field(self) -> str:
-        return "password_hash" if self._use_pg else "password"
+        return "password_hash"
 
     @staticmethod
     def _normalize_user(row: dict | None) -> dict | None:
@@ -72,22 +79,8 @@ class UserManager:
         return user
 
     def _init_sqlite(self):
-        self._sqlite_conn.execute("""
-            CREATE TABLE IF NOT EXISTS users (
-                id          TEXT PRIMARY KEY,
-                username    TEXT UNIQUE NOT NULL,
-                password    TEXT NOT NULL,
-                role        TEXT NOT NULL DEFAULT 'user',
-                api_keys    TEXT DEFAULT '{}',
-                created_at  REAL NOT NULL
-            );
-        """)
-        cols = {r[1] for r in self._sqlite_conn.execute("PRAGMA table_info(users)").fetchall()}
-        if "email" not in cols:
-            self._sqlite_conn.execute("ALTER TABLE users ADD COLUMN email TEXT")
-        if "auth_provider" not in cols:
-            self._sqlite_conn.execute("ALTER TABLE users ADD COLUMN auth_provider TEXT DEFAULT 'local'")
-        self._sqlite_conn.commit()
+        """Schema managed by Alembic — no runtime DDL."""
+        pass
 
     # --- User CRUD ---
 
@@ -109,7 +102,7 @@ class UserManager:
                 )
         else:
             self._sqlite_conn.execute(
-                "INSERT INTO users (id, username, password, role, api_keys, created_at) VALUES (?,?,?,?,?,?)",
+                "INSERT INTO users (id, username, password_hash, role, api_keys, created_at) VALUES (?,?,?,?,?,?)",
                 (user_id, username, pwd_hash, role, "{}", now),
             )
             self._sqlite_conn.commit()
@@ -132,7 +125,7 @@ class UserManager:
         if self._sqlite_conn:
             cur = self._sqlite_conn.execute("SELECT * FROM users WHERE username = ?", (username,))
             row = cur.fetchone()
-            return dict(row) if row else None
+            return self._normalize_user(dict(row) if row else None)
         return None
 
     async def get_user_by_id(self, user_id: str) -> dict | None:
@@ -143,7 +136,7 @@ class UserManager:
         if self._sqlite_conn:
             cur = self._sqlite_conn.execute("SELECT * FROM users WHERE id = ?", (user_id,))
             row = cur.fetchone()
-            return dict(row) if row else None
+            return self._normalize_user(dict(row) if row else None)
         return None
 
     async def update_api_keys(self, user_id: str, keys: dict):
@@ -212,7 +205,7 @@ class UserManager:
         else:
             self._sqlite_conn.execute(
                 """INSERT INTO users
-                   (id, username, password, role, api_keys, created_at, email, auth_provider)
+                   (id, username, password_hash, role, api_keys, created_at, email, auth_provider)
                    VALUES (?,?,?,?,?,?,?,?)""",
                 (user_id, username, pwd_hash, "user", "{}", now, email.lower(), "google"),
             )

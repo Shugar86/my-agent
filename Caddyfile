@@ -4,10 +4,10 @@
 # For HTTPS (Let's Encrypt), uncomment the domain line and remove the port.
 
 your-domain.com {
-    reverse_proxy my-agent:8000
+    reverse_proxy my-agent:8020
 }
 
 # Development (HTTP only, no TLS):
 # :80 {
-#     reverse_proxy my-agent:8000
+#     reverse_proxy my-agent:8020
 # }

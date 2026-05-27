@@ -34,6 +34,18 @@ Run tests:
 docker compose exec -T agent python -m pytest tests/test_demo_flow.py -q
 ```
 
+### Database (unified schema)
+
+- **Single migrator:** `alembic upgrade head` (migration `005_unified_schema`)
+- **Dev SQLite:** `data/agent.db` — users, workflows, chat sessions (`chat_sessions` / `chat_messages`)
+- **Prod:** `DATABASE_URL=postgresql://...` + `REDIS_URL=...`
+- **Legacy migration** (one-time, after upgrade):
+  ```bash
+  python scripts/migrate_state_to_agent.py   # state.db + cli_sessions.db → agent.db
+  python scripts/migrate_users_db.py         # users.db → agent.db
+  ```
+- **Local dev server:** `agent.py serve` or `uvicorn web.server:app --port 8020` (canonical port)
+
 ## Demo-ready checklist
 
 1. `docker compose up -d --build`

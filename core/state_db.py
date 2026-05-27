@@ -32,7 +32,7 @@ CREATE TABLE IF NOT EXISTS schema_version (
     version INTEGER NOT NULL
 );
 
-CREATE TABLE IF NOT EXISTS sessions (
+CREATE TABLE IF NOT EXISTS chat_sessions (
     id TEXT PRIMARY KEY,
     source TEXT NOT NULL DEFAULT 'web',
     user_id TEXT,
@@ -46,12 +46,17 @@ CREATE TABLE IF NOT EXISTS sessions (
     message_count INTEGER DEFAULT 0,
     tool_call_count INTEGER DEFAULT 0,
     title TEXT,
-    FOREIGN KEY (parent_session_id) REFERENCES sessions(id)
+    language TEXT,
+    cost_usd REAL DEFAULT 0,
+    input_tokens INTEGER DEFAULT 0,
+    output_tokens INTEGER DEFAULT 0,
+    compression_count INTEGER DEFAULT 0,
+    FOREIGN KEY (parent_session_id) REFERENCES chat_sessions(id)
 );
 
-CREATE TABLE IF NOT EXISTS messages (
+CREATE TABLE IF NOT EXISTS chat_messages (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    session_id TEXT NOT NULL REFERENCES sessions(id),
+    session_id TEXT NOT NULL REFERENCES chat_sessions(id),
     role TEXT NOT NULL,
     content TEXT,
     tool_call_id TEXT,
@@ -61,34 +66,34 @@ CREATE TABLE IF NOT EXISTS messages (
     finish_reason TEXT
 );
 
-CREATE TABLE IF NOT EXISTS state_meta (
+CREATE TABLE IF NOT EXISTS chat_state_meta (
     key TEXT PRIMARY KEY,
     value TEXT
 );
 
-CREATE INDEX IF NOT EXISTS idx_sessions_started ON sessions(started_at DESC);
-CREATE INDEX IF NOT EXISTS idx_messages_session ON messages(session_id, timestamp);
+CREATE INDEX IF NOT EXISTS idx_chat_sessions_started ON chat_sessions(started_at DESC);
+CREATE INDEX IF NOT EXISTS idx_chat_messages_session ON chat_messages(session_id, timestamp);
 """
 
 FTS_SQL = """
-CREATE VIRTUAL TABLE IF NOT EXISTS messages_fts USING fts5(
+CREATE VIRTUAL TABLE IF NOT EXISTS chat_messages_fts USING fts5(
     content
 );
 
-CREATE TRIGGER IF NOT EXISTS messages_fts_insert AFTER INSERT ON messages BEGIN
-    INSERT INTO messages_fts(rowid, content) VALUES (
+CREATE TRIGGER IF NOT EXISTS chat_messages_fts_insert AFTER INSERT ON chat_messages BEGIN
+    INSERT INTO chat_messages_fts(rowid, content) VALUES (
         new.id,
         COALESCE(new.content, '') || ' ' || COALESCE(new.tool_name, '') || ' ' || COALESCE(new.tool_calls, '')
     );
 END;
 
-CREATE TRIGGER IF NOT EXISTS messages_fts_delete AFTER DELETE ON messages BEGIN
-    DELETE FROM messages_fts WHERE rowid = old.id;
+CREATE TRIGGER IF NOT EXISTS chat_messages_fts_delete AFTER DELETE ON chat_messages BEGIN
+    DELETE FROM chat_messages_fts WHERE rowid = old.id;
 END;
 
-CREATE TRIGGER IF NOT EXISTS messages_fts_update AFTER UPDATE ON messages BEGIN
-    DELETE FROM messages_fts WHERE rowid = old.id;
-    INSERT INTO messages_fts(rowid, content) VALUES (
+CREATE TRIGGER IF NOT EXISTS chat_messages_fts_update AFTER UPDATE ON chat_messages BEGIN
+    DELETE FROM chat_messages_fts WHERE rowid = old.id;
+    INSERT INTO chat_messages_fts(rowid, content) VALUES (
         new.id,
         COALESCE(new.content, '') || ' ' || COALESCE(new.tool_name, '') || ' ' || COALESCE(new.tool_calls, '')
     );
@@ -104,9 +109,12 @@ class StateDB:
     _WRITE_RETRY_MAX_S = 0.150   # 150ms
     _CHECKPOINT_EVERY_N_WRITES = 50
 
-    def __init__(self, db_path: str = "data/state.db"):
-        self.db_path = Path(db_path)
-        self.db_path.parent.mkdir(parents=True, exist_ok=True)
+    def __init__(self, db_path: str | None = None):
+        from core.session_store import ensure_state_db_dir, get_state_db_path
+
+        resolved = db_path or get_state_db_path()
+        self.db_path = Path(resolved)
+        ensure_state_db_dir(str(self.db_path))
 
         self._lock = threading.Lock()
         self._write_count = 0
@@ -141,15 +149,25 @@ class StateDB:
     def _init_schema(self):
         """Create tables, indexes, and FTS5 virtual tables."""
         cursor = self._conn.cursor()
-        cursor.executescript(SCHEMA_SQL)
+        existing = {
+            row[0]
+            for row in cursor.execute(
+                "SELECT name FROM sqlite_master WHERE type='table'"
+            ).fetchall()
+        }
+        if "chat_sessions" not in existing:
+            cursor.executescript(SCHEMA_SQL)
 
-        # FTS5 setup
         try:
-            cursor.execute("SELECT * FROM messages_fts LIMIT 0")
+            cursor.execute("SELECT * FROM chat_messages_fts LIMIT 0")
         except sqlite3.OperationalError:
             cursor.executescript(FTS_SQL)
 
-        # Schema version bookkeeping
+        if "schema_version" not in existing and "chat_sessions" in existing:
+            cursor.execute(
+                "CREATE TABLE IF NOT EXISTS schema_version (version INTEGER NOT NULL)"
+            )
+
         cursor.execute("SELECT version FROM schema_version LIMIT 1")
         row = cursor.fetchone()
         if row is None:
@@ -162,27 +180,17 @@ class StateDB:
                 "UPDATE schema_version SET version = ?",
                 (SCHEMA_VERSION,),
             )
-            # Migration: add new columns for CLI v2
-            try:
-                cursor.execute("ALTER TABLE sessions ADD COLUMN language TEXT")
-            except sqlite3.OperationalError:
-                pass
-            try:
-                cursor.execute("ALTER TABLE sessions ADD COLUMN cost_usd REAL DEFAULT 0")
-            except sqlite3.OperationalError:
-                pass
-            try:
-                cursor.execute("ALTER TABLE sessions ADD COLUMN input_tokens INTEGER DEFAULT 0")
-            except sqlite3.OperationalError:
-                pass
-            try:
-                cursor.execute("ALTER TABLE sessions ADD COLUMN output_tokens INTEGER DEFAULT 0")
-            except sqlite3.OperationalError:
-                pass
-            try:
-                cursor.execute("ALTER TABLE sessions ADD COLUMN compression_count INTEGER DEFAULT 0")
-            except sqlite3.OperationalError:
-                pass
+            for col, ddl in (
+                ("language", "ALTER TABLE chat_sessions ADD COLUMN language TEXT"),
+                ("cost_usd", "ALTER TABLE chat_sessions ADD COLUMN cost_usd REAL DEFAULT 0"),
+                ("input_tokens", "ALTER TABLE chat_sessions ADD COLUMN input_tokens INTEGER DEFAULT 0"),
+                ("output_tokens", "ALTER TABLE chat_sessions ADD COLUMN output_tokens INTEGER DEFAULT 0"),
+                ("compression_count", "ALTER TABLE chat_sessions ADD COLUMN compression_count INTEGER DEFAULT 0"),
+            ):
+                try:
+                    cursor.execute(ddl)
+                except sqlite3.OperationalError:
+                    pass
 
         self._conn.commit()
 
@@ -258,7 +266,7 @@ class StateDB:
     ) -> str:
         def _do(conn):
             conn.execute(
-                """INSERT OR IGNORE INTO sessions
+                """INSERT OR IGNORE INTO chat_sessions
                    (id, source, user_id, model, model_config, system_prompt,
                     parent_session_id, started_at)
                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
@@ -279,7 +287,7 @@ class StateDB:
     def end_session(self, session_id: str, end_reason: str) -> None:
         def _do(conn):
             conn.execute(
-                "UPDATE sessions SET ended_at = ?, end_reason = ? WHERE id = ? AND ended_at IS NULL",
+                "UPDATE chat_sessions SET ended_at = ?, end_reason = ? WHERE id = ? AND ended_at IS NULL",
                 (time.time(), end_reason, session_id),
             )
         self._execute_write(_do)
@@ -287,10 +295,10 @@ class StateDB:
     def update_message_count(self, session_id: str) -> None:
         def _do(conn):
             count = conn.execute(
-                "SELECT COUNT(*) FROM messages WHERE session_id = ?", (session_id,)
+                "SELECT COUNT(*) FROM chat_messages WHERE session_id = ?", (session_id,)
             ).fetchone()[0]
             conn.execute(
-                "UPDATE sessions SET message_count = ? WHERE id = ?",
+                "UPDATE chat_sessions SET message_count = ? WHERE id = ?",
                 (count, session_id),
             )
         self._execute_write(_do)
@@ -298,7 +306,7 @@ class StateDB:
     def set_session_title(self, session_id: str, title: str) -> None:
         def _do(conn):
             conn.execute(
-                "UPDATE sessions SET title = ? WHERE id = ?",
+                "UPDATE chat_sessions SET title = ? WHERE id = ?",
                 (title[:100], session_id),
             )
         self._execute_write(_do)
@@ -306,7 +314,7 @@ class StateDB:
     def get_session(self, session_id: str) -> Optional[Dict[str, Any]]:
         with self._lock:
             cursor = self._conn.execute(
-                "SELECT * FROM sessions WHERE id = ?", (session_id,)
+                "SELECT * FROM chat_sessions WHERE id = ?", (session_id,)
             )
             row = cursor.fetchone()
         return dict(row) if row else None
@@ -316,7 +324,7 @@ class StateDB:
             rows = self._conn.execute(
                 """SELECT id, source, started_at, ended_at, message_count,
                           model, title
-                   FROM sessions
+                   FROM chat_sessions
                    ORDER BY started_at DESC
                    LIMIT ? OFFSET ?""",
                 (limit, offset),
@@ -330,7 +338,7 @@ class StateDB:
             rows = self._conn.execute(
                 """SELECT id, source, started_at, ended_at, message_count,
                           model, title
-                   FROM sessions
+                   FROM chat_sessions
                    WHERE user_id = ? OR id LIKE ?
                    ORDER BY started_at DESC
                    LIMIT ? OFFSET ?""",
@@ -340,8 +348,8 @@ class StateDB:
 
     def delete_session(self, session_id: str) -> None:
         def _do(conn):
-            conn.execute("DELETE FROM messages WHERE session_id = ?", (session_id,))
-            conn.execute("DELETE FROM sessions WHERE id = ?", (session_id,))
+            conn.execute("DELETE FROM chat_messages WHERE session_id = ?", (session_id,))
+            conn.execute("DELETE FROM chat_sessions WHERE id = ?", (session_id,))
         self._execute_write(_do)
 
     # ------------------------------------------------------------------
@@ -360,7 +368,7 @@ class StateDB:
     ) -> int:
         def _do(conn):
             cursor = conn.execute(
-                """INSERT INTO messages
+                """INSERT INTO chat_messages
                    (session_id, role, content, tool_call_id, tool_calls, tool_name, timestamp, finish_reason)
                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
                 (session_id, role, content, tool_call_id, tool_calls, tool_name, time.time(), finish_reason),
@@ -370,7 +378,7 @@ class StateDB:
 
     def get_messages(self, session_id: str, limit: int = None) -> List[Dict[str, Any]]:
         with self._lock:
-            sql = "SELECT * FROM messages WHERE session_id = ? ORDER BY timestamp, id"
+            sql = "SELECT * FROM chat_messages WHERE session_id = ? ORDER BY timestamp, id"
             params = (session_id,)
             if limit:
                 sql += " LIMIT ?"
@@ -381,7 +389,7 @@ class StateDB:
     def get_message_count(self, session_id: str) -> int:
         with self._lock:
             row = self._conn.execute(
-                "SELECT COUNT(*) FROM messages WHERE session_id = ?", (session_id,)
+                "SELECT COUNT(*) FROM chat_messages WHERE session_id = ?", (session_id,)
             ).fetchone()
         return row[0] if row else 0
 
@@ -390,13 +398,13 @@ class StateDB:
         def _do(conn):
             if keep_last > 0:
                 conn.execute(
-                    """DELETE FROM messages WHERE session_id = ? AND id NOT IN (
-                        SELECT id FROM messages WHERE session_id = ? ORDER BY timestamp DESC LIMIT ?
+                    """DELETE FROM chat_messages WHERE session_id = ? AND id NOT IN (
+                        SELECT id FROM chat_messages WHERE session_id = ? ORDER BY timestamp DESC LIMIT ?
                     )""",
                     (session_id, session_id, keep_last),
                 )
             else:
-                conn.execute("DELETE FROM messages WHERE session_id = ?", (session_id,))
+                conn.execute("DELETE FROM chat_messages WHERE session_id = ?", (session_id,))
         self._execute_write(_do)
 
     # ------------------------------------------------------------------
@@ -409,10 +417,10 @@ class StateDB:
             try:
                 rows = self._conn.execute(
                     """SELECT m.session_id, s.title, m.content, m.timestamp
-                       FROM messages_fts fts
-                       JOIN messages m ON fts.rowid = m.id
-                       JOIN sessions s ON m.session_id = s.id
-                       WHERE messages_fts MATCH ?
+                       FROM chat_messages_fts fts
+                       JOIN chat_messages m ON fts.rowid = m.id
+                       JOIN chat_sessions s ON m.session_id = s.id
+                       WHERE chat_messages_fts MATCH ?
                        ORDER BY rank
                        LIMIT ?""",
                     (query, limit),
@@ -422,8 +430,8 @@ class StateDB:
                 # FTS5 not available or query malformed — fall back to LIKE
                 rows = self._conn.execute(
                     """SELECT m.session_id, s.title, m.content, m.timestamp
-                       FROM messages m
-                       JOIN sessions s ON m.session_id = s.id
+                       FROM chat_messages m
+                       JOIN chat_sessions s ON m.session_id = s.id
                        WHERE m.content LIKE ?
                        ORDER BY m.timestamp DESC
                        LIMIT ?""",
@@ -439,7 +447,7 @@ class StateDB:
         """Get a range of messages by offset (for compression)."""
         with self._lock:
             rows = self._conn.execute(
-                """SELECT * FROM messages
+                """SELECT * FROM chat_messages
                    WHERE session_id = ?
                    ORDER BY timestamp, id
                    LIMIT ? OFFSET ?""",
@@ -452,7 +460,7 @@ class StateDB:
         def _do(conn):
             # Count total
             total = conn.execute(
-                "SELECT COUNT(*) FROM messages WHERE session_id = ?", (session_id,)
+                "SELECT COUNT(*) FROM chat_messages WHERE session_id = ?", (session_id,)
             ).fetchone()[0]
 
             if total <= keep_head + keep_tail + 1:
@@ -460,8 +468,8 @@ class StateDB:
 
             # Delete middle range
             conn.execute(
-                """DELETE FROM messages WHERE session_id = ? AND id IN (
-                    SELECT id FROM messages WHERE session_id = ?
+                """DELETE FROM chat_messages WHERE session_id = ? AND id IN (
+                    SELECT id FROM chat_messages WHERE session_id = ?
                     ORDER BY timestamp, id
                     LIMIT ? OFFSET ?
                 )""",
@@ -470,14 +478,14 @@ class StateDB:
 
             # Insert summary
             conn.execute(
-                """INSERT INTO messages
+                """INSERT INTO chat_messages
                    (session_id, role, content, timestamp)
                    VALUES (?, ?, ?, ?)""",
                 (session_id, "system", f"[CONTEXT SUMMARY]: {summary_content}", time.time()),
             )
             # Increment compression counter
             conn.execute(
-                "UPDATE sessions SET compression_count = compression_count + 1 WHERE id = ?",
+                "UPDATE chat_sessions SET compression_count = compression_count + 1 WHERE id = ?",
                 (session_id,),
             )
         self._execute_write(_do)
@@ -498,22 +506,22 @@ class StateDB:
         def _do(conn):
             if cost_usd is not None:
                 conn.execute(
-                    "UPDATE sessions SET cost_usd = cost_usd + ? WHERE id = ?",
+                    "UPDATE chat_sessions SET cost_usd = cost_usd + ? WHERE id = ?",
                     (cost_usd, session_id),
                 )
             if input_tokens is not None:
                 conn.execute(
-                    "UPDATE sessions SET input_tokens = input_tokens + ? WHERE id = ?",
+                    "UPDATE chat_sessions SET input_tokens = input_tokens + ? WHERE id = ?",
                     (input_tokens, session_id),
                 )
             if output_tokens is not None:
                 conn.execute(
-                    "UPDATE sessions SET output_tokens = output_tokens + ? WHERE id = ?",
+                    "UPDATE chat_sessions SET output_tokens = output_tokens + ? WHERE id = ?",
                     (output_tokens, session_id),
                 )
             if language is not None:
                 conn.execute(
-                    "UPDATE sessions SET language = ? WHERE id = ?",
+                    "UPDATE chat_sessions SET language = ? WHERE id = ?",
                     (language, session_id),
                 )
         self._execute_write(_do)
@@ -522,8 +530,28 @@ class StateDB:
         """Get session stats (cost, tokens, compression_count)."""
         with self._lock:
             cursor = self._conn.execute(
-                "SELECT cost_usd, input_tokens, output_tokens, compression_count, language FROM sessions WHERE id = ?",
+                "SELECT cost_usd, input_tokens, output_tokens, compression_count, language FROM chat_sessions WHERE id = ?",
                 (session_id,),
             )
             row = cursor.fetchone()
         return dict(row) if row else None
+
+    def save_messages(self, session_id: str, messages: List[Dict[str, Any]]) -> None:
+        """Replace all messages for a session (SessionCache SQLite fallback)."""
+        self.create_session(session_id, source="cache")
+        self.delete_messages(session_id)
+        for msg in messages:
+            tool_calls = msg.get("tool_calls")
+            self.add_message(
+                session_id,
+                role=msg.get("role", "user"),
+                content=msg.get("content"),
+                tool_call_id=msg.get("tool_call_id"),
+                tool_calls=json.dumps(tool_calls) if tool_calls else None,
+                tool_name=msg.get("tool_name"),
+                finish_reason=msg.get("finish_reason"),
+            )
+
+    def clear_session(self, session_id: str) -> None:
+        """Delete session and all messages."""
+        self.delete_session(session_id)

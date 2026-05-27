@@ -1,9 +1,23 @@
 """Video Processing Skill — FFmpeg-based video analysis and editing."""
 import os
 import json
+import re
 import subprocess
+from fractions import Fraction
 from typing import Dict, List, Optional
 from pathlib import Path
+
+
+def _parse_frame_rate(rate: Optional[str]) -> float:
+    """Parse ffprobe r_frame_rate (e.g. '30/1') without eval."""
+    if not rate or not isinstance(rate, str):
+        return 0.0
+    if not re.fullmatch(r"\d+/\d+", rate):
+        return 0.0
+    try:
+        return float(Fraction(rate))
+    except (ValueError, ZeroDivisionError):
+        return 0.0
 
 
 def extract_frames(video_path: str, output_dir: str = None, fps: float = 1.0, max_frames: int = 100) -> Dict:
@@ -87,7 +101,7 @@ def get_video_info(video_path: str) -> Dict:
                 "codec": video_stream.get("codec_name"),
                 "width": video_stream.get("width"),
                 "height": video_stream.get("height"),
-                "fps": eval(video_stream.get("r_frame_rate", "0/1")),  # e.g. "30/1" -> 30
+                "fps": _parse_frame_rate(video_stream.get("r_frame_rate", "0/1")),
             },
             "audio": {
                 "codec": audio_stream.get("codec_name"),

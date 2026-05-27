@@ -163,59 +163,14 @@ class DBManager:
         return result is not None
 
     def create_tables(self):
-        """Create all application tables."""
-        sessions_sql = """
-        CREATE TABLE IF NOT EXISTS sessions (
-            id TEXT PRIMARY KEY,
-            agent_id TEXT NOT NULL,
-            user_id TEXT,
-            messages TEXT,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        """Deprecated: schema is managed by Alembic migrations only."""
+        import warnings
+        warnings.warn(
+            "create_tables() is deprecated; run alembic upgrade head instead",
+            DeprecationWarning,
+            stacklevel=2,
         )
-        """
-        users_sql = """
-        CREATE TABLE IF NOT EXISTS users (
-            id TEXT PRIMARY KEY,
-            username TEXT UNIQUE NOT NULL,
-            password_hash TEXT NOT NULL,
-            email TEXT,
-            role TEXT DEFAULT 'user',
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-        """
-        skills_sql = """
-        CREATE TABLE IF NOT EXISTS installed_skills (
-            name TEXT PRIMARY KEY,
-            version TEXT,
-            source TEXT,
-            installed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-        """
-        metrics_sql = """
-        CREATE TABLE IF NOT EXISTS metrics (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT NOT NULL,
-            value REAL NOT NULL,
-            labels TEXT,
-            timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-        """
-
-        if self.db_type == "postgres":
-            # Adjust SQLite-specific AUTOINCREMENT for PostgreSQL
-            metrics_sql = metrics_sql.replace(
-                "id INTEGER PRIMARY KEY AUTOINCREMENT",
-                "id SERIAL PRIMARY KEY"
-            )
-            sessions_sql = sessions_sql.replace("TEXT", "VARCHAR")
-            users_sql = users_sql.replace("TEXT", "VARCHAR")
-            skills_sql = skills_sql.replace("TEXT", "VARCHAR")
-
-        for sql in [sessions_sql, users_sql, skills_sql, metrics_sql]:
-            self.execute(sql)
-
-        logger.info("Database tables created/verified")
+        logger.info("create_tables() skipped — use Alembic migrations")
 
     def close(self):
         """Close all connections."""

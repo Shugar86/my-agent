@@ -84,7 +84,14 @@ app.include_router(usage_router)
 # CORS — allow localhost origins
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://localhost:5173", "http://localhost:8000", "http://127.0.0.1:8000"],
+    allow_origins=[
+        "http://localhost:3000",
+        "http://localhost:5173",
+        "http://localhost:8020",
+        "http://127.0.0.1:8020",
+        "http://localhost:8000",
+        "http://127.0.0.1:8000",
+    ],
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE"],
     allow_headers=["*"],
@@ -235,29 +242,6 @@ async def startup():
     await scheduler_manager.start()
     await user_manager.connect()
     await user_manager.create_default_admin()
-    db.create_tables()
-    if db.db_type == "postgres":
-        db.execute("""
-            CREATE TABLE IF NOT EXISTS scheduled_jobs_log (
-                id SERIAL PRIMARY KEY,
-                job_id VARCHAR NOT NULL,
-                description TEXT,
-                result TEXT,
-                status VARCHAR,
-                executed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        """)
-    else:
-        db.execute("""
-            CREATE TABLE IF NOT EXISTS scheduled_jobs_log (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                job_id TEXT NOT NULL,
-                description TEXT,
-                result TEXT,
-                status TEXT,
-                executed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        """)
     from core.workflow.executor import rehydrate_all_triggers
     await rehydrate_all_triggers()
     from core.workflow import run_queue
@@ -777,7 +761,8 @@ async def chat_stream(request: Request, body: ChatRequest):
         sid = _user_session_id(uid, raw_sid, workspace_id)
         set_session_context(body.agent_id)
         from core.state_db import StateDB
-        state_db = StateDB(os.environ.get("STATE_DB_PATH", "data/state.db"))
+        from core.session_store import get_state_db_path
+        state_db = StateDB(get_state_db_path())
         if not state_db.get_session(sid):
             state_db.create_session(sid, source="web", user_id=uid, model=body.agent_id)
         if body.message.strip():

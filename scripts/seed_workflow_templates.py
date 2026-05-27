@@ -1039,7 +1039,6 @@ UPSERT_TEMPLATE_IDS = frozenset({
 def seed() -> int:
     """Insert workflow templates if not present."""
     run_migrations()
-    db.create_tables()
     count = 0
     updated = 0
     for tpl in TEMPLATES:
