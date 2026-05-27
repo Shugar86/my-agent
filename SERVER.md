@@ -211,4 +211,4 @@ Playwright smoke tests требуют запущенный сервер на `:8
 | UI v3.2 | UX events API | `POST /api/usage/event` in `web/usage_router.py` |
 | UI v3.2 | Playwright E2E | `web/frontend/e2e/smoke.spec.ts` |
 
-Дизайн-система: `web/frontend/DESIGN.md`. OpenCode reference: `DESIGN-opencode-reference.md`.
+Дизайн-система: `web/frontend/DESIGN.md`.

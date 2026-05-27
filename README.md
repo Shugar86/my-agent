@@ -1,607 +1,156 @@
-# My Agent — Technical Documentation
+# My Agent
 
-> Last updated: 2026-05-26
-> Version: 3.5.0 (React landing — UX audit, public routes, demo IA)
-> Author: AI Assistant
+**Autonomous Workflow OS** — визуальный конструктор workflow, маркетплейс шаблонов, multi-agent чат и deep research на базе Kimi K2.
+
+| | |
+|---|---|
+| **Версия** | 3.5.0 |
+| **Стек** | Python 3.11 · FastAPI · React 18 · PostgreSQL · Redis |
+| **Документация** | [docs/README.md](docs/README.md) — полный индекс |
 
 ---
 
-## Investor Demo (90 seconds)
-
-**Killer use-case:** Competitor Intelligence — webhook → 2 parallel research agents →
-SWOT analysis → DOCX report → n8n hook. Replaces ~4 hours of analyst work.
+## Быстрый старт (Docker)
 
 ```bash
+cp .env.example .env
+# Минимум: KIMI_API_KEY или OPENROUTER_API_KEY (demo работает и без ключей)
+
 docker compose up -d --build
-# Entrypoint auto-runs seed + DOCX generation on first start
-# Open http://localhost:8020/app → «Выбрать шаблон» or «▶ Демо за 90 сек»
+# Первый старт: seed шаблонов + demo DOCX (entrypoint)
 ```
-
-Manual re-seed (optional):
-
-```bash
-docker compose exec agent python scripts/seed_workflow_templates.py
-docker compose exec agent python scripts/generate_demo_artifact.py
-```
-
-Full script, talking points, and troubleshooting: **[DEMO.md](./DEMO.md)**.
-
-**Demo-MVP showcase (recommended):** `http://localhost:8020/showcase` — 7 vertical
-production cases, live playground (React SPA). Quick ref: **[INVESTOR.md](./INVESTOR.md)**.
-
-**Marketing landing:** `http://localhost:8020/` — React `LandingPage` (Hero, problems, live demo embed, pricing).
-Static HTML в `website/` deprecated — см. [`website/README-DEPRECATED.md`](website/README-DEPRECATED.md).
-
-Mock fallback works without API keys — safe for live investor presentations.
-
-### Web UI (v3.5)
-
-Единый React bundle: публичные маршруты (`/`, `/demo`, `/showcase`) + продукт `/app/*` (RU UI).
-Legacy static HTML (`website/*.html`) больше не отдаётся — только assets в `/welcome-assets`.
 
 | URL | Назначение |
 |-----|------------|
-| `/login` | JWT + Google OAuth |
-| `/` | **React landing** — outcome pitch, `#problems`, `#live-demo`, `#pricing` |
-| `/demo` | Public Competitor Intelligence demo (`PlaygroundDemo` + `publicMode`) |
-| `/showcase` | Public vertical cases + playground (без auth) |
-| `/welcome` | 301 → `/` |
-| `/app/` | Панель (activation hero, GettingStartedBanner, demo modal) |
-| `/app/chat` | Чат (markdown, tools; beta + API key hint) |
-| `/app/workflows` | Список + builder (`/app/workflows/:id`) |
-| `/app/marketplace` | Маркетплейс шаблонов |
-| `/app/demo` | In-app live demo (sidebar: «Live demo 90s») |
-| `/app/showcase` | Authenticated cases + install templates |
-| `/app/settings` | Интеграции, models, billing, agents/knowledge/MCP (tabs + badges) |
-| `/app/onboarding` | 4-step wizard + explainer + PlaygroundDemo |
-| `/app/share/templates/:id` | Публичный preview шаблона (install → login) |
+| http://localhost:8020/ | Публичный лендинг (React) |
+| http://localhost:8020/demo | Demo Competitor Intelligence |
+| http://localhost:8020/showcase | 7 вертикальных кейсов + playground |
+| http://localhost:8020/app/ | Продукт (после login) |
+| http://localhost:8020/login | JWT + Google OAuth |
 
-Legacy redirects: `/app/agents`, `/app/knowledge`, `/app/mcp`, `/app/builder` → `/app/settings?tab=...`
+Логин по умолчанию: `admin` / `admin` (сменить `AGENT_PASSWORD` в `.env`).
 
-Narrative strip: **Шаблон → Workflow → Результат** (PublicLayout + AppShell).
-
-Дизайн-система: [`web/frontend/DESIGN.md`](web/frontend/DESIGN.md). Сборка: `cd web/frontend && bun run build`.
-
-### Changelog 3.5.0 (2026-05-26) — UX audit (React landing + IA)
-
-**Landing migration:** `/`, `/demo`, `/showcase` → React SPA (`LandingPage`, `PublicDemoPage`, `PublicShowcasePage`); `server.py` `_serve_spa_index()`; static HTML deprecated.
-
-**IA:** sidebar — «Live demo 90s» + «Кейсы» (отдельно); quick links Agents/Knowledge/MCP; `ProductNarrative` strip.
-
-**Demo UX:** `PlaygroundDemo.publicMode` → `/api/demo/public/run`; unified preview banner; ararat CTA → «Установить шаблон».
-
-**Onboarding:** explainer block (Template → Workflow → Result) перед step 1.
-
-**Polish:** `useDemoAwareFetch`; marketplace install/preview loading; WorkflowList error banner + breadcrumbs; Settings tab badges; EN i18n для landing; E2E обновлены.
-
-### Changelog 3.4.3 (2026-05-26) — UX funnel (investor + first-run)
-
-**Onboarding:** step 2 — `fetchWithDemoFallback` + bundled fallback cards (`config/onboardingUseCases.ts`); skeleton loading; `createTeam` error handling; distinct «Skip integrations» vs «Go to dashboard».
-
-**Demo UX:** `DemoModal` closes only on success + retry banner; offline demo timed step replay (~3s/node); ROI metrics from `GET /api/demo/sample` in PlaygroundDemo footer.
-
-**Dashboard vs Landing:** dashboard hero action-oriented («Ваш первый workflow за 3 минуты»); 2 CTAs (marketplace + demo modal); `GettingStartedBanner` when no workflows.
-
-**IA:** sidebar tagline «Шаблон → Workflow → Результат»; nav «Кейсы и demo»; public `/showcase` link removed from sidebar (kept on dashboard cases footer); `FeatureStatusLegend` in sidebar.
-
-**Polish:** Chat empty state — Kimi API key hint; Analytics load error state; Settings version 3.4.3; landing single primary CTA + Preview badge on live-demo iframe.
-
-**Registry:** `PAGE_FEATURE_STATUS` in `featureRegistry.ts` for section-level badges.
-
-Build: `cd web/frontend && bun run build`. E2E: `bun run test:e2e` (сервер на `:8020`).
-
-### Changelog 3.4.2 (2026-05-26) — UX audit (investor + B2B)
-
-**Public share:** `GET /app/share/templates/:id` без JWT (`PUBLIC_PREFIXES` + `/api/public/templates`).
-
-**Honest status:** showcase cards — `FeatureTag` «Кейс» / «Preview», не ложный Live; marketplace demo-run всегда Preview.
-
-**Demo:** `/app/demo`; `PlaygroundDemo` — offline fallback (`lib/offlineDemo.ts`), presets + real-run в DemoModal; `fetchWithDemoFallback` → bundled `showcase.json`.
-
-**Showcase:** sidebar «Кейсы»; CTA «Установить похожий шаблон» (`config/showcaseCards.ts`); onboarding success messages.
-
-**IA:** Analytics empty → `/app/demo`; WorkflowList empty → marketplace; landing steps «Шаблон → Канал → Workflow».
-
-**Components:** `FeatureGate.tsx` для disabled CTAs.
-
-Build: `cd web/frontend && bun run build`. E2E: `bun run test:e2e` (сервер на `:8020`).
-
-### Changelog 3.4.1 (2026-05-26) — UX sprint (investor funnel)
-
-**Status system:** `<FeatureTag status="live|beta|mock|coming-soon" />` — nav, demo runs, dead CTAs.
-
-**Showcase SPA:** `/app/showcase` — PlaygroundDemo (auth `startDemoRun` + mock fallback), skeleton loading, install featured templates.
-
-**Demo UX:** Marketplace demo-run → ExecutionTimeline modal; WorkflowBuilder demo banner (`?demo=mock`); DemoModal Preview badge.
-
-**Navigation:** sidebar сжат до Dashboard / Workflows / Marketplace / Chat + Analytics / Settings; agents/knowledge/MCP в Settings tabs.
-
-**Landing:** `#problems`, iframe `/demo`, dynamic marketplace preview из API.
-
-**Polish:** Onboarding → PlaygroundDemo; Chat empty state + demo CTA; billing Stripe `coming-soon`.
-
-Build: `cd web/frontend && bun run build`. E2E: `bun run test:e2e` (сервер на `:8020`).
-
-### Changelog 3.4.0 (2026-05-26) — Production readiness
-
-**Ops:** systemd on VDS, PostgreSQL + Redis required in prod, daily `pg_dump` backup, Grafana/Prometheus alerts.
-
-**Execution:** durable workflow run queue (Redis RPOPLPUSH); orphaned runs marked failed on restart.
-
-Docs: [AUDIT_PRODUCTION_2026.md](./AUDIT_PRODUCTION_2026.md), [SERVER.md](./SERVER.md).
-
-### Changelog 3.3.1 (2026-05-26) — CEO audits
-
-**Sales readiness:** signup → onboarding, plan limits, template demo-run, API keys + billing UI, workspace isolation tests.
-
-**Product depth:** async workflow runs, schedule pause/resume UI, builder branch modal + edge panel, `enable_memory` on agent nodes, lazy bundle split, n8n registry, monitoring profile.
-
-Roadmap: [AUDIT_PRODUCT_2026.md](./AUDIT_PRODUCT_2026.md).
-
-### Changelog 3.3.0 (2026-05-26) — Architectural fix
-
-**Iteration 1 — gap closure**
-- Kimi Code API (`KIMI_API_KEY`, `core/kimi_provider.py`) as primary LLM for all agents
-- Docker entrypoint: auto-seed 52 templates + 3 demo DOCX on startup
-- Demo presets: competitor / beauty / lead; onboarding template mapping fixed
-- A2A queue → Redis; WebSocket JWT auth; Dashboard 4 stat cards
-- Marketplace: real install counts; showcase featured from API
-
-**Iteration 2 — correctness + RU polish**
-- Removed ghost tools from `universal` registry (voice_io/video/web3 stubs not in tool list)
-- Added `SKILL.md` for `web3`, `voice_io`, `video_processing` (skills load when enabled)
-- Executor: `action.*` with `{success: false}` → run status **failed** (no soft-success)
-- `agent.skill` respects config field `"skill"` (singular)
-- `action.webhook` supports `method=GET`; `action.n8n_webhook` in NodeType enum
-- 3 misleading templates tagged `draft`; `tpl_lead_qualify` → `trigger.webhook`
-- WorkflowBuilder + Marketplace Publish modal fully RU; Dashboard integrations stat fix
-- PublicTemplate: toast on install error (401 only → login); orphan `AgentBuilderPage` removed
-
-**Verify after deploy**
-```bash
-docker compose up -d --build agent
-docker compose exec -T agent python -m pytest tests/test_production_v34.py tests/test_marketplace.py -q
-curl -s http://127.0.0.1:8020/api/health
-# Production: ENV=production requires DATABASE_URL + REDIS_URL
-```
+Демо с n8n: `docker compose --profile demo up -d --build` → [DEMO.md](DEMO.md).
 
 ---
 
-## 1. Project Overview
+## Возможности
 
-My Agent is a modular AI agent system with a visual workflow builder, marketplace,
-multi-agent orchestration, and deep research capabilities.
+- **Workflow engine** — DAG builder (React Flow), 21+ типов узлов, async runs, Redis queue
+- **Marketplace** — 52+ шаблона, demo-run, публичный share `/app/share/templates/:id`
+- **7 агентов** — universal, researcher, developer, marketer, data_analyst, slides, docs
+- **30+ skills** — research, browser, RAG, docs/slides, messaging, scheduler, …
+- **Интеграции** — Telegram, Slack, n8n webhook, Google OAuth
+- **Production** — PostgreSQL + Redis обязательны при `ENV=production`; Prometheus/Grafana (`--profile monitoring`)
 
-### Key Features
-- **Universal Assistant** — one chat for everything, Kimi K2.6, ~61 real tools (no phantom stubs)
-- **7 Specialized Agents** — researcher, developer, marketer, data_analyst, slides, docs, universal
-- **30+ Skills** — deep_research, research, parsing, RAG, browser, web3, voice_io, …
-- **Workflow Engine** — visual DAG builder (React Flow), 21+ node types, **async runs**, honest status
-- **Marketplace** — 52 templates, demo-run preview, featured section
-- **Investor Demo** — `POST /api/demo/run` with 3 presets + prerecorded fallback + DOCX
-- **n8n Integration** — `action.n8n_webhook` node (optional `--profile demo` stack)
-- **Auto-Agent Factory** — LLM analyzes tasks and spawns sub-agents dynamically
-- **Graphify Integration** — codebase knowledge graph with community detection
-
-### Tech Stack
-| Layer | Technology |
-|-------|------------|
-| Backend | Python 3.11, FastAPI, Uvicorn |
-| AI Gateway | Kimi Code API (primary) + LiteLLM/OpenRouter fallback |
-| Frontend | React 18 + TypeScript + Vite + React Flow (`/app/*`), RU i18n, PWA |
-| Data | PostgreSQL / SQLite, Redis |
-| Container | Docker + Docker Compose (+ optional n8n profile) |
-| Testing | pytest + Playwright E2E (`web/frontend/e2e/`) |
+Подробнее: [ARCHITECTURE.md](ARCHITECTURE.md).
 
 ---
 
-## 2. Architecture
+## Структура репозитория
 
 ```
 my-agent/
-├── agent.py              # CLI entry point
+├── agent.py              # CLI
 ├── web/
-│   ├── server.py         # FastAPI backend
-│   ├── frontend/         # React SPA source (Vite)
-│   │   ├── src/          # Pages, components, i18n (RU)
-│   │   ├── e2e/          # Playwright smoke tests
-│   │   └── DESIGN.md     # Product design system
-│   ├── static/
-│   │   ├── app/          # Built SPA (npm run build)
-│   │   └── login.html    # Auth page (legacy static)
-│   └── Dockerfile
-├── core/                 # Core framework modules
-│   ├── builder.py        # AgentBuilder (fluent pattern)
-│   ├── runtime.py        # AgentRuntime (execution loop)
-│   ├── orchestrator.py   # Task routing & delegation
-│   ├── sub_agents.py     # Parallel agent execution
-│   ├── auto_agent_factory.py  # Dynamic agent spawning
-│   ├── agent_store.py    # Agent profile CRUD
-│   ├── llm_gateway.py    # LLM abstraction (litellm)
-│   ├── skill_loader.py   # Skill discovery & loading
-│   ├── tool_registry.py  # Tool registration
-│   ├── memory_manager.py # Session memory (JSON)
-│   ├── event_bus.py      # Event system
-│   ├── plugin_manager.py # Plugin discovery
-│   ├── context_compressor.py  # Context compression
-│   ├── config.py         # Configuration management
-│   └── logger.py         # Logging utilities
-├── skills/               # Skill modules
-│   ├── research/         # Web research skill
-│   ├── deep_research/    # Multi-query deep research
-│   ├── parsing/          # Content parsing
-│   ├── template/         # Template engine
-│   ├── code_analysis/    # Code review & analysis
-│   ├── code_execution/   # Code execution sandbox
-│   ├── web_automation/   # Web scraping
-│   ├── api_integration/  # API connector skill
-│   ├── data_analyst/     # Data analysis (pandas/matplotlib)
-│   ├── slides/           # Presentation generation
-│   └── docs/             # Document generation (DOCX/PDF)
-├── tools/                # Tool implementations
-│   ├── web_tools.py      # Web search/scrape
-│   ├── file_tools.py     # File I/O
-│   ├── code_tools.py     # Code execution
-│   ├── api_connector.py  # HTTP API tools
-│   ├── deep_search_tools.py  # Academic search
-│   ├── mcp_client.py     # MCP protocol client
-│   ├── data_tools.py     # Data analysis tools
-│   ├── slides_tools.py   # Presentation tools
-│   ├── docs_tools.py     # Document tools
-│   └── auto_agents_tools.py  # Auto-agent tools
-├── agents/               # Agent registry
-│   └── registry.json     # 7 agent profiles
-├── config/               # Configuration
-│   ├── agent.json        # Main config (API keys, model)
-│   └── models.yaml       # Model presets
-├── tasks/                # Predefined task templates
-│   ├── research-course.yaml
-│   ├── code-review.yaml
-│   ├── api-test.yaml
-│   └── deep-research.yaml
-├── tests/                # Test suite
-│   ├── test_all.py       # Core module tests (12 tests)
-│   └── test_skills_builder.py  # Builder tests (6 tests)
-├── graphify-out/         # Knowledge graph outputs
-│   ├── graph.html        # Interactive visualization
-│   ├── GRAPH_REPORT.md   # Graph analysis report
-│   └── graph.json        # Raw graph data
-├── requirements.txt      # Python dependencies
-├── docker-compose.yml    # Docker orchestration
-├── Dockerfile            # Container definition
-└── plans/                # Architecture plans
-    └── my-agent-web-ui.md
+│   ├── server.py         # FastAPI
+│   └── frontend/         # React SPA (Vite, bun)
+├── core/                 # runtime, orchestrator, workflow, auth, billing
+├── skills/               # доменные навыки (SKILL.md + skill.py)
+├── tools/                # регистрация инструментов
+├── agents/registry.json  # профили агентов
+├── config/               # agent.json, models.yaml
+├── tests/                # pytest (+ Playwright в web/frontend/e2e)
+├── deploy/               # prod compose, systemd, monitoring
+└── docker-compose.yml    # db + redis + agent (:8020)
 ```
 
 ---
 
-## 3. Core Concepts
+## Локальная разработка
 
-### 3.1 Agent
-An agent is a configured LLM instance with:
-- **Role** (system prompt)
-- **Model** (primary + fallback)
-- **Skills** (capabilities)
-- **Tools** (functions)
-- **Memory** (session persistence)
-
-### 3.2 Skill
-A skill is a module providing domain-specific capabilities:
-- `SKILL.md` — documentation and usage
-- `skill.py` — implementation
-- Registers tools via `register_tools()`
-
-### 3.3 Tool
-A tool is a Python function callable by the LLM:
-- Registered in `tool_registry.py`
-- Schema auto-generated from docstrings
-- Can return text, files, or structured data
-
-### 3.4 Builder Pattern
-```python
-from core.builder import AgentBuilder
-
-agent = (AgentBuilder()
-    .set_model({"primary": "openrouter/...", "api_key": "..."})
-    .set_role("You are a helpful assistant")
-    .set_skills(["research", "parsing"])
-    .set_tools(["web_search", "file_write"])
-    .set_memory({"enabled": True, "scope": "agent"})
-    .enable_events(True)
-    .enable_compression(True)
-    .build())
-```
-
-### 3.5 Orchestrator
-Routes user requests:
-1. **Handoff** — single agent execution
-2. **Parallel Delegate** — multiple sub-agents + result synthesis
-
-### 3.6 Auto-Agent Factory
-```python
-from core.auto_agent_factory import AutoAgentFactory
-
-factory = AutoAgentFactory(store, llm_config)
-result = factory.spawn_for_task("Research AI trends and write summary")
-```
-Process:
-1. LLM analyzes task → identifies sub-tasks
-2. Creates temporary agent configs
-3. Runs agents in parallel (ThreadPoolExecutor)
-4. Synthesizes results
-5. Cleans up temp agents
-
----
-
-## 4. API Reference
-
-### 4.1 REST Endpoints
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/` | Dashboard HTML |
-| GET | `/chat` | Chat interface HTML |
-| GET | `/agents` | Agent management HTML |
-| GET | `/settings` | Settings HTML |
-| GET | `/api/agents` | List all agents |
-| GET | `/api/agents/{id}` | Get agent by ID |
-| POST | `/api/agents` | Create agent |
-| PUT | `/api/agents/{id}` | Update agent |
-| DELETE | `/api/agents/{id}` | Delete agent |
-| POST | `/api/agents/{id}/duplicate` | Duplicate agent |
-| POST | `/api/chat` | Send message (JSON response) |
-| POST | `/api/chat/stream` | Send message (SSE streaming) |
-| GET | `/api/config` | Get system config |
-| POST | `/api/config` | Update config |
-
-### 4.2 Chat Request Format
-```json
-{
-  "message": "Hello!",
-  "agent_id": "universal",
-  "auto_agents": false
-}
-```
-
-### 4.3 Chat Response Format
-```json
-{
-  "response": "Agent's response text"
-}
-```
-
-### 4.4 Error Response
-```json
-{
-  "error": "Error description",
-  "detail": "Additional details"
-}
-```
-
----
-
-## 5. Agent Registry
-
-All agents defined in `agents/registry.json`:
-
-| ID | Name | Icon | Skills | Purpose |
-|----|------|------|--------|---------|
-| **universal** | Universal Assistant | 🤖 | 11 skills | Auto-selects tools for any task |
-| researcher | Researcher | 🔍 | deep_research, research, parsing | Deep research & analysis |
-| developer | Developer | 💻 | code_analysis, code_execution | Code review & dev |
-| marketer | Marketer | 📢 | research, template, web_automation | Marketing & content |
-| data_analyst | Data Analyst | 📊 | data_analyst, code_execution | Data analysis & charts |
-| slides | Slides Agent | 🎨 | slides, template | Presentations (HTML→PPTX) |
-| docs | Docs Agent | 📄 | docs, template | Documents (HTML→DOCX/PDF) |
-
----
-
-## 6. Skills Reference
-
-| Skill | File | Tools | Capabilities |
-|-------|------|-------|--------------|
-| **deep_research** | `skills/deep_research/skill.py` | deep_search, scholar_search, web_scrape | Multi-query academic research |
-| **research** | `skills/research/skill.py` | web_search, web_scrape | General web research |
-| **parsing** | `skills/parsing/skill.py` | web_scrape, file_read | Content extraction |
-| **template** | `skills/template/skill.py` | file_write | Template engine |
-| **code_analysis** | `skills/code_analysis/skill.py` | file_read, file_write | Code review, bug finding |
-| **code_execution** | `skills/code_execution/skill.py` | execute_code | Python/bash/JS execution |
-| **web_automation** | `skills/web_automation/skill.py` | web_search, web_scrape | Web scraping |
-| **api_integration** | `skills/api_integration/skill.py` | api_get, api_post, api_delete | HTTP API calls |
-| **data_analyst** | `skills/data_analyst/skill.py` | file_read, file_write, execute_code | Pandas, matplotlib, statistics |
-| **slides** | `skills/slides/skill.py` | file_read, file_write, web_search | HTML slides → PPTX |
-| **docs** | `skills/docs/skill.py` | file_read, file_write, web_search | HTML → DOCX/PDF |
-
----
-
-## 7. Configuration
-
-### 7.1 Main Config (`config/agent.json`)
-```json
-{
-  "model": {
-    "primary": "openrouter/deepseek/deepseek-v4-flash:free",
-    "api_key": "sk-or-v1-...",
-    "fallback": "openrouter/deepseek/deepseek-chat",
-    "params": {
-      "temperature": 0.5,
-      "max_tokens": 4096
-    }
-  }
-}
-```
-
-### 7.2 Environment Variables
-| Variable | Required | Description |
-|----------|----------|-------------|
-| `OPENROUTER_API_KEY` | Fallback | OpenRouter API key (optional if Kimi set) |
-| `KIMI_API_KEY` | Primary | Kimi Code API key (`sk-kimi-...`) |
-| `KIMI_BASE_URL` | No | Override base URL (default: `https://api.kimi.com/coding/v1`) |
-| `PYTHONIOENCODING` | No | Set to `utf-8` for Windows |
-
-### 7.3 Agent Config Fields
-```json
-{
-  "id": "unique-id",
-  "name": "Display Name",
-  "icon": "🤖",
-  "description": "What this agent does",
-  "role": "System prompt / instructions",
-  "model": {
-    "primary": "model-id",
-    "api_key": "${ENV_VAR}",
-    "fallback": "fallback-model",
-    "params": {"temperature": 0.5}
-  },
-  "skills": ["skill1", "skill2"],
-  "tools": ["tool1", "tool2"],
-  "sub_agents": ["agent-id-1"],
-  "memory": {"enabled": true, "scope": "agent"},
-  "output": {"format": "markdown", "path": "output/file.md"}
-}
-```
-
----
-
-## 8. Development Guide
-
-### 8.1 Project Setup
+### Backend
 
 ```bash
-# Clone project
-cd my-agent
-
-# Create virtual environment
-python -m venv venv
-source venv/bin/activate  # Linux/Mac
-# or
-venv\Scripts\activate     # Windows
-
-# Install dependencies
+python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
+cp .env.example .env
 
-# Verify setup
-python -m pytest tests/ -v
+# PostgreSQL + Redis (или docker compose up db redis -d)
+export DATABASE_URL=postgresql://agent:agentpass@127.0.0.1:5437/agent_db
+export REDIS_URL=redis://127.0.0.1:6380/0
+
+python -m uvicorn web.server:app --host 0.0.0.0 --port 8020 --reload
 ```
 
-### 8.2 Running the Server
+### Frontend
 
 ```bash
-# Set API key
-export OPENROUTER_API_KEY="sk-or-v1-..."
-
-# Run server
-python -m uvicorn web.server:app --host 0.0.0.0 --port 8000
-
-# Open browser
-# http://localhost:8000
+cd web/frontend && bun install && bun run build
+# Dev: bun run dev (proxy на :8020)
 ```
 
-### 8.3 Docker Deployment
+### Тесты
 
 ```bash
-# Build and run
-docker-compose up --build
-
-# Or manual
-docker build -t my-agent .
-docker run -p 8000:8000 -e OPENROUTER_API_KEY=... my-agent
+python -m pytest tests/ -q
+# E2E (нужен сервер на :8020):
+cd web/frontend && bun run test:e2e
 ```
 
-### 8.4 Adding a New Skill
-
-1. Create directory: `skills/my_skill/`
-2. Add `SKILL.md` — documentation
-3. Add `skill.py` — implementation with `register_tools()` function
-4. Register in `agents/registry.json` under agent's `skills` list
-
-Example `skill.py`:
-```python
-def my_tool(param: str) -> str:
-    """Tool description for LLM"""
-    return f"Result: {param}"
-
-def register_tools(registry):
-    registry.register("my_tool", my_tool)
-```
-
-### 8.5 Adding a New Agent
-
-1. Add entry to `agents/registry.json`
-2. Or use API: `POST /api/agents`
-
----
-
-## 9. Testing
+Smoke после деплоя:
 
 ```bash
-# Run all tests
-pytest tests/ -v
-
-# Run specific test file
-pytest tests/test_all.py -v
-
-# Run with coverage
-pytest tests/ --cov=core --cov-report=html
+curl -s http://127.0.0.1:8020/api/health
+docker compose exec -T agent python -m pytest tests/test_production_v34.py tests/test_marketplace.py -q
 ```
 
-Current test coverage: **20 tests** passing
-- `test_all.py` — 12 tests (core modules)
-- `test_skills_builder.py` — 6 tests (builder pattern)
+---
+
+## Web UI — маршруты
+
+| Маршрут | Описание |
+|---------|----------|
+| `/`, `/demo`, `/showcase` | Публичные (без auth) |
+| `/login` | Вход / регистрация |
+| `/app/` | Dashboard, activation hero |
+| `/app/chat` | Чат с агентами |
+| `/app/workflows`, `/app/workflows/:id` | Список и builder |
+| `/app/marketplace` | Шаблоны |
+| `/app/settings` | Интеграции, API keys, billing, agents/knowledge/MCP (tabs) |
+| `/app/onboarding` | 4-step wizard |
+| `/app/demo`, `/app/showcase` | In-app demo и кейсы |
+
+Редиректы: `/app/agents` → `settings?tab=agents`, `/welcome` → `/`.
+
+Дизайн: [web/frontend/DESIGN.md](web/frontend/DESIGN.md).
 
 ---
 
-## 10. Known Issues & Limitations
+## Переменные окружения
 
-### Resolved in 3.3.0
-- Ghost tools in chat (speak_text, web3, video_*) — removed from universal tool list
-- Workflow runs marked success when Telegram/Slack failed — executor now fails honestly
-- WorkflowBuilder / Publish modal EN strings — RU i18n complete
-- Dashboard integrations stat always 0 — fixed (`configured` field)
+| Переменная | Назначение |
+|------------|------------|
+| `KIMI_API_KEY` | Primary LLM (Kimi Code API) |
+| `OPENROUTER_API_KEY` | Fallback LLM |
+| `DATABASE_URL` | PostgreSQL (обязателен в production) |
+| `REDIS_URL` | Кэш, rate limits, workflow queue |
+| `AGENT_PASSWORD` / `AGENT_SECRET_KEY` | Админ и JWT |
+| `TAVILY_API_KEY` | Веб-поиск (опционально) |
 
-### Remaining
-1. **Blocking I/O in async endpoints** — some sync paths in orchestrator
-2. **E2E templates** — most templates need integration credentials for full delivery
-3. **Draft templates** — 3 templates tagged `draft` until gmail/notion nodes added
-4. Windows encoding issues with emojis in CLI
-
----
-
-## 11. File Map
-
-| File | Purpose | Lines |
-|------|---------|-------|
-| `agent.py` | CLI entry | ~100 |
-| `web/server.py` | FastAPI backend | ~150 |
-| `core/builder.py` | Agent builder | ~100 |
-| `core/runtime.py` | Execution loop | ~115 |
-| `core/orchestrator.py` | Task router | ~55 |
-| `core/llm_gateway.py` | LLM abstraction | ~40 |
-| `core/skill_loader.py` | Skill discovery | ~80 |
-| `core/tool_registry.py` | Tool registry | ~60 |
-| `core/memory_manager.py` | Session memory | ~90 |
-| `core/agent_store.py` | Agent CRUD | ~80 |
-| `core/auto_agent_factory.py` | Dynamic agents | ~120 |
-| `core/sub_agents.py` | Parallel execution | ~35 |
-| `core/config.py` | Configuration | ~70 |
-| `skills/*/skill.py` | Skill implementations | ~50-200 each |
-| `tools/*.py` | Tool implementations | ~30-100 each |
-| `web/static/*.html` | Frontend | ~100-150 each |
+Полный список: [.env.example](.env.example).
 
 ---
 
-## 12. Deployment Checklist
+## Связанные документы
 
-- [ ] Set `KIMI_API_KEY` (or `OPENROUTER_API_KEY` as fallback)
-- [ ] Configure `config/agent.json` with model settings
-- [ ] Install dependencies: `pip install -r requirements.txt`
-- [ ] Run tests: `pytest tests/ -v`
-- [ ] Start server: `python -m uvicorn web.server:app --host 0.0.0.0 --port 8000`
-- [ ] Open `http://localhost:8000`
-- [ ] Test chat with "Hello"
+| Тема | Файл |
+|------|------|
+| RU-руководство | [PROJECT_GUIDE.md](PROJECT_GUIDE.md) |
+| Деплой | [DEPLOYMENT.md](DEPLOYMENT.md) · [SERVER.md](SERVER.md) |
+| Безопасность | [SECURITY.md](SECURITY.md) |
+| Демо инвесторам | [DEMO.md](DEMO.md) · [INVESTOR.md](INVESTOR.md) |
+| Изменения | [CHANGELOG.md](CHANGELOG.md) |
+| Проблемы | [TROUBLESHOOTING.md](TROUBLESHOOTING.md) |
 
----
-
-**For questions or issues:** Check `plans/my-agent-web-ui.md` for detailed architecture decisions.
-
-**Next steps for development:** See ARCHITECTURE.md for detailed component interactions.
+**Лицензия:** MIT

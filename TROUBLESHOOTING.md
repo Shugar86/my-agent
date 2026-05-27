@@ -1,6 +1,7 @@
 # Troubleshooting Guide
 
-> My Agent — Common Issues & Solutions
+> My Agent — Common Issues & Solutions  
+> Version: **3.5.0** · Default port: **8020** (Docker / VDS)
 
 ---
 
@@ -31,13 +32,13 @@ export OPENROUTER_API_KEY="sk-or-v1-..."
 pkill -f uvicorn
 
 # Start fresh
-python -m uvicorn web.server:app --host 0.0.0.0 --port 8000
+python -m uvicorn web.server:app --host 0.0.0.0 --port 8020
 ```
 
 #### Port Already in Use
 ```bash
 # Find process
-netstat -ano | grep :8000
+netstat -ano | grep :8020
 
 # Kill it
 taskkill /F /PID <PID>
@@ -224,7 +225,7 @@ rm memory/sessions/*.json
 ```bash
 # Restart server
 pkill -f uvicorn
-python -m uvicorn web.server:app --host 0.0.0.0 --port 8000
+python -m uvicorn web.server:app --host 0.0.0.0 --port 8020
 ```
 
 **Fix:** Implement async runtime (see Architecture.md)

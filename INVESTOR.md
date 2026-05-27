@@ -6,7 +6,7 @@ One-page cheat sheet for demos and pitch meetings.
 
 | Surface | URL | Notes |
 |---------|-----|-------|
-| Landing | `/` or `/welcome` | Outcome pitch; **primary CTA → `/demo`** |
+| Landing | `/` (`/welcome` → 301) | React landing; **primary CTA → `/demo`** |
 | **Demo-MVP showcase** | **`/showcase`** (public) or **`/app/showcase`** (auth) | **7 vertical cases + `#playground` demo** |
 | Public demo | `/demo` | Competitor Intelligence only; no login |
 | Login | `/login` | Split SaaS layout; `?next=/app/onboarding` |

@@ -1,5 +1,14 @@
 # Changelog — My Agent
 
+## 3.5.1 — 2026-05-27 (Documentation)
+
+- Added [docs/README.md](docs/README.md) as documentation index
+- Streamlined [README.md](README.md) — removed inline changelog blocks, fixed port **8020**
+- Updated [PROJECT_GUIDE.md](PROJECT_GUIDE.md), [ARCHITECTURE.md](ARCHITECTURE.md), [DEPLOYMENT.md](DEPLOYMENT.md)
+- Removed obsolete session/meta docs (`CONTEXT.md`, `SESSION_HISTORY.md`, `AI_SKILLS.md`, audit snapshots)
+
+---
+
 ## 3.4.1 — 2026-05-26 (UX sprint — investor funnel)
 
 ### Frontend — status & demo UX
@@ -115,4 +124,4 @@
 
 ## 3.1.0 and earlier
 
-See git history and `SESSION_HISTORY.md`.
+See git history and [docs/README.md](docs/README.md).

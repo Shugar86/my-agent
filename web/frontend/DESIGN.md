@@ -61,7 +61,3 @@ Onboarding fallback cards: `src/config/onboardingUseCases.ts`.
 ## i18n
 
 Russian strings in `src/i18n/ru.ts`, accessed via `t('nav.dashboard')`.
-
-## Do not use
-
-Root `DESIGN-opencode-reference.md` is an OpenCode marketing reference — not this product.

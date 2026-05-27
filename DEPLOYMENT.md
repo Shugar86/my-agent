@@ -1,318 +1,125 @@
 # Deployment Guide
 
 > My Agent — Production Deployment  
-> Version: 3.1.0 | Investor Demo Ready
+> Version: **3.5.0**
 
-**На VDS `159.195.31.95`:** см. [SERVER.md](./SERVER.md) — порт **8020** (не 8000!).  
-**Investor demo:** см. [DEMO.md](./DEMO.md) — 90-second Competitor Intelligence flow.
+**VDS:** см. [SERVER.md](./SERVER.md) — порт **8020**.  
+**Investor demo:** [DEMO.md](./DEMO.md).
 
 ---
 
-## Quick Start (Local)
-
-### Prerequisites
-- Python 3.11+
-- pip
-- 2GB RAM minimum
-- OpenRouter API key
-
-### Step 1: Clone & Setup
+## Quick Start (Docker)
 
 ```bash
-git clone <your-repo-url> my-agent
-cd my-agent
+cp .env.example .env
+# KIMI_API_KEY=sk-kimi-...  (или OPENROUTER_API_KEY для fallback)
 
-# Create virtual environment
-python -m venv venv
+docker compose up -d --build
+curl -s http://127.0.0.1:8020/api/health
+```
 
-# Activate
-source venv/bin/activate  # Linux/Mac
-# or
-venv\Scripts\activate     # Windows
+Открыть: http://localhost:8020/app
 
-# Install dependencies
+С n8n для демо: `docker compose --profile demo up -d --build`
+
+---
+
+## Prerequisites
+
+- Docker + Docker Compose
+- 2 GB RAM minimum
+- `KIMI_API_KEY` и/или `OPENROUTER_API_KEY` (demo работает без ключей — mock)
+
+Production additionally:
+
+- PostgreSQL 16
+- Redis 7
+- TLS termination (nginx/Caddy) — см. `deploy/Caddyfile.prod`
+
+---
+
+## Environment
+
+```bash
+cp .env.example .env
+```
+
+| Variable | Production |
+|----------|------------|
+| `ENV` | `production` |
+| `DATABASE_URL` | PostgreSQL (required) |
+| `REDIS_URL` | Redis (required) |
+| `KIMI_API_KEY` | Primary LLM |
+| `AGENT_SECRET_KEY` | Random 32+ chars |
+| `AGENT_PASSWORD` | Change from default |
+
+`docker-compose.yml` выставляет `ENV=production` и подключает db/redis автоматически.
+
+---
+
+## Local development (without full compose)
+
+```bash
+python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
+
+export DATABASE_URL=postgresql://agent:agentpass@127.0.0.1:5437/agent_db
+export REDIS_URL=redis://127.0.0.1:6380/0
+
+python -m uvicorn web.server:app --host 0.0.0.0 --port 8020 --reload
 ```
 
-### Step 2: Configure
+Frontend rebuild after UI changes:
 
 ```bash
-# Edit config
-nano config/agent.json
-```
-
-```json
-{
-  "model": {
-    "primary": "openrouter/deepseek/deepseek-v4-flash:free",
-    "api_key": "sk-or-v1-YOUR_KEY_HERE",
-    "fallback": "openrouter/deepseek/deepseek-chat",
-    "params": {
-      "temperature": 0.5,
-      "max_tokens": 4096
-    }
-  }
-}
-```
-
-Or use environment variable:
-```bash
-export OPENROUTER_API_KEY="sk-or-v1-YOUR_KEY_HERE"
-```
-
-### Step 3: Test
-
-```bash
-# Run tests
-python -m pytest tests/ -v
-
-# Expected: 20 passed
-```
-
-### Step 4: Start Server
-
-```bash
-# Development
-python -m uvicorn web.server:app --host 127.0.0.1 --port 8000 --reload
-
-# Production (single worker)
-python -m uvicorn web.server:app --host 0.0.0.0 --port 8000
-
-# Production (multiple workers)
-python -m gunicorn web.server:app -w 4 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:8000
-```
-
-### Step 5: Access
-
-Open browser: `http://localhost:8000`
-
----
-
-## Docker Deployment
-
-### Build Image
-
-```bash
-docker build -t my-agent:latest .
-```
-
-### Run Container
-
-```bash
-# Basic
-docker run -d \
-  --name my-agent \
-  -p 8000:8000 \
-  -e OPENROUTER_API_KEY="sk-or-v1-..." \
-  my-agent:latest
-
-# With volume for persistence
-docker run -d \
-  --name my-agent \
-  -p 8000:8000 \
-  -v $(pwd)/output:/app/output \
-  -v $(pwd)/config:/app/config \
-  -e OPENROUTER_API_KEY="sk-or-v1-..." \
-  my-agent:latest
-```
-
-### Docker Compose
-
-```bash
-# Start
-docker-compose up -d
-
-# View logs
-docker-compose logs -f
-
-# Stop
-docker-compose down
+cd web/frontend && bun run build
 ```
 
 ---
 
-## Production Checklist
-
-### Security
-- [ ] Change default API key
-- [ ] Enable HTTPS (Let's Encrypt / Cloudflare)
-- [ ] Set up firewall (ufw/iptables)
-- [ ] Add authentication (OAuth2/JWT)
-- [ ] Rate limiting (nginx or middleware)
-- [ ] Input validation
-- [ ] CORS configuration
-- [ ] Secret management (Vault/AWS Secrets)
-
-### Performance
-- [ ] Use Redis for memory (not JSON files)
-- [ ] Add caching layer (Redis/Memcached)
-- [ ] Connection pooling for LLM API
-- [ ] Async runtime (fix blocking I/O)
-- [ ] CDN for static assets
-- [ ] Database (PostgreSQL) for agent registry
-
-### Monitoring
-- [x] Application logs (structured, rotating — `core/logging_setup.py`)
-- [x] Metrics endpoint (`GET /metrics` — Prometheus)
-- [x] Health checks (`GET /api/health`)
-- [x] Usage analytics UI (`/app/analytics` + `usage_events` table)
-- [ ] Error tracking (Sentry) — optional `SENTRY_DSN`
-- [ ] Grafana dashboards — scrape `/metrics` externally
-- [ ] Alerting (PagerDuty/Opsgenie)
-
-### Backup
-- [ ] Agent registry backup
-- [ ] Session data backup
-- [ ] Config backup
-- [ ] Automated backups (daily)
-
----
-
-## Environment Variables
-
-| Variable | Required | Default | Description |
-|----------|----------|---------|-------------|
-| `OPENROUTER_API_KEY` | Yes | - | OpenRouter API key |
-| `PYTHONIOENCODING` | No | utf-8 | Console encoding |
-| `LOG_LEVEL` | No | INFO | Logging level |
-| `REDIS_URL` | No | - | Redis connection |
-| `DB_URL` | No | - | Database connection |
-| `PORT` | No | 8000 | Server port |
-| `HOST` | No | 0.0.0.0 | Server host |
-| `WORKERS` | No | 1 | Uvicorn workers |
-| `MAX_TOKENS` | No | 4096 | LLM max tokens |
-| `TEMPERATURE` | No | 0.5 | LLM temperature |
-
----
-
-## Reverse Proxy (Nginx)
-
-```nginx
-server {
-    listen 80;
-    server_name your-domain.com;
-    
-    location / {
-        proxy_pass http://127.0.0.1:8000;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-        
-        # WebSocket support
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection "upgrade";
-        
-        # Timeouts
-        proxy_read_timeout 300s;
-        proxy_connect_timeout 75s;
-    }
-}
-```
-
----
-
-## Systemd Service
-
-Create `/etc/systemd/system/my-agent.service`:
-
-```ini
-[Unit]
-Description=My Agent AI Service
-After=network.target
-
-[Service]
-Type=simple
-User=myagent
-WorkingDirectory=/opt/my-agent
-Environment=OPENROUTER_API_KEY=sk-or-v1-...
-Environment=PYTHONIOENCODING=utf-8
-ExecStart=/opt/my-agent/venv/bin/uvicorn web.server:app --host 0.0.0.0 --port 8000
-Restart=always
-RestartSec=5
-
-[Install]
-WantedBy=multi-user.target
-```
-
-Enable:
-```bash
-sudo systemctl daemon-reload
-sudo systemctl enable my-agent
-sudo systemctl start my-agent
-sudo systemctl status my-agent
-```
-
----
-
-## SSL/HTTPS
-
-### Let's Encrypt
+## Tests before deploy
 
 ```bash
-# Install certbot
-sudo apt install certbot python3-certbot-nginx
+python -m pytest tests/ -q
 
-# Obtain certificate
-sudo certbot --nginx -d your-domain.com
-
-# Auto-renewal
-sudo certbot renew --dry-run
-```
-
-### Cloudflare
-
-1. Add site to Cloudflare
-2. Enable proxy (orange cloud)
-3. SSL/TLS → Full (strict)
-4. Enable "Always Use HTTPS"
-
----
-
-## Scaling
-
-### Horizontal (Multiple Instances)
-
-```
-Users → Load Balancer (Nginx/HAProxy)
-           ├── Instance 1 (Port 8000)
-           ├── Instance 2 (Port 8001)
-           └── Instance 3 (Port 8002)
-```
-
-Requirements:
-- Shared Redis for memory
-- Shared PostgreSQL for registry
-- Sticky sessions (optional)
-
-### Vertical (More Resources)
-
-```bash
-# Increase workers
-python -m gunicorn web.server:app -w 8 --threads 2
-
-# Increase memory
-# Upgrade server to 4GB+ RAM
+# Smoke (in container):
+docker compose exec -T agent python -m pytest \
+  tests/test_production_v34.py tests/test_marketplace.py -q
 ```
 
 ---
 
-## Troubleshooting
+## Production stack
 
-See TROUBLESHOOTING.md for common issues.
+| Component | Path |
+|-----------|------|
+| Docker prod | `deploy/docker-compose.prod.yml` |
+| systemd | `deploy/my-agent.service` |
+| Monitoring | `docker compose --profile monitoring up -d` |
+| Backup | `deploy/scripts/backup-db.sh` |
 
----
-
-## Health Check
-
-```bash
-# Check if server is running
-curl http://localhost:8000/api/agents
-
-# Expected: JSON with agent list
-```
+Подробный runbook: [deploy/README.md](./deploy/README.md), [AUDIT_PRODUCTION_2026.md](./AUDIT_PRODUCTION_2026.md).
 
 ---
 
-End of Deployment Guide
+## Checklist
+
+- [ ] `.env` с уникальными `AGENT_PASSWORD`, `AGENT_SECRET_KEY`
+- [ ] `DATABASE_URL` + `REDIS_URL` заданы
+- [ ] `curl http://127.0.0.1:8020/api/health` → `redis: true`
+- [ ] TLS перед публичным доступом
+- [ ] `cd web/frontend && bun run build` после изменений UI
+- [ ] Не коммитить `.env`, `logs/`, runtime `data/`
+
+---
+
+## Troubleshooting deploy
+
+| Issue | Fix |
+|-------|-----|
+| Health `redis: false` | Start redis service, check `REDIS_URL` |
+| PG connection refused | `docker compose up db -d`, port 5437 on host |
+| 502 behind nginx | Agent listens on **8020**, not 8000 |
+| Templates empty | `docker compose exec agent python scripts/seed_workflow_templates.py` |
+
+См. [TROUBLESHOOTING.md](./TROUBLESHOOTING.md).

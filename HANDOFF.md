@@ -1,8 +1,8 @@
 # Handoff Instructions — My Agent
 
-> **Date:** 2026-05-26  
-> **Version:** 3.4.0  
-> **Last session:** CEO audit — production readiness (systemd, PG, Redis queue, Grafana)
+> **Date:** 2026-05-27  
+> **Version:** 3.5.0  
+> **Docs index:** [docs/README.md](./docs/README.md)
 
 ---
 
