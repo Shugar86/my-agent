@@ -25,7 +25,12 @@ _PROJECT_ROOT = Path(__file__).resolve().parent.parent
 DEMO_DIR = _PROJECT_ROOT / "data" / "demo"
 REAL_MODE_LLM_KEYS = ("OPENROUTER_API_KEY", "NEUROAPI_API_KEY")
 
-_PREVIEW_MODEL = "openrouter/openai/gpt-oss-20b:free"
+_PREVIEW_MODELS = [
+    "openai/gpt-oss-20b:free",
+    "google/gemma-4-26b-a4b-it:free",
+    "meta-llama/llama-3.3-70b-instruct:free",
+    "qwen/qwen3-coder:free",
+]
 
 
 def _real_mode_available() -> bool:
@@ -359,16 +364,17 @@ def _require_preview_key() -> None:
 
 
 async def _preview_completion(messages: list[dict[str, str]]) -> str:
-    """Call OpenRouter via sync requests in a thread — avoids async SSL issues."""
+    """Call OpenRouter with automatic fallback across free models on 429."""
     import requests as _requests
 
-    model_id = _PREVIEW_MODEL.removeprefix("openrouter/")
+    api_key = os.getenv("OPENROUTER_API_KEY", "")
+    last_error: Exception | None = None
 
-    def _call() -> str:
+    def _call(model_id: str) -> str:
         resp = _requests.post(
             "https://openrouter.ai/api/v1/chat/completions",
             headers={
-                "Authorization": f"Bearer {os.getenv('OPENROUTER_API_KEY', '')}",
+                "Authorization": f"Bearer {api_key}",
                 "Content-Type": "application/json",
             },
             json={
@@ -382,7 +388,16 @@ async def _preview_completion(messages: list[dict[str, str]]) -> str:
         resp.raise_for_status()
         return resp.json()["choices"][0]["message"]["content"] or ""
 
-    return await asyncio.to_thread(_call)
+    for model_id in _PREVIEW_MODELS:
+        try:
+            return await asyncio.to_thread(_call, model_id)
+        except _requests.HTTPError as exc:
+            last_error = exc
+            if exc.response is not None and exc.response.status_code == 429:
+                logger.info("Model %s rate-limited, trying next", model_id)
+                continue
+            raise
+    raise last_error or RuntimeError("All preview models exhausted")
 
 
 def _extract_json(text: str) -> dict:

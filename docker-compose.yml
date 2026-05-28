@@ -61,7 +61,7 @@ services:
     build: .
     container_name: my-agent
     ports:
-      - "127.0.0.1:8020:8020"
+      - "0.0.0.0:8020:8020"
     env_file:
       - .env
     environment:
