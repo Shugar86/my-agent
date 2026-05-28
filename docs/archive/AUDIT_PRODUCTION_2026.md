@@ -83,7 +83,7 @@ flowchart LR
 | Worker service split | P2 | Scheduler still in API process |
 | External uptime check | P2 | UptimeRobot on `/api/health` |
 | Full isolation audit | P2 | Extend tests beyond workflow runs |
-| HubSpot/Airtable | P3 | See AUDIT_PRODUCT_2026.md |
+| HubSpot/Airtable | P3 | See [AUDIT_PRODUCT_2026.md](./AUDIT_PRODUCT_2026.md) |
 
 ---
 

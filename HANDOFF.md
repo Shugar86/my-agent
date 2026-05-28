@@ -60,17 +60,19 @@ docker compose exec -T agent python -m pytest tests/test_demo_flow.py -q
 
 ---
 
-## Key Files (3.4.0)
+## Key Files (3.5.2)
 
 | Area | Files |
 |------|-------|
+| LLM config | `config/agent.json` (OpenRouter primary) |
+| Chat memory | `core/pg_state.py`, `core/memory_manager.py` |
 | Run queue | `core/workflow/run_queue.py`, `core/redis_client.py` |
 | Prod DB | `core/db_manager.py` (fail-fast PG in production) |
 | systemd | `deploy/my-agent.service` |
 | Backup | `deploy/scripts/backup-db.sh` |
 | Migration | `scripts/migrate_sqlite_to_postgres.py` |
 | Monitoring | `deploy/monitoring/` (Grafana dashboard, Prometheus alerts) |
-| Audits | `AUDIT_PRODUCTION_2026.md`, `AUDIT_PRODUCT_2026.md`, `SERVER.md` |
+| Archive audits | `docs/archive/` |
 
 ---
 
@@ -105,7 +107,7 @@ curl -s http://127.0.0.1:8020/api/health   # expect redis: true
 ```
 
 Path on VDS: `/opt/projects/my-agent/`  
-Full runbook: [SERVER.md](./SERVER.md), [AUDIT_PRODUCTION_2026.md](./AUDIT_PRODUCTION_2026.md)
+Full runbook: [SERVER.md](./SERVER.md), [docs/archive/AUDIT_PRODUCTION_2026.md](./docs/archive/AUDIT_PRODUCTION_2026.md)
 
 ---
 
@@ -114,5 +116,5 @@ Full runbook: [SERVER.md](./SERVER.md), [AUDIT_PRODUCTION_2026.md](./AUDIT_PRODU
 - Stripe payment integration (plan limits exist; no checkout)
 - Worker service split (scheduler still in API process)
 - External uptime check (UptimeRobot)
-- HubSpot / Airtable connectors — see AUDIT_PRODUCT_2026.md
+- HubSpot / Airtable connectors — see [docs/archive/AUDIT_PRODUCT_2026.md](./docs/archive/AUDIT_PRODUCT_2026.md)
 - 3 templates still `draft`
