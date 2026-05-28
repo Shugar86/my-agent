@@ -840,15 +840,17 @@ async def chat_stream(request: Request, body: ChatRequest):
 
             max_turns = 10
             total_output_tokens = 0
+            full_response = ""
             for turn in range(max_turns):
                 messages = [{"role": "system", "content": system_prompt}] + session.messages
                 tool_call_seen = False
+                turn_text = ""
 
-                # Now async-native: await llm.chat_stream()
                 async for event in llm.chat_stream(messages, tools=tools if tools else None):
                     yield f"data: {json.dumps(event)}\n\n"
                     if event["type"] == "token":
                         total_output_tokens += 1
+                        turn_text += event.get("content", "")
                     elif event["type"] == "tool_call":
                         tool_call_seen = True
                         try:
@@ -885,9 +887,13 @@ async def chat_stream(request: Request, body: ChatRequest):
                         LLM_TOKEN_COUNT.labels(model=model_name).inc(total_output_tokens)
                         break
 
+                full_response += turn_text
+
                 if not tool_call_seen:
                     break
 
+            if full_response.strip():
+                session.add_assistant_message(full_response)
             if agent.memory.enabled:
                 await agent.memory.persist_session(session)
         except Exception as e:

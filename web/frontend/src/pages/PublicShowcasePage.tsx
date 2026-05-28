@@ -1,9 +1,8 @@
 import { useEffect, useState } from 'react';
-import PlaygroundDemo from '../components/demo/PlaygroundDemo';
+import AgentPreviewWidget from '../components/demo/AgentPreviewWidget';
 import FeatureTag from '../components/ui/FeatureTag';
 import { SHOWCASE_CARD_TEMPLATES, showcaseCardFeatureStatus } from '../config/showcaseCards';
 import { getPageFeatureStatus } from '../config/featureRegistry';
-import { COMPETITOR_DEMO_PRESETS } from '../lib/demoNodeLabels';
 import { useDemoAwareFetch } from '../hooks/useDemoAwareFetch';
 import { loginUrl } from '../lib/routes';
 import { t } from '../i18n';
@@ -180,15 +179,11 @@ export default function PublicShowcasePage() {
 
       <div id="playground" style={{ marginBottom: 48 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
-          <h2 className="landing-section-title" style={{ fontSize: '1.25rem', margin: 0 }}>{t('playground.title')}</h2>
+          <h2 className="landing-section-title" style={{ fontSize: '1.25rem', margin: 0 }}>{t('agentPreview.title')}</h2>
           <FeatureTag status={getPageFeatureStatus('showcase.playground')} showDot={false} />
         </div>
         <div className="landing-demo-embed">
-          <PlaygroundDemo
-            publicMode
-            lockPreset="competitor"
-            presets={COMPETITOR_DEMO_PRESETS}
-          />
+          <AgentPreviewWidget />
         </div>
       </div>
 

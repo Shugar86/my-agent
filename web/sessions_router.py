@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import logging
+import os
 import uuid
 
 from fastapi import APIRouter, HTTPException, Request
@@ -10,9 +12,11 @@ from pydantic import BaseModel
 from core.state_db import StateDB
 from core.session_store import get_state_db_path
 
+logger = logging.getLogger(__name__)
 router = APIRouter(tags=["sessions"])
 
 _state_db: StateDB | None = None
+_pg_memory: object | None = None
 
 
 def get_state_db() -> StateDB:
@@ -21,6 +25,15 @@ def get_state_db() -> StateDB:
     if _state_db is None:
         _state_db = StateDB(get_state_db_path())
     return _state_db
+
+
+def _get_pg_memory():
+    """Lazy singleton MemoryManager for PG reads (avoids pool-per-request)."""
+    global _pg_memory
+    if _pg_memory is None:
+        from core.memory_manager import MemoryManager
+        _pg_memory = MemoryManager({"enabled": True})
+    return _pg_memory
 
 
 def _full_session_id(user_id: str, workspace_id: str | None, raw_id: str) -> str:
@@ -92,15 +105,40 @@ async def create_session(request: Request, body: SessionCreateRequest):
     return {"id": raw_id, "full_id": full_id, "title": body.title}
 
 
+def _is_pg_backend() -> bool:
+    """Check if the primary session storage is PostgreSQL."""
+    db_url = os.environ.get("DATABASE_URL", "")
+    return db_url.startswith(("postgresql://", "postgres://"))
+
+
 @router.get("/api/sessions/{session_id}/messages")
 async def get_session_messages(request: Request, session_id: str):
-    """Get messages for a chat session."""
+    """Get messages for a chat session.
+
+    When DATABASE_URL points to PostgreSQL, reads from MemoryManager/PG
+    (the same backend SSE chat writes to) to avoid the PG/SQLite split.
+    Falls back to StateDB (SQLite) otherwise.
+    """
     user_id = getattr(request.state, "user_id", None)
     if not user_id:
         raise HTTPException(status_code=401, detail="Not authenticated")
     workspace_id = getattr(request.state, "workspace_id", None)
     full_id = _full_session_id(user_id, workspace_id, session_id)
     _assert_session_owner(user_id, workspace_id, full_id)
+
+    if _is_pg_backend():
+        try:
+            mm = _get_pg_memory()
+            session = await mm.get_session_async(full_id)
+            messages = [
+                {"role": m["role"], "content": m.get("content") or ""}
+                for m in session.messages
+                if m["role"] in ("user", "assistant") and m.get("content")
+            ]
+            return {"session_id": session_id, "messages": messages}
+        except Exception as exc:
+            logger.warning("PG session read failed for %s, falling back to SQLite: %s", full_id, exc)
+
     state_db = get_state_db()
     if not state_db.get_session(full_id):
         raise HTTPException(status_code=404, detail="Session not found")

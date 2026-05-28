@@ -249,6 +249,55 @@
   display: block;
 }
 
+.landing-hero-widget {
+  border-radius: 12px;
+  background: #0d1117;
+  border: 1px solid #30363d;
+  box-shadow: var(--landing-shadow);
+  padding: 24px;
+  min-height: 280px;
+}
+
+.landing-hero-widget .playground-demo {
+  background: transparent;
+}
+
+.landing-hero-widget .card {
+  background: #161b22;
+  border-color: #30363d;
+}
+
+.landing-hero-widget .input {
+  background: #161b22;
+  border-color: #30363d;
+  color: #e6edf3;
+}
+
+.landing-hero-widget .badge {
+  background: rgba(255, 77, 0, 0.15);
+  color: var(--landing-accent);
+}
+
+.landing-hero-widget label,
+.landing-hero-widget p,
+.landing-hero-widget span {
+  color: #8b949e;
+}
+
+.landing-hero-widget h2,
+.landing-hero-widget h3 {
+  color: #e6edf3;
+}
+
+.landing-hero-widget .btn-primary {
+  background: var(--landing-accent);
+  color: #fff;
+}
+
+.landing-hero-widget .btn-ghost {
+  color: #8b949e;
+}
+
 .landing-proof-strip {
   background: var(--landing-bg-secondary);
   border-block: 1px solid var(--landing-border);

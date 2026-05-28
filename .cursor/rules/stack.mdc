@@ -1,0 +1,33 @@
+---
+description: AI Agent System — my-agent правила и архитектура
+globs: ["**/*.py", "**/ARCHITECTURE.md", "**/CONTEXT.md"]
+---
+
+# my-agent — Modular AI Agent System
+
+## Стек
+- Python 3.12, FastAPI, asyncio
+- Standalone Docker Compose в `/opt/projects/my-agent/`
+- Порт: `localhost:8020` (через `tunnel-myagent`)
+
+## Архитектура
+- Модульная система: каждый агент — отдельный модуль
+- Коммуникация через HTTP или очередь
+- Конфиги через `.env` + `pydantic-settings`
+
+## Разработка
+```bash
+# Запуск туннеля к VDS
+ssh -N -L 8020:localhost:8020 vds-root &
+
+# Деплой
+ssh vds-root "cd /opt/projects/my-agent && git pull && docker compose up -d --build"
+
+# Логи
+ssh vds-root "cd /opt/projects/my-agent && docker compose logs -f --tail=50"
+```
+
+## Правила агента
+- Новые агенты — отдельные модули, не трогай core
+- Все внешние API-вызовы — с retry и timeout
+- Логи через structlog или stdlib logging (не print)

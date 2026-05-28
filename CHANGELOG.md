@@ -1,5 +1,42 @@
 # Changelog — My Agent
 
+## 4.0.0 — 2026-05-28 (Agent OS pivot + landing redesign)
+
+### Product narrative
+- **Pivot:** «Competitor Intelligence за 90 сек» → «AI-оператор для бизнеса за 2 минуты».
+- **Landing redesign:** 6 секций вместо 9. Hero = AgentPreviewWidget (live LLM). Убраны Pricing, Problems, Proof strip. Добавлены showcase cards (3 live кейса с persona snippets).
+- **Dashboard:** chat-first hero, primary CTA → `/app/chat`, stats скрыты при пустой БД.
+- **DemoModal:** PlaygroundDemo → AgentPreviewWidget.
+- **Onboarding step 1:** PlaygroundDemo → AgentPreviewWidget.
+
+### New endpoints
+- `POST /api/demo/public/agent-preview` — live LLM генерация AI-оператора из текстового описания задачи (deepseek-chat-v3-free via OpenRouter).
+- `POST /api/demo/public/agent-chat` — follow-up chat с preview-агентом.
+- Rate limit: 5 preview + 10 chat req/IP/hour (Redis middleware).
+- Guard: 503 при отсутствии `OPENROUTER_API_KEY`; prompt injection protection; regex JSON extraction.
+
+### Kimi cleanup
+- Удалены `api_key` / `base_url` Kimi из всех 10 агентов в `registry.json`.
+- Все агенты используют `model: "balanced"` → OpenRouter через `configurator.py`.
+- Удалены Kimi-ссылки из i18n, AgentsPage, `.env.example`.
+
+### Chat reliability (Phase 2)
+- **SSE persistence:** `chat_stream` теперь сохраняет `full_response` через `session.add_assistant_message()` перед `persist_session()`.
+- **Unified storage:** `sessions_router` читает messages из PG (MemoryManager) когда `DATABASE_URL` = PostgreSQL. Singleton `_get_pg_memory()`.
+- **SSE error handling:** ChatPage обрабатывает `event.type === 'error'`.
+- **Real mode:** `REAL_MODE_LLM_KEYS` расширен на `NEUROAPI_API_KEY`; Tavily больше не обязателен.
+
+### Deploy fixes
+- `.env.example`: `AGENT_PASSWORD=change-me-12ch` (>= 12 символов).
+- `deploy/.env.example`: добавлены `AGENT_PASSWORD`, `TAVILY_API_KEY`.
+- `REAL_MODE_SEARCH_KEYS` удалён (dead code).
+
+### Docs
+- README, DEMO.md, INVESTOR.md переписаны под новый narrative.
+- Удалены orphan i18n ключи (problems, pricing, old stats).
+
+---
+
 ## 3.5.3 — 2026-05-27 (TROUBLES remediation + re-audit)
 
 ### Security & build

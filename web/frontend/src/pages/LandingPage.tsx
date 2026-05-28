@@ -1,26 +1,44 @@
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import PlaygroundDemo from '../components/demo/PlaygroundDemo';
+import AgentPreviewWidget from '../components/demo/AgentPreviewWidget';
 import ProductNarrative from '../components/ProductNarrative';
 import TemplateCardGrid from '../components/marketplace/TemplateCardGrid';
 import FeatureTag from '../components/ui/FeatureTag';
-import { getPageFeatureStatus } from '../config/featureRegistry';
-import { COMPETITOR_DEMO_PRESETS } from '../lib/demoNodeLabels';
 import { loginUrl } from '../lib/routes';
 import { t } from '../i18n';
 
-const PROOF_ITEMS = [
-  'Mary Jewelry — Telegram-консультант',
-  'DocBrain — legal SaaS, Stripe',
-  'Pretenzia — 15 000+ документов',
-  'PEGAS Touristik — автоканал',
-];
+interface ShowcaseCard {
+  id: string;
+  vertical: string;
+  title: string;
+  one_liner: string;
+  status: 'live' | 'lab';
+  platform: string;
+  metric: string;
+  icon: string;
+  persona: { snippets: Array<{ text: string }> };
+}
 
-const PROBLEM_ICONS = ['⏱', '🔗', '💬'];
+const FEATURED_IDS = ['ararat', 'pegasszn', 'docbrain'];
 
 /** Public marketing landing at `/`. */
 export default function LandingPage() {
+  const [showcaseCards, setShowcaseCards] = useState<ShowcaseCard[]>([]);
+
+  useEffect(() => {
+    fetch('/welcome-assets/data/showcase.json')
+      .then((r) => r.json())
+      .then((data) => {
+        const cards: ShowcaseCard[] = data.cards || [];
+        const featured = cards.filter((c) => FEATURED_IDS.includes(c.id) && c.status === 'live');
+        setShowcaseCards(featured.length > 0 ? featured : cards.filter((c) => c.status === 'live').slice(0, 3));
+      })
+      .catch(() => {});
+  }, []);
+
   return (
     <>
+      {/* --- Hero: text + live AgentPreviewWidget --- */}
       <header className="landing-hero">
         <div className="landing-hero-grid">
           <div>
@@ -36,81 +54,82 @@ export default function LandingPage() {
             </h1>
             <p className="landing-hero-desc">{t('landing.heroDesc')}</p>
             <div className="landing-hero-actions">
-              <Link to="/showcase#playground" className="landing-btn landing-btn-primary">
+              <a href="#live-demo" className="landing-btn landing-btn-primary">
                 {t('landing.heroPrimaryCta')}
-              </Link>
-              <Link to="/showcase" className="landing-btn landing-btn-secondary">
+              </a>
+              <a href="#showcase" className="landing-btn landing-btn-secondary">
                 {t('landing.heroSecondaryCta')}
-              </Link>
+              </a>
             </div>
-            <div className="landing-hero-stats" style={{ position: 'relative' }}>
-              <FeatureTag status={getPageFeatureStatus('landing.heroStats')} showDot={false} />
+            <div className="landing-hero-stats">
               <div>
                 <span className="landing-stat-value">50+</span>
                 <span className="landing-stat-label">{t('landing.statTemplates')}</span>
               </div>
               <div>
-                <span className="landing-stat-value">90 {t('landing.statSec')}</span>
-                <span className="landing-stat-label">{t('landing.statTimeToWow')}</span>
+                <span className="landing-stat-value">7</span>
+                <span className="landing-stat-label">{t('landing.statDeployments')}</span>
               </div>
               <div>
-                <span className="landing-stat-value">$0.42</span>
-                <span className="landing-stat-label">{t('landing.statDemoCost')}</span>
+                <span className="landing-stat-value">30+</span>
+                <span className="landing-stat-label">{t('landing.statSkills')}</span>
               </div>
               <div>
-                <span className="landing-stat-value">~4ч</span>
-                <span className="landing-stat-label">{t('landing.statSaved')}</span>
+                <span className="landing-stat-value">2 {t('landing.statMin')}</span>
+                <span className="landing-stat-label">{t('landing.statFirstAgent')}</span>
               </div>
             </div>
           </div>
-          <div className="landing-device-frame">
-            <div className="landing-device-frame__bar">
-              <span className="landing-device-frame__dot" />
-              <span className="landing-device-frame__dot" />
-              <span className="landing-device-frame__dot" />
-            </div>
-            <div className="landing-device-frame__body">
-              <img src="/welcome-assets/assets/product-dashboard.svg" alt={t('landing.productScreenshotAlt')} />
-            </div>
+          <div id="live-demo" className="landing-hero-widget">
+            <AgentPreviewWidget />
           </div>
         </div>
       </header>
 
-      <div className="landing-proof-strip">
-        <div className="landing-proof-inner">
-          {PROOF_ITEMS.map((item, i) => (
-            <span key={item}>
-              {i > 0 && ' · '}
-              {item}
-            </span>
-          ))}
-        </div>
-      </div>
-
-      <section id="problems" className="landing-section">
+      {/* --- Showcase: 3 live cases --- */}
+      <section id="showcase" className="landing-section">
         <div className="landing-section-header">
-          <span className="landing-section-tag">{t('landing.problemsTag')}</span>
-          <h2 className="landing-section-title">{t('landing.problemsTitle')}</h2>
+          <span className="landing-section-tag">{t('landing.showcaseTag')}</span>
+          <h2 className="landing-section-title">{t('landing.showcaseTitle')}</h2>
+          <p className="landing-section-desc">{t('landing.showcaseDesc')}</p>
         </div>
-        <div className="landing-cards-grid">
-          <article className="landing-card">
-            <div className="landing-card-num">{PROBLEM_ICONS[0]}</div>
-            <h3>{t('landing.problem1Title')}</h3>
-            <p>{t('landing.problem1Desc')}</p>
-          </article>
-          <article className="landing-card">
-            <div className="landing-card-num">{PROBLEM_ICONS[1]}</div>
-            <h3>{t('landing.problem2Title')}</h3>
-            <p>{t('landing.problem2Desc')}</p>
-          </article>
-          <article className="landing-card">
-            <div className="landing-card-num">{PROBLEM_ICONS[2]}</div>
-            <h3>{t('landing.problem3Title')}</h3>
-            <p>{t('landing.problem3Desc')}</p>
-          </article>
+        {showcaseCards.length > 0 && (
+          <div className="landing-cards-grid">
+            {showcaseCards.map((card) => (
+              <article key={card.id} className="landing-card">
+                <div style={{ display: 'flex', gap: 12, marginBottom: 10 }}>
+                  <img src={`/welcome-assets/assets/icons/${card.icon}.svg`} alt="" width={40} height={40} />
+                  <div>
+                    <div style={{ fontSize: 11, color: 'var(--landing-accent)', fontWeight: 600, textTransform: 'uppercase' }}>
+                      {card.vertical}
+                    </div>
+                    <h3 style={{ fontSize: 16, margin: '4px 0 0' }}>{card.title}</h3>
+                  </div>
+                </div>
+                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 10 }}>
+                  <FeatureTag status="live" showDot={false} />
+                  <span className="badge">{card.platform}</span>
+                </div>
+                <p style={{ fontSize: 13, color: 'var(--landing-text-muted)', marginBottom: 8 }}>{card.one_liner}</p>
+                <p style={{ fontSize: 13, fontWeight: 600, marginBottom: 10 }}>{card.metric}</p>
+                {card.persona.snippets[0] && (
+                  <p style={{ fontSize: 12, color: 'var(--landing-text-muted)', fontStyle: 'italic', borderLeft: '2px solid var(--landing-accent)', paddingLeft: 10 }}>
+                    {card.persona.snippets[0].text.slice(0, 140)}
+                    {card.persona.snippets[0].text.length > 140 ? '...' : ''}
+                  </p>
+                )}
+              </article>
+            ))}
+          </div>
+        )}
+        <div style={{ textAlign: 'center', marginTop: 24 }}>
+          <Link to="/showcase" className="landing-btn landing-btn-secondary">
+            {t('landing.showcaseAllCta')}
+          </Link>
         </div>
       </section>
 
+      {/* --- How it works: 3 steps --- */}
       <section id="product" className="landing-section">
         <div className="landing-section-header">
           <span className="landing-section-tag">{t('landing.howTag')}</span>
@@ -139,18 +158,22 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <section id="live-demo" className="landing-section">
+      {/* --- Marketplace preview --- */}
+      <section id="marketplace-preview" className="landing-section">
         <div className="landing-section-header">
-          <span className="landing-section-tag">{t('landing.liveDemoTag')}</span>
-          <FeatureTag status={getPageFeatureStatus('landing.liveDemo')} showDot={false} />
-          <h2 className="landing-section-title">{t('landing.liveDemoTitle')}</h2>
-          <p className="landing-section-desc">{t('landing.liveDemoDesc')}</p>
+          <span className="landing-section-tag">{t('landing.marketplaceTag')}</span>
+          <h2 className="landing-section-title">{t('landing.marketplaceTitle')}</h2>
+          <p className="landing-section-desc">{t('landing.marketplaceDesc')}</p>
         </div>
-        <div className="landing-demo-embed">
-          <PlaygroundDemo variant="compact" publicMode lockPreset="competitor" presets={COMPETITOR_DEMO_PRESETS} />
+        <TemplateCardGrid limit={4} publicMode />
+        <div style={{ textAlign: 'center', marginTop: 28 }}>
+          <a href={loginUrl('/app/marketplace')} className="landing-btn landing-btn-primary">
+            {t('landing.marketplaceCta')}
+          </a>
         </div>
       </section>
 
+      {/* --- Trust --- */}
       <section className="landing-section">
         <div className="landing-section-header">
           <span className="landing-section-tag">{t('landing.trustTag')}</span>
@@ -172,71 +195,11 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <section id="marketplace-preview" className="landing-section">
-        <div className="landing-section-header">
-          <span className="landing-section-tag">{t('landing.marketplaceTag')}</span>
-          <h2 className="landing-section-title">{t('landing.marketplaceTitle')}</h2>
-          <p className="landing-section-desc">{t('landing.marketplaceDesc')}</p>
-        </div>
-        <TemplateCardGrid limit={4} publicMode />
-        <div style={{ textAlign: 'center', marginTop: 28 }}>
-          <a href={loginUrl('/app/marketplace')} className="landing-btn landing-btn-primary">
-            {t('landing.marketplaceCta')}
-          </a>
-        </div>
-      </section>
-
-      <section id="pricing" className="landing-section">
-        <div className="landing-section-header">
-          <span className="landing-section-tag">{t('landing.pricingTag')}</span>
-          <h2 className="landing-section-title">{t('landing.pricingTitle')}</h2>
-        </div>
-        <div className="landing-pricing-grid">
-          <div className="landing-pricing-card">
-            <h3>Starter</h3>
-            <div className="landing-pricing-price">$0 <span>/ {t('landing.pricingPerMonth')}</span></div>
-            <ul>
-              <li>{t('landing.pricingStarter1')}</li>
-              <li>{t('landing.pricingStarter2')}</li>
-              <li>{t('landing.pricingStarter3')}</li>
-            </ul>
-            <a href={loginUrl()} className="landing-btn landing-btn-secondary" style={{ width: '100%' }}>
-              {t('landing.pricingStart')}
-            </a>
-          </div>
-          <div className="landing-pricing-card landing-pricing-card--featured">
-            <span className="landing-pricing-badge">{t('landing.pricingPopular')}</span>
-            <h3>Pro</h3>
-            <div className="landing-pricing-price">$49 <span>/ {t('landing.pricingPerMonth')}</span></div>
-            <ul>
-              <li>{t('landing.pricingPro1')}</li>
-              <li>{t('landing.pricingPro2')}</li>
-              <li>{t('landing.pricingPro3')}</li>
-              <li>{t('landing.pricingPro4')}</li>
-            </ul>
-            <a href={loginUrl()} className="landing-btn landing-btn-primary" style={{ width: '100%' }}>
-              {t('landing.pricingTryPro')}
-            </a>
-          </div>
-          <div className="landing-pricing-card">
-            <h3>Enterprise</h3>
-            <div className="landing-pricing-price">Custom</div>
-            <ul>
-              <li>{t('landing.pricingEnt1')}</li>
-              <li>{t('landing.pricingEnt2')}</li>
-              <li>{t('landing.pricingEnt3')}</li>
-            </ul>
-            <Link to="/showcase#cta" className="landing-btn landing-btn-secondary" style={{ width: '100%' }}>
-              {t('landing.pricingContact')}
-            </Link>
-          </div>
-        </div>
-      </section>
-
+      {/* --- Footer CTA --- */}
       <section className="landing-footer-cta">
         <h2>{t('landing.footerCtaTitle')}</h2>
         <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
-          <Link to="/showcase#playground" className="landing-btn landing-btn-primary">{t('landing.footerCtaDemo')}</Link>
+          <a href="#live-demo" className="landing-btn landing-btn-primary">{t('landing.footerCtaDemo')}</a>
           <Link to="/showcase" className="landing-btn landing-btn-secondary">{t('landing.footerCtaCases')}</Link>
         </div>
       </section>
@@ -249,8 +212,7 @@ export default function LandingPage() {
           </Link>
           <div className="landing-footer-links">
             <Link to="/showcase">{t('nav.showcase')}</Link>
-            <Link to="/showcase#playground">{t('landing.navDemo')}</Link>
-            <a href="/#pricing">{t('landing.navPricing')}</a>
+            <a href="#live-demo">{t('landing.navDemo')}</a>
             <a href={loginUrl()}>{t('landing.navLogin')}</a>
           </div>
           <p style={{ fontSize: 12, color: 'var(--landing-text-muted)', margin: 0 }}>

@@ -17,6 +17,8 @@ PUBLIC_EXACT_PATHS = {
     "/api/register",
     "/api/health",
     "/api/demo/public/run",
+    "/api/demo/public/agent-preview",
+    "/api/demo/public/agent-chat",
     "/api/leads/showcase",
     "/metrics",
 }
@@ -85,5 +87,9 @@ def resolve_rate_limit(path: str, method: str) -> RateLimitRule | None:
         return RateLimitRule("workflow_run", 10)
     if path.startswith("/api/workflows/webhook/"):
         return RateLimitRule("workflow_webhook", 60)
+    if path == "/api/demo/public/agent-preview":
+        return RateLimitRule("demo_agent_preview", 5, window=3600)
+    if path == "/api/demo/public/agent-chat":
+        return RateLimitRule("demo_agent_chat", 10, window=3600)
 
     return None

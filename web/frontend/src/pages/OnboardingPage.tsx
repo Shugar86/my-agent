@@ -14,7 +14,7 @@ import {
   logUxEvent,
   type Integration,
 } from '../api/appClient';
-import PlaygroundDemo from '../components/demo/PlaygroundDemo';
+import AgentPreviewWidget from '../components/demo/AgentPreviewWidget';
 import FeatureTag from '../components/ui/FeatureTag';
 import {
   filterOnboardingUsecaseCards,
@@ -23,7 +23,6 @@ import {
   type OnboardingUsecaseCard,
 } from '../config/onboardingUseCases';
 import { getPageFeatureStatus } from '../config/featureRegistry';
-import { COMPETITOR_DEMO_PRESETS } from '../lib/demoNodeLabels';
 import ProductNarrative from '../components/ProductNarrative';
 import { fetchWithDemoFallback } from '../lib/demoFallback';
 import { appRoute } from '../lib/routes';
@@ -47,8 +46,6 @@ export default function OnboardingPage() {
   const [installedWfId, setInstalledWfId] = useState<string | null>(null);
   const [drafts, setDrafts] = useState<Record<string, Record<string, string>>>({});
   const [testing, setTesting] = useState<string | null>(null);
-  const [demoCompleted, setDemoCompleted] = useState(false);
-  const [demoSuccessMsg, setDemoSuccessMsg] = useState('');
   const [usecaseSuccessMsg, setUsecaseSuccessMsg] = useState('');
   const [creatingTeam, setCreatingTeam] = useState(false);
 
@@ -202,33 +199,15 @@ export default function OnboardingPage() {
         <div className="card">
           <h2 style={{ fontSize: 16, marginBottom: 8 }}>{t('onboarding.demoTitle')}</h2>
           <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 16 }}>{t('onboarding.demoDesc')}</p>
-          <PlaygroundDemo
-            variant="compact"
-            lockPreset="competitor"
-            presets={COMPETITOR_DEMO_PRESETS}
-            showContinue={demoCompleted}
-            onComplete={(result) => {
-              if (result.status === 'success' || result.status === 'completed') {
-                setDemoCompleted(true);
-                setDemoSuccessMsg(t('onboarding.demoSuccess'));
-                logUxEvent('onboarding_demo_completed');
-              }
-            }}
-            onContinue={() => setStep(2)}
-          />
-          {demoSuccessMsg && (
-            <p style={{ fontSize: 13, color: 'var(--success)', marginTop: 12 }}>{demoSuccessMsg}</p>
-          )}
-          {!demoCompleted && (
-            <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
-              <button type="button" className="btn btn-ghost" onClick={() => setStep(2)}>
-                {t('common.skip')}
-              </button>
-              <button type="button" className="btn btn-ghost" onClick={() => navigate(appRoute('/marketplace'))}>
-                {t('onboarding.skipToMarketplace')}
-              </button>
-            </div>
-          )}
+          <AgentPreviewWidget compact />
+          <div style={{ display: 'flex', gap: 8, marginTop: 16, flexWrap: 'wrap' }}>
+            <button type="button" className="btn btn-primary" onClick={() => { setStep(2); logUxEvent('onboarding_demo_completed'); }}>
+              {t('common.continue')}
+            </button>
+            <button type="button" className="btn btn-ghost" onClick={() => navigate(appRoute('/marketplace'))}>
+              {t('onboarding.skipToMarketplace')}
+            </button>
+          </div>
         </div>
       )}
 

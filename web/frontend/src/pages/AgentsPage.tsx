@@ -70,7 +70,7 @@ export default function AgentsPage({ embedded = false }: { embedded?: boolean })
         icon: form.icon || '🤖',
         description: form.description,
         role: form.role,
-        model: 'kimi',
+        model: 'balanced',
         skills: form.skills.split(',').map((s) => s.trim()).filter(Boolean),
         tools: form.tools.split(',').map((s) => s.trim()).filter(Boolean),
         sub_agents: [],

@@ -527,6 +527,45 @@ export async function getDemoSample(
   return res.json();
 }
 
+// ---------------------------------------------------------------------------
+// Public agent preview (live LLM, no auth)
+// ---------------------------------------------------------------------------
+
+export interface AgentPreviewResult {
+  name: string;
+  icon: string;
+  role: string;
+  skills: string[];
+  sample_response: string;
+}
+
+export async function getAgentPreview(task: string): Promise<AgentPreviewResult> {
+  const res = await fetch('/api/demo/public/agent-preview', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ task }),
+  });
+  if (!res.ok) {
+    const text = await res.text().catch(() => '');
+    throw new Error(text || `Agent preview failed (${res.status})`);
+  }
+  return res.json();
+}
+
+export async function agentPreviewChat(role: string, message: string): Promise<string> {
+  const res = await fetch('/api/demo/public/agent-chat', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ role, message }),
+  });
+  if (!res.ok) {
+    const text = await res.text().catch(() => '');
+    throw new Error(text || `Agent chat failed (${res.status})`);
+  }
+  const data = await res.json();
+  return data.response || '';
+}
+
 export async function streamChat(
   message: string,
   agentId: string,

@@ -1,11 +1,12 @@
 # My Agent
 
-**Autonomous Workflow OS** — визуальный конструктор workflow, маркетплейс шаблонов, multi-agent чат и deep research на базе Kimi K2.
+**AI Agent OS** — опишите задачу, получите AI-оператора для бизнеса. Без кода, без интегратора.
 
 | | |
 |---|---|
-| **Версия** | 3.5.3 |
+| **Версия** | 4.0.0 |
 | **Стек** | Python 3.11 · FastAPI · React 18 · PostgreSQL · Redis |
+| **LLM** | OpenRouter (deepseek, owl-alpha, claude и др.) |
 | **Документация** | [docs/README.md](docs/README.md) — полный индекс |
 
 ---
@@ -14,35 +15,34 @@
 
 ```bash
 cp .env.example .env
-# Минимум: KIMI_API_KEY или OPENROUTER_API_KEY (demo работает и без ключей)
+# Минимум: OPENROUTER_API_KEY (public demo работает и без ключей — mock fallback)
+# AGENT_PASSWORD — в production >= 12 символов
 
 docker compose up -d --build
-# Первый старт: seed шаблонов + demo DOCX (entrypoint)
 ```
 
 | URL | Назначение |
 |-----|------------|
-| http://localhost:8020/ | Публичный лендинг (React) |
-| **http://localhost:8020/showcase#playground** | **Канонический demo** — Competitor Intelligence 90s → DOCX |
-| http://localhost:8020/showcase | 7 вертикальных кейсов + playground |
-| http://localhost:8020/demo | Shortcut на тот же playground (вторичный) |
+| http://localhost:8020/ | Лендинг — live demo «Создайте AI-оператора» |
+| http://localhost:8020/showcase | 7 вертикальных кейсов в production |
+| http://localhost:8020/demo | Live agent preview (shortcut) |
 | http://localhost:8020/app/ | Продукт (после login) |
 | http://localhost:8020/login | JWT + Google OAuth |
 
-Логин по умолчанию: `admin` / `admin` (dev). В **production** задайте `AGENT_PASSWORD` ≥ 12 символов — иначе bootstrap admin не создастся.
-
-Демо с n8n: `docker compose --profile demo up -d --build` → [DEMO.md](DEMO.md).
+Логин по умолчанию: `admin` / значение `AGENT_PASSWORD` из `.env`. В **production** (`ENV=production`) пароль должен быть >= 12 символов.
 
 ---
 
-## Возможности
+## Что умеет My Agent
 
-- **Workflow engine** — DAG builder (React Flow), 21+ типов узлов, async runs, Redis queue
-- **Marketplace** — 52+ шаблона, demo-run, публичный share `/app/share/templates/:id`
-- **7 агентов** — universal, researcher, developer, marketer, data_analyst, slides, docs
-- **30+ skills** — research, browser, RAG, docs/slides, messaging, scheduler, …
-- **Интеграции** — Telegram, Slack, n8n webhook, Google OAuth
-- **Production** — PostgreSQL + Redis обязательны при `ENV=production`; Prometheus/Grafana (`--profile monitoring`)
+- **Agent Preview** — опишите задачу текстом → AI генерирует оператора (live LLM, без регистрации)
+- **10 агентов** — universal, researcher, developer, marketer, data_analyst, slides, docs, media, data_engineer, news
+- **30+ skills** — research, browser, RAG, docs/slides, messaging, scheduler, code execution, OCR, vision и др.
+- **AutoAgentFactory** — LLM анализирует задачу, создаёт sub-агентов, запускает параллельно
+- **Workflow engine** — visual DAG builder (React Flow), 21+ типов узлов, async runs, Redis queue
+- **Marketplace** — 50+ шаблонов, install в один клик, публичный share
+- **7 live deployments** — Mary Jewelry, PEGAS Touristik, DocBrain, Pretenzia и др.
+- **Интеграции** — Telegram, Slack, n8n webhook, Google OAuth, Gmail, Sheets
 
 Подробнее: [ARCHITECTURE.md](ARCHITECTURE.md).
 
@@ -55,14 +55,15 @@ my-agent/
 ├── agent.py              # CLI
 ├── web/
 │   ├── server.py         # FastAPI
+│   ├── demo_router.py    # Public agent preview + demo endpoints
 │   └── frontend/         # React SPA (Vite, bun)
-├── core/                 # runtime, orchestrator, workflow, auth, billing
+├── core/                 # runtime, orchestrator, workflow, auth
 ├── skills/               # доменные навыки (SKILL.md + skill.py)
 ├── tools/                # регистрация инструментов
-├── agents/registry.json  # профили агентов
+├── agents/registry.json  # профили агентов (model: "balanced" → OpenRouter)
 ├── config/               # agent.json, models.yaml
-├── tests/                # pytest (+ Playwright в web/frontend/e2e)
-├── deploy/               # prod compose, systemd, monitoring
+├── tests/                # pytest (+ Playwright e2e)
+├── deploy/               # prod compose, monitoring
 └── docker-compose.yml    # db + redis + agent (:8020)
 ```
 
@@ -74,8 +75,8 @@ my-agent/
 
 ```bash
 python -m venv .venv && source .venv/bin/activate
-pip install -e ".[dev]"   # предпочтительно; requirements.txt — legacy
-cp .env.example .env
+pip install -e ".[dev]"
+cp .env.example .env     # заполнить OPENROUTER_API_KEY
 
 # PostgreSQL + Redis (или docker compose up db redis -d)
 export DATABASE_URL=postgresql://agent:agentpass@127.0.0.1:5437/agent_db
@@ -83,8 +84,6 @@ export REDIS_URL=redis://127.0.0.1:6380/0
 
 python -m uvicorn web.server:app --host 0.0.0.0 --port 8020 --reload
 ```
-
-`execute_code` (Python/JS/Bash) требует **Docker на хосте**. В prod-контейнере — mount `docker.sock` (см. [DEPLOYMENT.md](DEPLOYMENT.md)).
 
 ### Frontend
 
@@ -96,25 +95,13 @@ cd web/frontend && bun install && bun run build
 ### Тесты
 
 ```bash
-# Gate после security/remediation fixes (60 tests)
 pytest tests/test_code_tools.py tests/test_file_tools.py \
        tests/test_security_improvements.py tests/test_async_utils.py \
        tests/test_db_manager.py tests/test_production_hardening.py \
        tests/test_all.py::test_memory_manager -q
 
-bash scripts/check-secrets.sh   # CI: .github/workflows/secrets-check.yml
-uv build                        # pyproject setuptools packages.find
-
+bash scripts/check-secrets.sh
 python -m pytest tests/test_demo_flow.py tests/test_marketplace.py -q
-# E2E canonical demo (нужен сервер на :8020):
-cd web/frontend && E2E_DEMO_RUN=1 npx playwright test e2e/investor-funnel.spec.ts -g "Canonical demo"
-```
-
-Smoke после деплоя:
-
-```bash
-curl -s http://127.0.0.1:8020/api/health
-docker compose exec -T agent python -m pytest tests/test_demo_flow.py -q
 ```
 
 ---
@@ -123,19 +110,17 @@ docker compose exec -T agent python -m pytest tests/test_demo_flow.py -q
 
 | Маршрут | Описание |
 |---------|----------|
-| `/`, `/showcase`, `/demo` | Публичные (без auth); **канонический demo:** `/showcase#playground` |
+| `/` | Лендинг: hero + agent preview + showcase cards + marketplace |
+| `/showcase` | 7 vertical кейсов + agent preview widget |
+| `/demo` | Live agent preview (shortcut) |
 | `/login` | Вход / регистрация |
-| `/app/` | Dashboard, activation hero |
-| `/app/chat` | Чат с агентами |
-| `/app/workflows`, `/app/workflows/:id` | Список и builder |
+| `/app/` | Dashboard: chat-first hero + showcase + templates |
+| `/app/chat` | Multi-thread chat с агентами (SSE) |
+| `/app/workflows`, `/app/workflows/:id` | Список и visual builder |
 | `/app/marketplace` | Шаблоны |
-| `/app/settings` | Интеграции, API keys, billing, agents/knowledge/MCP (tabs) |
-| `/app/onboarding` | 4-step wizard |
-| `/app/demo`, `/app/showcase` | In-app demo и кейсы |
-
-Редиректы: `/app/agents` → `settings?tab=agents`, `/welcome` → `/`.
-
-Дизайн: [web/frontend/DESIGN.md](web/frontend/DESIGN.md).
+| `/app/settings` | API keys, agents, integrations, MCP |
+| `/app/onboarding` | 4-step wizard (agent preview → usecase → workspace → integrations) |
+| `/app/demo` | In-app competitor demo (PlaygroundDemo, behind login) |
 
 ---
 
@@ -143,14 +128,14 @@ docker compose exec -T agent python -m pytest tests/test_demo_flow.py -q
 
 | Переменная | Назначение |
 |------------|------------|
-| `KIMI_API_KEY` | Primary LLM (Kimi Code API) |
-| `OPENROUTER_API_KEY` | Fallback LLM |
+| `OPENROUTER_API_KEY` | Primary LLM (все агенты через profile `balanced`) |
+| `NEUROAPI_API_KEY` | Альтернативный LLM provider |
+| `TAVILY_API_KEY` | Веб-поиск для research workflows |
 | `DATABASE_URL` | PostgreSQL (обязателен в production) |
 | `REDIS_URL` | Кэш, rate limits, workflow queue |
-| `AGENT_PASSWORD` / `AGENT_SECRET_KEY` | Админ и JWT (prod: пароль ≥ 12 символов) |
-| `CORS_ORIGINS` | Доп. origins через запятую (localhost всегда в dev) |
-| `AGENT_WORKSPACE` | Корень для `file_read` / `file_write` (default: cwd) |
-| `TAVILY_API_KEY` | Веб-поиск (опционально) |
+| `AGENT_PASSWORD` | Пароль admin (prod: >= 12 символов) |
+| `AGENT_SECRET_KEY` | JWT secret (>= 32 символа) |
+| `CORS_ORIGINS` | Доп. origins через запятую |
 
 Полный список: [.env.example](.env.example).
 
@@ -160,11 +145,10 @@ docker compose exec -T agent python -m pytest tests/test_demo_flow.py -q
 
 | Тема | Файл |
 |------|------|
-| RU-руководство | [PROJECT_GUIDE.md](PROJECT_GUIDE.md) |
-| Деплой | [DEPLOYMENT.md](DEPLOYMENT.md) · [SERVER.md](SERVER.md) |
+| Демо инвесторам | [DEMO.md](DEMO.md) |
+| Деплой | [DEPLOYMENT.md](DEPLOYMENT.md) |
 | Безопасность | [SECURITY.md](SECURITY.md) |
-| Демо инвесторам | [DEMO.md](DEMO.md) · [INVESTOR.md](INVESTOR.md) |
 | Изменения | [CHANGELOG.md](CHANGELOG.md) |
-| Проблемы | [TROUBLES.md](TROUBLES.md) · [TROUBLESHOOTING.md](TROUBLESHOOTING.md) |
+| Аудит / проблемы | [TROUBLES.md](TROUBLES.md) |
 
 **Лицензия:** MIT

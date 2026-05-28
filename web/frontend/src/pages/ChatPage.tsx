@@ -194,6 +194,12 @@ export default function ChatPage() {
             },
           ]);
         }
+        if (event.type === 'error') {
+          assistantText = String(event.content || t('chat.responseError'));
+          setMessages((prev) =>
+            prev.map((m) => (m.id === assistantId ? { ...m, content: assistantText } : m)),
+          );
+        }
       }, threadId);
       logUxEvent('chat_message_sent', { agent_id: agentId });
       loadThreads();

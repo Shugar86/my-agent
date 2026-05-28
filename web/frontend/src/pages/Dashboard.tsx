@@ -128,7 +128,7 @@ export default function Dashboard() {
           <p className="dashboard-hero__desc">{t('dashboard.heroDesc')}</p>
         </div>
         <div className="dashboard-hero__actions">
-          <Link to={appRoute('/marketplace')} className="btn btn-primary">{t('dashboard.heroPrimaryCta')}</Link>
+          <Link to={appRoute('/chat')} className="btn btn-primary">{t('dashboard.heroPrimaryCta')}</Link>
           <button type="button" className="btn" onClick={() => setDemoOpen(true)}>
             {t('dashboard.tryDemoModal')}
           </button>
@@ -139,23 +139,25 @@ export default function Dashboard() {
         <GettingStartedBanner onOpenDemo={() => setDemoOpen(true)} />
       )}
 
-      <section style={{ marginBottom: 32 }}>
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
-            gap: 12,
-          }}
-        >
-          {statCards.map((card) => (
-            <div key={card.label} className="card" style={{ padding: 16 }}>
-              <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{card.label}</div>
-              <div style={{ fontSize: 28, fontWeight: 700, color: 'var(--accent)' }}>{card.value}</div>
-              <div style={{ fontSize: 11, color: 'var(--text-subtle)' }}>{card.hint}</div>
-            </div>
-          ))}
-        </div>
-      </section>
+      {(stats.workflows > 0 || stats.agents > 0) && (
+        <section style={{ marginBottom: 32 }}>
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
+              gap: 12,
+            }}
+          >
+            {statCards.map((card) => (
+              <div key={card.label} className="card" style={{ padding: 16 }}>
+                <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{card.label}</div>
+                <div style={{ fontSize: 28, fontWeight: 700, color: 'var(--accent)' }}>{card.value}</div>
+                <div style={{ fontSize: 11, color: 'var(--text-subtle)' }}>{card.hint}</div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       <section style={{ marginBottom: 32 }}>
         <PageHeader
