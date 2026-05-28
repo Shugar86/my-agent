@@ -20,7 +20,6 @@ async def demo_client(monkeypatch, tmp_path):
     """HTTP client with seeded competitor template and demo DOCX."""
     os.environ["ENV"] = "test"
     monkeypatch.delenv("DATABASE_URL", raising=False)
-    monkeypatch.delenv("KIMI_API_KEY", raising=False)
     monkeypatch.delenv("OPENROUTER_API_KEY", raising=False)
     monkeypatch.delenv("NEUROAPI_API_KEY", raising=False)
 

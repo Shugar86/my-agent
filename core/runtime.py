@@ -9,7 +9,7 @@ from rich.panel import Panel
 from rich.markdown import Markdown
 
 from core.iteration_budget import IterationBudget, BudgetExhaustedError
-from core.kimi_provider import extract_message_content
+from core.llm_gateway import extract_message_content
 from core.skill_cache import filter_skills_by_query
 
 os.environ.setdefault("PYTHONIOENCODING", "utf-8")

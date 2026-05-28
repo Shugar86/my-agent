@@ -92,7 +92,7 @@ def check_first_run():
 ║                                                              ║
 ║  Это первый запуск. Нужно настроить:                         ║
 ║                                                              ║
-║  1. API ключ Kimi (KIMI_API_KEY) или OpenRouter              ║
+║  1. API ключ OpenRouter (OPENROUTER_API_KEY)                 ║
 ║  2. Выбрать модель по умолчанию                             ║
 ║                                                              ║
 ║  Запусти:  agent setup                                       ║
@@ -110,19 +110,17 @@ def cmd_setup(args):
     name = input("Ваше имя [User]: ").strip() or "User"
     
     print("\nДоступные модели:")
-    print("  1. kimi      — Kimi K2 (рекомендуется, primary)")
+    print("  1. balanced  — OpenRouter owl-alpha (~6с, рекомендуется)")
     print("  2. fast      — NeuroAPI gpt-5.4-nano (~1.5с)")
-    print("  3. balanced  — OpenRouter owl-alpha (~6с)")
-    print("  4. smart     — Claude Sonnet (~8с)")
-    print("  5. local     — Ollama на localhost")
+    print("  3. smart     — Claude Sonnet (~8с)")
+    print("  4. local     — Ollama на localhost")
     
     choice = input("\nВыберите модель [1]: ").strip() or "1"
     profiles = {
-        "1": ("openai/kimi-for-coding", "https://api.kimi.com/coding/v1", "KIMI_API_KEY"),
+        "1": ("openrouter/owl-alpha", "https://openrouter.ai/api/v1", "OPENROUTER_API_KEY"),
         "2": ("openai/gpt-5.4-nano", "https://neuroapi.host/v1", "NEUROAPI_API_KEY"),
-        "3": ("openrouter/owl-alpha", "https://openrouter.ai/api/v1", "OPENROUTER_API_KEY"),
-        "4": ("anthropic/claude-sonnet-4", "https://openrouter.ai/api/v1", "OPENROUTER_API_KEY"),
-        "5": ("ollama/llama3", "http://localhost:11434", None),
+        "3": ("anthropic/claude-sonnet-4", "https://openrouter.ai/api/v1", "OPENROUTER_API_KEY"),
+        "4": ("ollama/llama3", "http://localhost:11434", None),
     }
     
     model_id, base_url, env_key = profiles.get(choice, profiles["1"])

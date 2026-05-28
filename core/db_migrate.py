@@ -1,13 +1,32 @@
 """Run Alembic migrations on application startup."""
 
+from __future__ import annotations
+
+import importlib
 import logging
 import os
+import sys
 from pathlib import Path
-
-from alembic import command
-from alembic.config import Config
+from typing import Any
 
 logger = logging.getLogger(__name__)
+
+
+def _load_alembic() -> tuple[Any, type]:
+    """Import Alembic modules without shadowing by local ``alembic/`` migrations dir."""
+    project_root = Path(__file__).resolve().parent.parent
+    original_path = sys.path.copy()
+    try:
+        sys.path = [
+            entry
+            for entry in sys.path
+            if entry and Path(entry).resolve() != project_root
+        ]
+        command = importlib.import_module("alembic.command")
+        config_mod = importlib.import_module("alembic.config")
+        return command, config_mod.Config
+    finally:
+        sys.path = original_path
 
 
 def run_migrations(database_url: str | None = None) -> None:
@@ -26,6 +45,7 @@ def run_migrations(database_url: str | None = None) -> None:
     data_dir = project_root / "data"
     data_dir.mkdir(parents=True, exist_ok=True)
 
+    command, Config = _load_alembic()
     cfg = Config(str(alembic_ini))
     cfg.set_main_option("sqlalchemy.url", url)
     cfg.set_main_option("script_location", str(project_root / "alembic"))

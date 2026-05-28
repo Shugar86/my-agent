@@ -1,7 +1,7 @@
 import logging
 
 from core.async_utils import run_coro_sync
-from core.kimi_provider import extract_message_content
+from core.llm_gateway import extract_message_content
 
 logger = logging.getLogger(__name__)
 

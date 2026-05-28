@@ -35,7 +35,7 @@ interface ConnectionDraft {
   [field: string]: string;
 }
 
-const DEFAULT_MODEL_PROFILE = 'kimi';
+const DEFAULT_MODEL_PROFILE = 'balanced';
 
 /** Settings with tabs: integrations, models/API keys, workspace profile. */
 export default function SettingsPage() {
@@ -52,7 +52,7 @@ export default function SettingsPage() {
   const [apiKey, setApiKey] = useState('');
   const [primaryModel, setPrimaryModel] = useState(DEFAULT_MODEL_PROFILE);
   const [modelOptions, setModelOptions] = useState<Array<{ value: string; label: string }>>([
-    { value: 'kimi', label: 'Kimi K2.6 Code' },
+    { value: 'balanced', label: 'OpenRouter Balanced' },
   ]);
   const [me, setMe] = useState<MeUser | null>(null);
   const [billing, setBilling] = useState<BillingPlan | null>(null);

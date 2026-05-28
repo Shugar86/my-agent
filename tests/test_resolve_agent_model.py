@@ -6,10 +6,10 @@ from core.config import resolve_agent_model_config, load_agent_config
 
 
 def test_resolve_profile_name(monkeypatch) -> None:
-    monkeypatch.setenv("KIMI_API_KEY", "sk-kimi-test")
-    cfg = resolve_agent_model_config({"model": "kimi"})
-    assert cfg["primary"] == "openai/kimi-for-coding"
-    assert cfg["api_key"] == "sk-kimi-test"
+    monkeypatch.setenv("OPENROUTER_API_KEY", "sk-or-v1-test")
+    cfg = resolve_agent_model_config({"model": "balanced"})
+    assert cfg["primary"] == "openrouter/owl-alpha"
+    assert cfg["api_key"] == "sk-or-v1-test"
 
 
 def test_resolve_legacy_model_string() -> None:

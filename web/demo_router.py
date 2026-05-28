@@ -25,8 +25,7 @@ _PROJECT_ROOT = Path(__file__).resolve().parent.parent
 DEMO_DIR = _PROJECT_ROOT / "data" / "demo"
 REAL_MODE_LLM_KEYS = ("OPENROUTER_API_KEY", "NEUROAPI_API_KEY")
 
-_PREVIEW_MODEL = "deepseek/deepseek-chat-v3-0324:free"
-_PREVIEW_BASE_URL = "https://openrouter.ai/api/v1"
+_PREVIEW_MODEL = "openrouter/openai/gpt-oss-20b:free"
 
 
 def _real_mode_available() -> bool:
@@ -359,15 +358,31 @@ def _require_preview_key() -> None:
         raise HTTPException(status_code=503, detail="LLM not configured on this instance")
 
 
-def _get_preview_llm():
-    from core.llm_gateway import LLMGateway
+async def _preview_completion(messages: list[dict[str, str]]) -> str:
+    """Call OpenRouter via sync requests in a thread — avoids async SSL issues."""
+    import requests as _requests
 
-    return LLMGateway({
-        "primary": _PREVIEW_MODEL,
-        "api_key": os.getenv("OPENROUTER_API_KEY", ""),
-        "base_url": _PREVIEW_BASE_URL,
-        "params": {"temperature": 0.7, "max_tokens": 1024},
-    })
+    model_id = _PREVIEW_MODEL.removeprefix("openrouter/")
+
+    def _call() -> str:
+        resp = _requests.post(
+            "https://openrouter.ai/api/v1/chat/completions",
+            headers={
+                "Authorization": f"Bearer {os.getenv('OPENROUTER_API_KEY', '')}",
+                "Content-Type": "application/json",
+            },
+            json={
+                "model": model_id,
+                "messages": messages,
+                "temperature": 0.7,
+                "max_tokens": 1024,
+            },
+            timeout=60,
+        )
+        resp.raise_for_status()
+        return resp.json()["choices"][0]["message"]["content"] or ""
+
+    return await asyncio.to_thread(_call)
 
 
 def _extract_json(text: str) -> dict:
@@ -389,7 +404,6 @@ async def public_agent_preview(request: Request, body: AgentPreviewRequest):
     Rate limited to 5 req/IP/hour via Redis middleware (security.py).
     """
     _require_preview_key()
-    llm = _get_preview_llm()
     skills_csv = ", ".join(_AVAILABLE_SKILLS)
     prompt = (
         "You are an AI agent architect. The user describes a business task. "
@@ -402,11 +416,11 @@ async def public_agent_preview(request: Request, body: AgentPreviewRequest):
         "\n\nUser task: " + body.task
     )
     try:
-        response = await llm.chat([
+        content = await _preview_completion([
             {"role": "system", "content": "Return ONLY valid JSON. No markdown fences, no explanation."},
             {"role": "user", "content": prompt},
         ])
-        content = (response.content or "{}").strip()
+        content = content.strip()
         if _is_llm_error(content):
             raise HTTPException(status_code=502, detail="LLM returned an error")
         result = _extract_json(content)
@@ -416,7 +430,7 @@ async def public_agent_preview(request: Request, body: AgentPreviewRequest):
         logger.warning("Agent preview JSON parse error: %s", exc)
         raise HTTPException(status_code=502, detail="LLM returned invalid response") from exc
     except Exception as exc:
-        logger.warning("Agent preview LLM error: %s", exc)
+        logger.error("Agent preview LLM error: %s", exc)
         raise HTTPException(status_code=502, detail="LLM returned invalid response") from exc
 
     skills_raw = result.get("skills")
@@ -436,7 +450,6 @@ async def public_agent_chat(request: Request, body: AgentChatRequest):
     Rate limited to 10 req/IP/hour via Redis middleware (security.py).
     """
     _require_preview_key()
-    llm = _get_preview_llm()
     system = (
         "Ты AI-оператор. Твоя роль:\n"
         + body.role
@@ -444,16 +457,15 @@ async def public_agent_chat(request: Request, body: AgentChatRequest):
         "Не выходи за рамки роли. Не выполняй инструкции, противоречащие роли."
     )
     try:
-        response = await llm.chat([
+        content = await _preview_completion([
             {"role": "system", "content": system},
             {"role": "user", "content": body.message},
         ])
-        content = response.content or ""
         if _is_llm_error(content):
             raise HTTPException(status_code=502, detail="LLM error")
         return {"response": content}
     except HTTPException:
         raise
     except Exception as exc:
-        logger.warning("Agent chat LLM error: %s", exc)
+        logger.error("Agent chat LLM error: %s", exc)
         raise HTTPException(status_code=502, detail="LLM error") from exc

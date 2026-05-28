@@ -95,7 +95,7 @@ def resolve_agent_model_config(
 
     Supports:
     - full model dict (``config/agent.json`` style)
-    - profile name (``kimi``, ``fast``, …)
+    - profile name (``balanced``, ``fast``, ``smart``, …)
     - legacy model id string + agent-level api_key/base_url
     - fallback to ``config/agent.json`` then DEFAULT_CONFIG
     """

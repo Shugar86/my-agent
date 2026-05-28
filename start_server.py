@@ -4,10 +4,8 @@ import requests
 import os
 import sys
 
-kimi_key = os.environ.get("KIMI_API_KEY")
-openrouter_key = os.environ.get("OPENROUTER_API_KEY")
-if not kimi_key and not openrouter_key:
-    print("Note: KIMI_API_KEY / OPENROUTER_API_KEY not set — chat will fail, but demo mock flow works.")
+if not os.environ.get("OPENROUTER_API_KEY"):
+    print("Note: OPENROUTER_API_KEY not set — chat will fail, but demo mock flow works.")
 
 print("Starting server...")
 proc = subprocess.Popen(

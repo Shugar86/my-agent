@@ -3,20 +3,7 @@ import json
 import os
 from typing import Dict, Optional
 
-# Built-in model profiles
 MODEL_PROFILES = {
-    "kimi": {
-        "primary": "openai/kimi-for-coding",
-        "api_key": "${KIMI_API_KEY}",
-        "base_url": "https://api.kimi.com/coding/v1",
-        "fallback": "openrouter/owl-alpha",
-        "fallback_api_key": "${OPENROUTER_API_KEY}",
-        "fallback_base_url": "https://openrouter.ai/api/v1",
-        "params": {"temperature": 0.7, "max_tokens": 8192},
-        "max_retries": 3,
-        "retry_base_delay": 5.0,
-        "retry_max_delay": 60.0,
-    },
     "fast": {
         "primary": "openai/gpt-5.4-nano",
         "api_key": "${NEUROAPI_API_KEY}",
@@ -64,7 +51,6 @@ MODEL_PROFILES = {
     },
 }
 
-# Task presets
 TASK_PRESETS: Dict[str, Dict] = {
     "researcher": {
         "name": "Исследователь",
@@ -104,7 +90,7 @@ TASK_PRESETS: Dict[str, Dict] = {
     "universal": {
         "name": "Универсальный",
         "description": "Все навыки",
-        "skills": [],  # Will be populated with all
+        "skills": [],
         "tools": [],
         "role": "Ты — универсальный AI-ассистент с доступом ко всем инструментам.",
     },
@@ -113,18 +99,17 @@ TASK_PRESETS: Dict[str, Dict] = {
 
 def resolve_profile(profile_name: str) -> Optional[Dict]:
     """Resolve a model profile name to full configuration.
-    
+
     Args:
-        profile_name: One of 'kimi', 'fast', 'balanced', 'smart', 'local'
-        
+        profile_name: One of 'fast', 'balanced', 'smart', 'local'
+
     Returns:
-        Dict with full model configuration or None if unknown
+        Dict with full model configuration or None if unknown.
     """
     profile = MODEL_PROFILES.get(profile_name)
     if not profile:
         return None
-    
-    # Resolve env vars
+
     resolved = {}
     for key, value in profile.items():
         if isinstance(value, str) and value.startswith("${") and value.endswith("}"):
@@ -132,30 +117,18 @@ def resolve_profile(profile_name: str) -> Optional[Dict]:
             resolved[key] = os.environ.get(env_var, "")
         else:
             resolved[key] = value
-    
+
     return resolved
 
 
 def get_task_preset(task_name: str) -> Optional[Dict]:
-    """Get a task preset by name.
-    
-    Args:
-        task_name: One of the preset names
-        
-    Returns:
-        Dict with task configuration or None
-    """
+    """Get a task preset by name."""
     return TASK_PRESETS.get(task_name)
 
 
 def list_profiles() -> Dict[str, str]:
-    """List all available model profiles.
-    
-    Returns:
-        Dict mapping profile name to description
-    """
+    """List all available model profiles."""
     return {
-        "kimi": "Kimi K2.6 Code — primary для chat и workflows",
         "fast": "NeuroAPI primary (~1.5s) — для повседневных задач",
         "balanced": "OpenRouter primary (~6s) — надёжность и качество",
         "smart": "Claude Sonnet (~8s) — для сложных задач",
@@ -164,11 +137,7 @@ def list_profiles() -> Dict[str, str]:
 
 
 def list_task_presets() -> Dict[str, Dict]:
-    """List all available task presets.
-    
-    Returns:
-        Dict mapping preset name to info
-    """
+    """List all available task presets."""
     return {
         name: {"name": info["name"], "description": info["description"]}
         for name, info in TASK_PRESETS.items()
