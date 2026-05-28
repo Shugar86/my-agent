@@ -77,4 +77,4 @@
 - [README.md](./README.md) — setup & changelog  
 - [CHANGELOG.md](./CHANGELOG.md) — release notes  
 - [HANDOFF.md](./HANDOFF.md) — operational handoff  
-- [AUDIT_REPORT.md](./AUDIT_REPORT.md) — metrics snapshot  
+- [AUDIT_REPORT.md](./AUDIT_REPORT.md) — metrics snapshot (this folder)  

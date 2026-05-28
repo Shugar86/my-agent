@@ -1,7 +1,7 @@
 # Architecture
 
 > My Agent — System Architecture  
-> Version: **3.5.0**
+> Version: **3.5.2**
 
 ---
 
@@ -28,13 +28,15 @@
        │          └──────┬───────┘
        ▼                 │
 ┌─────────────────────────────────────────────────────────────┐
-│  AgentBuilder → AgentRuntime → LLMGateway (Kimi + litellm)   │
-│  SkillLoader · ToolRegistry · MemoryManager                  │
+│  AgentBuilder → AgentRuntime → LLMGateway                    │
+│  Primary: OpenRouter (config/agent.json)                     │
+│  Fallback: litellm profiles (Kimi, Gemini, …)                │
+│  SkillLoader · ToolRegistry · MemoryManager (PG in prod)     │
 └──────────────────────────┬──────────────────────────────────┘
                            │
                            ▼
 ┌─────────────────────────────────────────────────────────────┐
-│  skills/* · tools/* · agents/registry.json                   │
+│  skills/* · tools/* · agents/registry.json (10 agents)       │
 └─────────────────────────────────────────────────────────────┘
                            │
                            ▼
@@ -53,7 +55,7 @@ React 18 SPA (`web/frontend/`), собирается в `web/static/app/`.
 | Product | `/app/*` | JWT cookie |
 | Auth | `/login` | — |
 
-Legacy static HTML в `website/` и `web/static/*.html` не используются для основного UI (кроме `login.html` при необходимости).
+`website/data/showcase.json` — данные для публичного showcase (импорт в `demoFallback.ts`). HTML в `website/` deprecated — см. [website/README-DEPRECATED.md](website/README-DEPRECATED.md).
 
 ---
 
@@ -76,6 +78,10 @@ Fluent configuration → `AgentRuntime`. Загружает skills, создаё
 
 LLM планирует sub-agents → временные профили → parallel run → cleanup.
 
+### Memory (production)
+
+`MemoryManager` → `PGStateManager` с lazy `ensure_connected()` и миграцией legacy schema (3.5.2).
+
 ---
 
 ## Workflow engine
@@ -88,7 +94,7 @@ web/workflow_router.py
     → core/workflow/run_queue.py  (Redis RPOPLPUSH)
 ```
 
-Узлы: `trigger.*`, `agent.skill`, `condition`, `action.webhook`, `action.n8n_webhook`, …
+Узлы: `trigger.*`, `agent.skill`, `condition`, `action.webhook`, `action.n8n_webhook`, `util.*`, …
 
 Runs async по умолчанию; sync с `{"wait": true}`.
 
@@ -98,7 +104,7 @@ Runs async по умолчанию; sync с `{"wait": true}`.
 
 | Store | Usage |
 |-------|--------|
-| PostgreSQL | Users, workflows, templates, billing |
+| PostgreSQL | Users, workflows, templates, billing, chat sessions (prod) |
 | Redis | Sessions blacklist, rate limits, run queue |
 | JSON files | Dev memory sessions (`memory/sessions/`) |
 | ChromaDB | RAG knowledge base |
@@ -128,7 +134,8 @@ web/server.py
 ├── core/orchestrator.py → core/builder.py → core/runtime.py
 ├── core/workflow/* 
 ├── core/auth.py, core/billing/*
-├── core/kimi_provider.py
+├── core/kimi_provider.py, core/llm_gateway.py
+├── core/pg_state.py
 └── core/agent_store.py
 
 skills/*/skill.py → tools/*.py

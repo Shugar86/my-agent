@@ -1,85 +1,89 @@
 # Запуск My Agent на Windows
 
-## Быстрый старт (3 способа)
+> Для production и demo предпочтителен **Docker** — см. [README.md](README.md).  
+> Этот файл — только для локального CLI без контейнеров.
 
-### Способ 1: Через командную строку (РЕКОМЕНДУЕТСЯ)
+---
 
-1. Открой терминал (Win+R → `cmd` → Enter)
-2. Перейди в папку агента:
-   ```cmd
-   cd "C:\Users\Тема\Desktop\moy agent\my-agent"
-   ```
-3. Запусти:
-   ```cmd
-   python agent.py
-   ```
-   Или с выбором модели:
-   ```cmd
-   python agent.py --model smart
-   ```
+## Требования
 
-### Способ 2: Через setup.bat
+- Python 3.11+
+- Git clone репозитория в любую папку (ниже — `%REPO%` как корень проекта)
 
-1. Дважды кликни `setup.bat`
-2. Выбери опцию:
-   - **1** — Создать ярлык на рабочем столе
-   - **2** — Добавить в PATH (можно запускать из любой папки)
-   - **3** — Просто запустить сейчас
+---
 
-### Способ 3: Ярлык вручную
+## Быстрый старт
 
-1. Правый клик на рабочем столе → Создать → Ярлык
-2. В поле "Укажите расположение" введи:
-   ```
-   cmd /k cd /d "C:\Users\Тема\Desktop\moy agent\my-agent" && python agent.py chat
-   ```
-3. Назови ярлык "My Agent"
-4. Готово! Двойной клик открывает TUI.
+### 1. Командная строка (рекомендуется)
 
-## Почему .bat может не работать при двойном клике
+```cmd
+cd /d "%REPO%"
+python -m venv .venv
+.venv\Scripts\activate
+pip install -r requirements.txt
+copy .env.example .env
 
-При двойном клике по `.bat` файл Windows может:
-- Не найти Python (если он не в PATH)
-- Закрыть окно слишком быстро
-- Использовать неправильную кодировку
-
-**Решение:** Используй `setup.bat` или запускай через командную строку.
-
-## Полезные команды
-
-```bash
-# Интерактивный чат (по умолчанию)
-python agent.py
 python agent.py chat
+```
 
-# С конкретной моделью
-python agent.py chat --model fast      # Быстрая
-python agent.py chat --model smart     # Умная
-python agent.py chat --model balanced  # Сбалансированная
+### 2. Через `my-agent.bat` / `run.bat`
 
-# Статус системы
+Дважды кликнуть `my-agent.bat` в корне репозитория или:
+
+```cmd
+cd /d "%REPO%"
+my-agent.bat
+```
+
+Если окно сразу закрывается — запускайте из `cmd`, чтобы видеть ошибки (часто Python не в PATH).
+
+### 3. Web-сервер на Windows
+
+```cmd
+cd /d "%REPO%"
+.venv\Scripts\activate
+python -m uvicorn web.server:app --host 0.0.0.0 --port 8020
+```
+
+Открыть: http://127.0.0.1:8020/app (нужны PostgreSQL + Redis или Docker только для `db`/`redis`).
+
+---
+
+## Полезные команды CLI
+
+```cmd
+python agent.py chat --model fast
+python agent.py chat --model balanced
+python agent.py serve --port 8020
+python agent.py list-agents
 python agent.py status
-
-# Веб-сервер
-python agent.py serve
-
-# Запуск конкретного агента
 python agent.py chat --agent developer
 ```
 
-## Добавление в PATH (для запуска из любой папки)
+Профили моделей: `config/models.yaml`.
 
-```powershell
-# PowerShell (от админа)
-[Environment]::SetEnvironmentVariable(
-    "Path", 
-    $env:Path + ";C:\Users\Тема\Desktop\moy agent\my-agent", 
-    "User"
-)
+---
+
+## Переменные окружения
+
+Скопируйте `.env.example` → `.env` и задайте минимум:
+
+```
+OPENROUTER_API_KEY=sk-or-v1-...
+DATABASE_URL=postgresql://agent:agentpass@127.0.0.1:5437/agent_db
+REDIS_URL=redis://127.0.0.1:6380/0
 ```
 
-После этого можно просто писать в любом терминале:
-```cmd
-agent
-agent --model smart
-```
+Без ключей работает публичный mock-demo: http://127.0.0.1:8020/showcase#playground
+
+---
+
+## Типичные проблемы
+
+| Симптом | Решение |
+|---------|---------|
+| `python` не найден | Установить Python 3.11+, добавить в PATH |
+| Порт 8020 занят | `netstat -ano \| findstr :8020` → завершить PID |
+| 500 в чате | Проверить `OPENROUTER_API_KEY`, см. [TROUBLESHOOTING.md](TROUBLESHOOTING.md) |
+
+Полный гайд: [TROUBLESHOOTING.md](TROUBLESHOOTING.md) · [PROJECT_GUIDE.md](PROJECT_GUIDE.md)

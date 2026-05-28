@@ -1,5 +1,15 @@
 # Changelog — My Agent
 
+## 3.5.3 — 2026-05-28 (Documentation)
+
+### Docs
+- [docs/README.md](docs/README.md): версия 3.5.2, OpenRouter как primary LLM, 10 агентов / 33 skills
+- Обновлены [README.md](README.md), [PROJECT_GUIDE.md](PROJECT_GUIDE.md), [ARCHITECTURE.md](ARCHITECTURE.md), [DEPLOYMENT.md](DEPLOYMENT.md), [HANDOFF.md](HANDOFF.md), [SERVER.md](SERVER.md)
+- [WINDOWS_LAUNCH.md](WINDOWS_LAUNCH.md): убраны персональные пути, добавлен Docker-first контекст
+- Аудиты и [ROADMAP_90_DAYS.md](docs/archive/ROADMAP_90_DAYS.md) перенесены в [docs/archive/](docs/archive/)
+
+---
+
 ## 3.5.2 — 2026-05-27 (Live chat + OpenRouter + Postgres stability)
 
 ### LLM & Demo
@@ -74,7 +84,7 @@
 
 ### Migration
 - [scripts/migrate_sqlite_to_postgres.py](scripts/migrate_sqlite_to_postgres.py) for one-time VDS migration
-- [AUDIT_PRODUCTION_2026.md](AUDIT_PRODUCTION_2026.md)
+- [docs/archive/AUDIT_PRODUCTION_2026.md](docs/archive/AUDIT_PRODUCTION_2026.md)
 
 ---
 
@@ -86,7 +96,7 @@
 - Plan tiers: `core/billing/plans.py`, quota check on run (429), Billing tab in Settings
 - API Keys UI in Settings (list/create/delete via `/api/keys`)
 - Workspace isolation: access checks on runs + `tests/test_workspace_isolation.py`
-- Audit docs refreshed: `AUDIT_REPORT.md`, `AUDIT_2026.md`, `AUDIT_PRODUCT_2026.md`
+- Audit docs refreshed: `docs/archive/AUDIT_*.md`
 
 ### Builder & UX
 - Condition branch modal + edge config side panel (removed `window.prompt`)

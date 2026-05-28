@@ -31,7 +31,7 @@ docker compose exec agent python scripts/seed_workflow_templates.py
 docker compose exec agent python scripts/generate_demo_artifact.py
 ```
 
-The demo gracefully falls back to a prerecorded run if Kimi / OpenRouter /
+The demo gracefully falls back to a prerecorded run if OpenRouter /
 Tavily keys are missing — the investor flow never breaks.
 
 ---
