@@ -1,5 +1,7 @@
 # CEO Audit — Production Readiness (v3.4)
 
+> **Архив.** Снимок v3.4.0. Ops runbook: [SERVER.md](./SERVER.md), [DEPLOYMENT.md](./DEPLOYMENT.md).
+
 **Date:** 2026-05-26  
 **Version:** my-agent v3.4.0  
 **Audience:** CTO / Ops / Due diligence  

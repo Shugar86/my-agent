@@ -1,85 +1,69 @@
 # Запуск My Agent на Windows
 
-## Быстрый старт (3 способа)
+> Краткая инструкция. Полный индекс: [docs/README.md](docs/README.md).
 
-### Способ 1: Через командную строку (РЕКОМЕНДУЕТСЯ)
+## Рекомендуется: Docker Desktop
 
-1. Открой терминал (Win+R → `cmd` → Enter)
-2. Перейди в папку агента:
-   ```cmd
-   cd "C:\Users\Тема\Desktop\moy agent\my-agent"
-   ```
-3. Запусти:
-   ```cmd
-   python agent.py
-   ```
-   Или с выбором модели:
-   ```cmd
-   python agent.py --model smart
-   ```
+1. Установите [Docker Desktop](https://www.docker.com/products/docker-desktop/).
+2. В PowerShell или cmd перейдите в каталог клона репозитория:
 
-### Способ 2: Через setup.bat
-
-1. Дважды кликни `setup.bat`
-2. Выбери опцию:
-   - **1** — Создать ярлык на рабочем столе
-   - **2** — Добавить в PATH (можно запускать из любой папки)
-   - **3** — Просто запустить сейчас
-
-### Способ 3: Ярлык вручную
-
-1. Правый клик на рабочем столе → Создать → Ярлык
-2. В поле "Укажите расположение" введи:
-   ```
-   cmd /k cd /d "C:\Users\Тема\Desktop\moy agent\my-agent" && python agent.py chat
-   ```
-3. Назови ярлык "My Agent"
-4. Готово! Двойной клик открывает TUI.
-
-## Почему .bat может не работать при двойном клике
-
-При двойном клике по `.bat` файл Windows может:
-- Не найти Python (если он не в PATH)
-- Закрыть окно слишком быстро
-- Использовать неправильную кодировку
-
-**Решение:** Используй `setup.bat` или запускай через командную строку.
-
-## Полезные команды
-
-```bash
-# Интерактивный чат (по умолчанию)
-python agent.py
-python agent.py chat
-
-# С конкретной моделью
-python agent.py chat --model fast      # Быстрая
-python agent.py chat --model smart     # Умная
-python agent.py chat --model balanced  # Сбалансированная
-
-# Статус системы
-python agent.py status
-
-# Веб-сервер
-python agent.py serve
-
-# Запуск конкретного агента
-python agent.py chat --agent developer
-```
-
-## Добавление в PATH (для запуска из любой папки)
-
-```powershell
-# PowerShell (от админа)
-[Environment]::SetEnvironmentVariable(
-    "Path", 
-    $env:Path + ";C:\Users\Тема\Desktop\moy agent\my-agent", 
-    "User"
-)
-```
-
-После этого можно просто писать в любом терминале:
 ```cmd
-agent
-agent --model smart
+cd C:\path\to\my-agent
+copy .env.example .env
+docker compose up -d --build
 ```
+
+3. Откройте http://127.0.0.1:8020/app (логин `admin` / `admin` по умолчанию).
+
+Каноническое demo без входа: http://127.0.0.1:8020/showcase#playground
+
+---
+
+## Локально: Python CLI
+
+Требования: Python 3.11+, зависимости из `requirements.txt`.
+
+```cmd
+cd C:\path\to\my-agent
+python -m venv .venv
+.venv\Scripts\activate
+pip install -r requirements.txt
+copy .env.example .env
+python agent.py chat
+```
+
+Полезные команды:
+
+```cmd
+python agent.py --help
+python agent.py chat --model fast
+python agent.py serve --port 8020
+python agent.py list-agents
+python agent.py test --fast
+```
+
+Веб-интерфейс после `serve` или uvicorn: http://127.0.0.1:8020/app
+
+---
+
+## Скрипты в репозитории
+
+| Файл | Назначение |
+|------|------------|
+| `my-agent.bat` | Быстрый запуск CLI |
+| `run.bat` | Альтернативный launcher |
+| `setup.bat` | Ярлык / PATH (если есть в вашей копии) |
+
+При двойном клике по `.bat` окно может закрыться до чтения ошибки — запускайте из терминала.
+
+---
+
+## Типичные проблемы
+
+| Симптом | Решение |
+|---------|---------|
+| `python` не найден | Добавьте Python в PATH или используйте `py -3.11` |
+| Порт занят | Проект использует **8020**, не 8000 |
+| Нет ответа в чате | Задайте `OPENROUTER_API_KEY` в `.env`, перезапустите контейнер |
+
+Подробнее: [TROUBLESHOOTING.md](TROUBLESHOOTING.md).

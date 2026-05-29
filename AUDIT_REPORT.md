@@ -1,5 +1,7 @@
 # My Agent — Audit Report
 
+> **Архив.** Снимок 2026-05-26 (v3.5.0). Актуально: [HANDOFF.md](./HANDOFF.md), [CHANGELOG.md](./CHANGELOG.md), [docs/README.md](./docs/README.md).
+
 > **Date:** 2026-05-26  
 > **Version:** 3.5.0  
 > **Scope:** UX audit — React landing migration, demo IA, status badges, onboarding explainer
