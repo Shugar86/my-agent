@@ -1,5 +1,14 @@
 # Changelog — My Agent
 
+## 3.5.3 — 2026-05-29 (Documentation)
+
+- Синхронизированы версии и факты: **3.5.2**, OpenRouter как primary LLM, 10 агентов, 33 skills, 20 типов workflow-узлов
+- Обновлены [README.md](README.md), [docs/README.md](docs/README.md), [PROJECT_GUIDE.md](PROJECT_GUIDE.md), [ARCHITECTURE.md](ARCHITECTURE.md), [DEPLOYMENT.md](DEPLOYMENT.md), [HANDOFF.md](HANDOFF.md), [WINDOWS_LAUNCH.md](WINDOWS_LAUNCH.md), [website/BRAND.md](website/BRAND.md)
+- Добавлен [docs/archive/README.md](docs/archive/README.md) — индекс исторических аудитов и roadmap
+- В индексе документации: устаревшие пути (`graphify-out`, порт 8000, Kimi-as-primary в старых аудитах)
+
+---
+
 ## 3.5.2 — 2026-05-27 (Live chat + OpenRouter + Postgres stability)
 
 ### LLM & Demo

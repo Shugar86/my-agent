@@ -1,5 +1,7 @@
 # CEO Audit — Product Depth & New Features
 
+> **Архив.** Снимок v3.3.1. Актуально: [HANDOFF.md](./HANDOFF.md), [CHANGELOG.md](./CHANGELOG.md).
+
 **Date:** 2026-05-26  
 **Version:** my-agent v3.3.1  
 **Audience:** CTO / Engineering  

@@ -1,5 +1,7 @@
 # My Agent — Competitive & Technical Audit 2026
 
+> **Архив.** Снимок v3.3.0. Актуально: [HANDOFF.md](./HANDOFF.md), [docs/archive/README.md](./docs/archive/README.md).
+
 > **Date:** 2026-05-26  
 > **Version:** 3.3.0  
 > **Previous audit:** 2026-05-25 (stale — referenced v2.0.0 / 461 tests)
