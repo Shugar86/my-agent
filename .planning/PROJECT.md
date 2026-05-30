@@ -27,7 +27,7 @@ My Agent is a modular AI agent platform evolving into a **business automation pr
 
 ## Current Status (Phase 1)
 
-See `ROADMAP_90_DAYS.md` and `.planning/STATE.md`.
+See `docs/archive/ROADMAP_90_DAYS.md` and `.planning/STATE.md`.
 
 ## Next Milestone
 

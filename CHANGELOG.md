@@ -1,5 +1,15 @@
 # Changelog — My Agent
 
+## 3.5.3 — 2026-05-30 (Documentation)
+
+- Synced all docs to **3.5.2** product state: OpenRouter as primary LLM, port **8020**, 33 skills
+- [docs/README.md](docs/README.md): LLM quick reference, HANDOFF/WINDOWS links, `graphify-out/` marked non-doc
+- Moved historical audits and [ROADMAP_90_DAYS.md](docs/archive/ROADMAP_90_DAYS.md) → [docs/archive/](docs/archive/)
+- [WINDOWS_LAUNCH.md](WINDOWS_LAUNCH.md): removed machine-specific paths; Docker/WSL note
+- [pyproject.toml](pyproject.toml) version aligned to 3.5.3
+
+---
+
 ## 3.5.2 — 2026-05-27 (Live chat + OpenRouter + Postgres stability)
 
 ### LLM & Demo
@@ -74,7 +84,7 @@
 
 ### Migration
 - [scripts/migrate_sqlite_to_postgres.py](scripts/migrate_sqlite_to_postgres.py) for one-time VDS migration
-- [AUDIT_PRODUCTION_2026.md](AUDIT_PRODUCTION_2026.md)
+- [docs/archive/AUDIT_PRODUCTION_2026.md](docs/archive/AUDIT_PRODUCTION_2026.md)
 
 ---
 
