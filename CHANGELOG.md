@@ -1,5 +1,15 @@
 # Changelog — My Agent
 
+## 3.5.3 — 2026-05-31 (Documentation)
+
+- Synced docs to **3.5.2** product state: OpenRouter as primary LLM across README, PROJECT_GUIDE, DEPLOYMENT, ARCHITECTURE
+- Expanded [docs/README.md](docs/README.md): LLM keys table, CI link, `graphify-out/` excluded, 33 skills
+- [WINDOWS_LAUNCH.md](WINDOWS_LAUNCH.md): removed machine-specific paths; generic Windows guide
+- [website/BRAND.md](website/BRAND.md): canonical CTA `/showcase#playground`
+- [SERVER.md](SERVER.md): version bump to v3.5.2
+
+---
+
 ## 3.5.2 — 2026-05-27 (Live chat + OpenRouter + Postgres stability)
 
 ### LLM & Demo

@@ -1,85 +1,107 @@
 # Запуск My Agent на Windows
 
-## Быстрый старт (3 способа)
+> CLI и локальный web. Полное RU-руководство: [PROJECT_GUIDE.md](PROJECT_GUIDE.md).  
+> Production: [DEPLOYMENT.md](DEPLOYMENT.md) (Docker на Linux/VDS предпочтительнее).
 
-### Способ 1: Через командную строку (РЕКОМЕНДУЕТСЯ)
+---
 
-1. Открой терминал (Win+R → `cmd` → Enter)
-2. Перейди в папку агента:
-   ```cmd
-   cd "C:\Users\Тема\Desktop\moy agent\my-agent"
-   ```
-3. Запусти:
-   ```cmd
-   python agent.py
-   ```
-   Или с выбором модели:
-   ```cmd
-   python agent.py --model smart
-   ```
+## Быстрый старт
 
-### Способ 2: Через setup.bat
+### Способ 1: Командная строка (рекомендуется)
 
-1. Дважды кликни `setup.bat`
-2. Выбери опцию:
-   - **1** — Создать ярлык на рабочем столе
-   - **2** — Добавить в PATH (можно запускать из любой папки)
-   - **3** — Просто запустить сейчас
+```cmd
+cd C:\path\to\my-agent
+python agent.py chat
+```
+
+С профилем модели:
+
+```cmd
+python agent.py chat --model smart
+```
+
+### Способ 2: setup.bat
+
+1. Дважды кликните `setup.bat` в корне репозитория.
+2. Выберите:
+   - **1** — ярлык на рабочем столе
+   - **2** — добавить в PATH
+   - **3** — запустить сейчас
 
 ### Способ 3: Ярлык вручную
 
-1. Правый клик на рабочем столе → Создать → Ярлык
-2. В поле "Укажите расположение" введи:
-   ```
-   cmd /k cd /d "C:\Users\Тема\Desktop\moy agent\my-agent" && python agent.py chat
-   ```
-3. Назови ярлык "My Agent"
-4. Готово! Двойной клик открывает TUI.
+Создайте ярлык с командой:
 
-## Почему .bat может не работать при двойном клике
+```text
+cmd /k cd /d "C:\path\to\my-agent" && python agent.py chat
+```
 
-При двойном клике по `.bat` файл Windows может:
-- Не найти Python (если он не в PATH)
-- Закрыть окно слишком быстро
-- Использовать неправильную кодировку
+---
 
-**Решение:** Используй `setup.bat` или запускай через командную строку.
+## Web UI на Windows
 
-## Полезные команды
+```cmd
+cd C:\path\to\my-agent
+copy .env.example .env
+REM Заполните OPENROUTER_API_KEY для live chat
 
-```bash
-# Интерактивный чат (по умолчанию)
-python agent.py
-python agent.py chat
+python -m uvicorn web.server:app --host 0.0.0.0 --port 8020
+```
 
-# С конкретной моделью
-python agent.py chat --model fast      # Быстрая
-python agent.py chat --model smart     # Умная
-python agent.py chat --model balanced  # Сбалансированная
+Откройте http://127.0.0.1:8020/app (логин по умолчанию: `admin` / `admin`).
 
-# Статус системы
+Frontend (после изменений UI):
+
+```cmd
+cd web\frontend
+bun install
+bun run build
+```
+
+---
+
+## Полезные команды CLI
+
+```cmd
+python agent.py --help
+python agent.py chat --model fast
+python agent.py chat --model balanced
 python agent.py status
-
-# Веб-сервер
-python agent.py serve
-
-# Запуск конкретного агента
+python agent.py serve --port 8020
 python agent.py chat --agent developer
 ```
 
-## Добавление в PATH (для запуска из любой папки)
+---
+
+## Почему .bat может не работать при двойном клике
+
+- Python не в PATH
+- Окно закрывается до вывода ошибки
+- Неверная кодировая страница
+
+**Решение:** запускайте через `cmd` или `setup.bat`.
+
+---
+
+## Добавление в PATH (PowerShell, от пользователя)
 
 ```powershell
-# PowerShell (от админа)
 [Environment]::SetEnvironmentVariable(
-    "Path", 
-    $env:Path + ";C:\Users\Тема\Desktop\moy agent\my-agent", 
+    "Path",
+    $env:Path + ";C:\path\to\my-agent",
     "User"
 )
 ```
 
-После этого можно просто писать в любом терминале:
+После перезапуска терминала:
+
 ```cmd
-agent
-agent --model smart
+python agent.py chat
 ```
+
+---
+
+## См. также
+
+- [TROUBLESHOOTING.md](TROUBLESHOOTING.md) — ошибки chat, Redis, порт 8020
+- [docs/README.md](docs/README.md) — индекс документации
