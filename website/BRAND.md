@@ -19,10 +19,11 @@
 
 ## Primary CTAs
 
-1. **Live demo** — `/demo` (landing primary CTA; mock без keys)
+1. **Canonical demo** — `/showcase#playground` (90s Competitor Intelligence; mock без keys)
 2. **7 vertical cases** — `/showcase` (investor meetings)
-3. **Live playground** — `/showcase#playground` or `/app/showcase#playground`
-4. **Начать бесплатно** — `/login?next=/app/onboarding` → dashboard
+3. **Landing hero** — `/` → CTA на `/showcase#playground`
+4. **Shortcut** — `/demo` (тот же playground, вторичный вход)
+5. **Начать бесплатно** — `/login?next=/app/onboarding` → dashboard
 
 ## Glue narrative (везде в UI)
 
