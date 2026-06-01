@@ -39,7 +39,7 @@
 
 ## Phase 7: Business Product (90-Day Plan) 🔄 IN PROGRESS
 **Theme:** Workflow automation + marketplace MVP — compete with ASCN.ai
-**See:** `ROADMAP_90_DAYS.md`
+**See:** `docs/archive/ROADMAP_90_DAYS.md`
 
 ### Phase 7.1 (Days 1–30) — ✅ COMPLETE
 - [x] Workflow Engine v1 (JSON DAG executor)
