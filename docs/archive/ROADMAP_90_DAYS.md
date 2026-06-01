@@ -29,7 +29,7 @@
 ### Data source
 
 - [website/data/showcase.json](website/data/showcase.json) — cards, templates, presets
-- [website/showcase.html](website/showcase.html) + showcase.css + showcase.js
+- React: `/showcase` (`PublicShowcasePage`); legacy `website/showcase.html` deprecated
 
 ---
 

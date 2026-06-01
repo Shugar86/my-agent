@@ -13,7 +13,7 @@
 ## One-command launch (works without API keys)
 
 ```bash
-cd /opt/projects/my-agent
+cd my-agent   # или путь к клону, напр. /opt/projects/my-agent
 docker compose --profile demo up -d --build
 # Wait ~30s, then open:
 # - http://localhost:8020/app   (My Agent)

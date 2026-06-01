@@ -1,7 +1,7 @@
 # Deployment Guide
 
 > My Agent — Production Deployment  
-> Version: **3.5.0**
+> Version: **3.5.2**
 
 **VDS:** см. [SERVER.md](./SERVER.md) — порт **8020**.  
 **Investor demo:** [DEMO.md](./DEMO.md).
@@ -12,7 +12,8 @@
 
 ```bash
 cp .env.example .env
-# KIMI_API_KEY=sk-kimi-...  (или OPENROUTER_API_KEY для fallback)
+# OPENROUTER_API_KEY=sk-or-v1-...  (live chat / demo)
+# TAVILY_API_KEY=...  (опционально, веб-поиск)
 
 docker compose up -d --build
 curl -s http://127.0.0.1:8020/api/health
@@ -28,7 +29,7 @@ curl -s http://127.0.0.1:8020/api/health
 
 - Docker + Docker Compose
 - 2 GB RAM minimum
-- `KIMI_API_KEY` и/или `OPENROUTER_API_KEY` (demo работает без ключей — mock)
+- `OPENROUTER_API_KEY` для live LLM (demo работает без ключей — mock)
 
 Production additionally:
 
@@ -49,7 +50,8 @@ cp .env.example .env
 | `ENV` | `production` |
 | `DATABASE_URL` | PostgreSQL (required) |
 | `REDIS_URL` | Redis (required) |
-| `KIMI_API_KEY` | Primary LLM |
+| `OPENROUTER_API_KEY` | Primary LLM (`config/agent.json`) |
+| `TAVILY_API_KEY` | Веб-поиск (опционально) |
 | `AGENT_SECRET_KEY` | Random 32+ chars |
 | `AGENT_PASSWORD` | Change from default |
 
@@ -98,7 +100,7 @@ docker compose exec -T agent python -m pytest \
 | Monitoring | `docker compose --profile monitoring up -d` |
 | Backup | `deploy/scripts/backup-db.sh` |
 
-Подробный runbook: [deploy/README.md](./deploy/README.md), [AUDIT_PRODUCTION_2026.md](./AUDIT_PRODUCTION_2026.md).
+Подробный runbook: [deploy/README.md](./deploy/README.md), [docs/archive/AUDIT_PRODUCTION_2026.md](./docs/archive/AUDIT_PRODUCTION_2026.md).
 
 ---
 

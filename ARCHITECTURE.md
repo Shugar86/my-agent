@@ -1,7 +1,7 @@
 # Architecture
 
 > My Agent — System Architecture  
-> Version: **3.5.0**
+> Version: **3.5.2**
 
 ---
 
@@ -28,7 +28,7 @@
        │          └──────┬───────┘
        ▼                 │
 ┌─────────────────────────────────────────────────────────────┐
-│  AgentBuilder → AgentRuntime → LLMGateway (Kimi + litellm)   │
+│  AgentBuilder → AgentRuntime → LLMGateway (OpenRouter/Kimi)  │
 │  SkillLoader · ToolRegistry · MemoryManager                  │
 └──────────────────────────┬──────────────────────────────────┘
                            │
@@ -88,7 +88,7 @@ web/workflow_router.py
     → core/workflow/run_queue.py  (Redis RPOPLPUSH)
 ```
 
-Узлы: `trigger.*`, `agent.skill`, `condition`, `action.webhook`, `action.n8n_webhook`, …
+Узлы (20 типов): `trigger.*` (5), `agent.skill`, `condition`, `action.*` (9), `util.*` (4).
 
 Runs async по умолчанию; sync с `{"wait": true}`.
 
