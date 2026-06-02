@@ -152,6 +152,7 @@ E2E: `cd web/frontend && bun run test:e2e` (сервер на `:8020`).
 
 ## См. также
 
+- [WINDOWS_LAUNCH.md](WINDOWS_LAUNCH.md) — запуск на Windows
 - [README.md](README.md) — EN quick start
 - [ARCHITECTURE.md](ARCHITECTURE.md) — архитектура
 - [DEPLOYMENT.md](DEPLOYMENT.md) · [SERVER.md](SERVER.md) — деплой
