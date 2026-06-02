@@ -1,5 +1,15 @@
 # Changelog — My Agent
 
+## 3.5.3 — 2026-06-02 (Documentation)
+
+- Synced docs to **3.5.2** product state: OpenRouter as primary LLM across README, PROJECT_GUIDE, DEPLOYMENT, ARCHITECTURE
+- Updated [docs/README.md](docs/README.md): HANDOFF, WINDOWS_LAUNCH, showcase data path, `graphify-out/` marked non-doc
+- Fixed outdated references to deprecated `website/showcase.html` in DEMO.md and ROADMAP_90_DAYS.md
+- Refreshed [WINDOWS_LAUNCH.md](WINDOWS_LAUNCH.md) (generic paths, Docker-first, port 8020)
+- [SERVER.md](SERVER.md) version header → 3.5.2
+
+---
+
 ## 3.5.2 — 2026-05-27 (Live chat + OpenRouter + Postgres stability)
 
 ### LLM & Demo
