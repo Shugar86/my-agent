@@ -1,6 +1,6 @@
 # Handoff Instructions — My Agent
 
-> **Date:** 2026-05-27  
+> **Date:** 2026-06-02  
 > **Version:** 3.5.2  
 > **Docs index:** [docs/README.md](./docs/README.md)
 

@@ -1,85 +1,70 @@
 # Запуск My Agent на Windows
 
-## Быстрый старт (3 способа)
+> Краткая справка. Полный индекс: [docs/README.md](docs/README.md).
 
-### Способ 1: Через командную строку (РЕКОМЕНДУЕТСЯ)
+## Рекомендуется: Docker
 
-1. Открой терминал (Win+R → `cmd` → Enter)
-2. Перейди в папку агента:
-   ```cmd
-   cd "C:\Users\Тема\Desktop\moy agent\my-agent"
-   ```
-3. Запусти:
-   ```cmd
-   python agent.py
-   ```
-   Или с выбором модели:
-   ```cmd
-   python agent.py --model smart
-   ```
+```cmd
+cd path\to\my-agent
+copy .env.example .env
+docker compose up -d --build
+```
 
-### Способ 2: Через setup.bat
+Открыть: http://127.0.0.1:8020/app (логин `admin` / `admin` по умолчанию).
 
-1. Дважды кликни `setup.bat`
-2. Выбери опцию:
-   - **1** — Создать ярлык на рабочем столе
-   - **2** — Добавить в PATH (можно запускать из любой папки)
-   - **3** — Просто запустить сейчас
+---
+
+## CLI / TUI (без Docker)
+
+### Способ 1: Командная строка
+
+```cmd
+cd path\to\my-agent
+python -m venv .venv
+.venv\Scripts\activate
+pip install -r requirements.txt
+copy .env.example .env
+
+python agent.py chat --model fast
+python agent.py serve --port 8020
+```
+
+### Способ 2: setup.bat
+
+1. Запустите `setup.bat` в корне репозитория.
+2. Выберите: ярлык на рабочем столе, PATH или запуск сейчас.
 
 ### Способ 3: Ярлык вручную
 
-1. Правый клик на рабочем столе → Создать → Ярлык
-2. В поле "Укажите расположение" введи:
-   ```
-   cmd /k cd /d "C:\Users\Тема\Desktop\moy agent\my-agent" && python agent.py chat
-   ```
-3. Назови ярлык "My Agent"
-4. Готово! Двойной клик открывает TUI.
+```
+cmd /k cd /d "C:\path\to\my-agent" && .venv\Scripts\activate && python agent.py chat
+```
+
+---
+
+## Переменные для live LLM
+
+В `.env` или системных переменных:
+
+```
+OPENROUTER_API_KEY=sk-or-v1-...
+TAVILY_API_KEY=tvly-...
+```
+
+Без ключей чат и публичное demo работают в mock-режиме.
+
+---
 
 ## Почему .bat может не работать при двойном клике
 
-При двойном клике по `.bat` файл Windows может:
-- Не найти Python (если он не в PATH)
-- Закрыть окно слишком быстро
-- Использовать неправильную кодировку
+- Окно закрывается до чтения ошибки → запускайте из `cmd` или используйте `setup.bat`.
+- Python не в PATH → установите Python 3.11+ и отметьте «Add to PATH».
+- Неверная рабочая папка → `cd` в каталог с `agent.py` перед запуском.
 
-**Решение:** Используй `setup.bat` или запускай через командную строку.
+---
 
-## Полезные команды
+## См. также
 
-```bash
-# Интерактивный чат (по умолчанию)
-python agent.py
-python agent.py chat
-
-# С конкретной моделью
-python agent.py chat --model fast      # Быстрая
-python agent.py chat --model smart     # Умная
-python agent.py chat --model balanced  # Сбалансированная
-
-# Статус системы
-python agent.py status
-
-# Веб-сервер
-python agent.py serve
-
-# Запуск конкретного агента
-python agent.py chat --agent developer
-```
-
-## Добавление в PATH (для запуска из любой папки)
-
-```powershell
-# PowerShell (от админа)
-[Environment]::SetEnvironmentVariable(
-    "Path", 
-    $env:Path + ";C:\Users\Тема\Desktop\moy agent\my-agent", 
-    "User"
-)
-```
-
-После этого можно просто писать в любом терминале:
-```cmd
-agent
-agent --model smart
-```
+- [README.md](README.md) — быстрый старт
+- [PROJECT_GUIDE.md](PROJECT_GUIDE.md) — RU-руководство
+- [TROUBLESHOOTING.md](TROUBLESHOOTING.md) — ошибки

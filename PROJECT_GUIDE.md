@@ -1,6 +1,6 @@
 # My Agent — Руководство (RU)
 
-> Версия **3.5.0** · 2026-05-27  
+> Версия **3.5.3** · 2026-06-02  
 > Краткое RU-руководство. Полный индекс: [docs/README.md](docs/README.md).
 
 ---
@@ -11,8 +11,9 @@
 
 | Компонент | Значение |
 |-----------|----------|
-| Primary LLM | Kimi Code API (`KIMI_API_KEY`) |
-| Fallback | OpenRouter (`OPENROUTER_API_KEY`) |
+| Primary LLM | OpenRouter (`OPENROUTER_API_KEY`, `config/agent.json`) |
+| Опционально | Kimi Code API (`KIMI_API_KEY`, `KIMI_BASE_URL`) |
+| Поиск (live demo) | Tavily (`TAVILY_API_KEY`) |
 | UI | React SPA на `/app/*`, RU i18n |
 | БД | PostgreSQL (prod), SQLite (dev без `ENV=production`) |
 | Очередь | Redis — rate limits, workflow runs |
@@ -140,7 +141,7 @@ E2E: `cd web/frontend && bun run test:e2e` (сервер на `:8020`).
 
 | Симптом | Решение |
 |---------|---------|
-| 500 в чате | Проверить `KIMI_API_KEY` / `OPENROUTER_API_KEY`, перезапустить сервер |
+| 500 в чате | Проверить `OPENROUTER_API_KEY`, `DATABASE_URL` + Redis в prod, перезапустить |
 | `redis: false` в health | Запустить Redis, проверить `REDIS_URL` |
 | Порт занят | `docker compose` использует **8020**, не 8000 |
 | Demo без ключей | Mock fallback — см. [DEMO.md](DEMO.md) |
@@ -151,6 +152,7 @@ E2E: `cd web/frontend && bun run test:e2e` (сервер на `:8020`).
 
 ## См. также
 
+- [WINDOWS_LAUNCH.md](WINDOWS_LAUNCH.md) — запуск на Windows
 - [README.md](README.md) — EN quick start
 - [ARCHITECTURE.md](ARCHITECTURE.md) — архитектура
 - [DEPLOYMENT.md](DEPLOYMENT.md) · [SERVER.md](SERVER.md) — деплой

@@ -142,8 +142,9 @@ any code.
   (auth) and `POST /api/demo/public/run` (showcase, no auth) with mock fallback.
 - **Leads router** ([web/leads_router.py](web/leads_router.py)) — `POST /api/leads/showcase`
   writes to `data/showcase_leads.jsonl`.
-- **Showcase page** ([website/showcase.html](website/showcase.html)) — static Demo-MVP
-  with [showcase.json](website/data/showcase.json) as source-of-truth.
+- **Showcase page** ([web/frontend/src/pages/PublicShowcasePage.tsx](web/frontend/src/pages/PublicShowcasePage.tsx))
+  at `/showcase` — data from [website/data/showcase.json](website/data/showcase.json)
+  via `/welcome-assets/data/showcase.json`.
 
 ---
 
