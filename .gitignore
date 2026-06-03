@@ -42,6 +42,5 @@ web/frontend/playwright-report/
 .DS_Store
 Thumbs.db
 
-# Graphify cache
-graphify-out/*.json
-graphify-out/*.lock
+# Graphify (local dev graphs — not product docs)
+graphify-out/

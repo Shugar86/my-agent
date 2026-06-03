@@ -1,7 +1,7 @@
 # Architecture
 
 > My Agent — System Architecture  
-> Version: **3.5.0**
+> Version: **3.5.3**
 
 ---
 
@@ -28,7 +28,7 @@
        │          └──────┬───────┘
        ▼                 │
 ┌─────────────────────────────────────────────────────────────┐
-│  AgentBuilder → AgentRuntime → LLMGateway (Kimi + litellm)   │
+│  AgentBuilder → AgentRuntime → LLMGateway (OpenRouter/Kimi)  │
 │  SkillLoader · ToolRegistry · MemoryManager                  │
 └──────────────────────────┬──────────────────────────────────┘
                            │
@@ -54,6 +54,11 @@ React 18 SPA (`web/frontend/`), собирается в `web/static/app/`.
 | Auth | `/login` | — |
 
 Legacy static HTML в `website/` и `web/static/*.html` не используются для основного UI (кроме `login.html` при необходимости).
+
+### LLM configuration
+
+Default model chain: [config/agent.json](config/agent.json) (`openrouter/owl-alpha` + fallback).  
+Per-agent overrides: [agents/registry.json](agents/registry.json). CLI profiles: [config/models.yaml](config/models.yaml).
 
 ---
 

@@ -1,5 +1,15 @@
 # Changelog — My Agent
 
+## 3.5.3 — 2026-06-03 (Documentation)
+
+- Синхронизированы версии и primary LLM (OpenRouter) в [README.md](README.md), [PROJECT_GUIDE.md](PROJECT_GUIDE.md), [DEPLOYMENT.md](DEPLOYMENT.md), [ARCHITECTURE.md](ARCHITECTURE.md)
+- Обновлён [docs/README.md](docs/README.md): HANDOFF, WINDOWS_LAUNCH, `.planning/`, пометка `graphify-out/` как dev-артефакт
+- [WINDOWS_LAUNCH.md](WINDOWS_LAUNCH.md) — generic пути, Docker-first
+- [ROADMAP_90_DAYS.md](ROADMAP_90_DAYS.md) — ссылка на актуальный `.planning/ROADMAP.md`, исправлены ссылки на React showcase
+- [.env.example](.env.example) — OpenRouter как primary в комментариях
+
+---
+
 ## 3.5.2 — 2026-05-27 (Live chat + OpenRouter + Postgres stability)
 
 ### LLM & Demo
