@@ -1,85 +1,89 @@
 # Запуск My Agent на Windows
 
-## Быстрый старт (3 способа)
+> Версия **3.5.2** · порт **8020**
 
-### Способ 1: Через командную строку (РЕКОМЕНДУЕТСЯ)
+---
 
-1. Открой терминал (Win+R → `cmd` → Enter)
-2. Перейди в папку агента:
-   ```cmd
-   cd "C:\Users\Тема\Desktop\moy agent\my-agent"
-   ```
-3. Запусти:
-   ```cmd
-   python agent.py
-   ```
-   Или с выбором модели:
-   ```cmd
-   python agent.py --model smart
-   ```
+## Рекомендуется: Docker
 
-### Способ 2: Через setup.bat
+```powershell
+cd C:\path\to\my-agent
+copy .env.example .env
+docker compose up -d --build
+```
 
-1. Дважды кликни `setup.bat`
-2. Выбери опцию:
-   - **1** — Создать ярлык на рабочем столе
-   - **2** — Добавить в PATH (можно запускать из любой папки)
-   - **3** — Просто запустить сейчас
+Открыть: http://localhost:8020/showcase#playground
 
-### Способ 3: Ярлык вручную
+---
 
-1. Правый клик на рабочем столе → Создать → Ярлык
-2. В поле "Укажите расположение" введи:
-   ```
-   cmd /k cd /d "C:\Users\Тема\Desktop\moy agent\my-agent" && python agent.py chat
-   ```
-3. Назови ярлык "My Agent"
-4. Готово! Двойной клик открывает TUI.
+## CLI (без Docker)
 
-## Почему .bat может не работать при двойном клике
+### 1. Подготовка
 
-При двойном клике по `.bat` файл Windows может:
-- Не найти Python (если он не в PATH)
-- Закрыть окно слишком быстро
-- Использовать неправильную кодировку
+```powershell
+cd C:\path\to\my-agent
+python -m venv .venv
+.venv\Scripts\activate
+pip install -r requirements.txt
+copy .env.example .env
+```
 
-**Решение:** Используй `setup.bat` или запускай через командную строку.
+### 2. Запуск
 
-## Полезные команды
-
-```bash
-# Интерактивный чат (по умолчанию)
-python agent.py
+```powershell
+# Интерактивный чат
 python agent.py chat
 
 # С конкретной моделью
-python agent.py chat --model fast      # Быстрая
-python agent.py chat --model smart     # Умная
-python agent.py chat --model balanced  # Сбалансированная
+python agent.py chat --model fast
+python agent.py chat --model balanced
 
-# Статус системы
+# Web-сервер
+python agent.py serve --port 8020
+# или
+python -m uvicorn web.server:app --host 0.0.0.0 --port 8020 --reload
+```
+
+Открыть: http://localhost:8020/app (login: `admin` / `admin` по умолчанию).
+
+### 3. Frontend (после изменений UI)
+
+```powershell
+cd web\frontend
+bun install
+bun run build
+```
+
+---
+
+## Полезные команды
+
+```powershell
+python agent.py --help
+python agent.py list-agents
 python agent.py status
-
-# Веб-сервер
-python agent.py serve
-
-# Запуск конкретного агента
+python agent.py test --fast
 python agent.py chat --agent developer
 ```
 
-## Добавление в PATH (для запуска из любой папки)
+---
 
-```powershell
-# PowerShell (от админа)
-[Environment]::SetEnvironmentVariable(
-    "Path", 
-    $env:Path + ";C:\Users\Тема\Desktop\moy agent\my-agent", 
-    "User"
-)
-```
+## Типичные проблемы Windows
 
-После этого можно просто писать в любом терминале:
-```cmd
-agent
-agent --model smart
-```
+| Проблема | Решение |
+|----------|---------|
+| Python не найден | Установить Python 3.11+ и добавить в PATH |
+| `.bat` закрывается сразу | Запускать через `cmd` или PowerShell |
+| `UnicodeEncodeError` | `set PYTHONIOENCODING=utf-8` |
+| Кириллица в пути проекта | Переместить в ASCII-путь, напр. `C:\dev\my-agent` |
+| Порт 8020 занят | `netstat -ano \| findstr :8020` → завершить процесс |
+
+Подробнее: [TROUBLESHOOTING.md](TROUBLESHOOTING.md).
+
+---
+
+## См. также
+
+- [README.md](README.md) — quick start
+- [PROJECT_GUIDE.md](PROJECT_GUIDE.md) — RU-руководство
+- [DEPLOYMENT.md](DEPLOYMENT.md) — деплой

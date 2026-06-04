@@ -1,5 +1,17 @@
 # Changelog — My Agent
 
+## 3.5.3 — 2026-06-04 (Documentation refresh)
+
+### Documentation
+- Synced all docs to **v3.5.2** facts: OpenRouter as primary LLM, 10 agents, 33 skills, port **8020**
+- Rewrote [docs/README.md](docs/README.md) — clearer active vs archive index, added HANDOFF and WINDOWS_LAUNCH
+- Updated [PROJECT_GUIDE.md](PROJECT_GUIDE.md), [SERVER.md](SERVER.md), [SECURITY.md](SECURITY.md), [WINDOWS_LAUNCH.md](WINDOWS_LAUNCH.md)
+- Fixed outdated routes in SERVER.md (settings tabs, `/showcase#playground` as canonical demo)
+- Removed personal paths from WINDOWS_LAUNCH.md; trimmed obsolete TROUBLESHOOTING sections
+- [website/BRAND.md](website/BRAND.md): canonical CTA → `/showcase#playground`
+
+---
+
 ## 3.5.2 — 2026-05-27 (Live chat + OpenRouter + Postgres stability)
 
 ### LLM & Demo

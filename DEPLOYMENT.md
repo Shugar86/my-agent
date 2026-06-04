@@ -1,7 +1,7 @@
 # Deployment Guide
 
 > My Agent — Production Deployment  
-> Version: **3.5.0**
+> Version: **3.5.2** · 2026-06-04
 
 **VDS:** см. [SERVER.md](./SERVER.md) — порт **8020**.  
 **Investor demo:** [DEMO.md](./DEMO.md).
@@ -12,7 +12,7 @@
 
 ```bash
 cp .env.example .env
-# KIMI_API_KEY=sk-kimi-...  (или OPENROUTER_API_KEY для fallback)
+# OPENROUTER_API_KEY=sk-or-v1-...  (primary LLM; demo работает без ключей)
 
 docker compose up -d --build
 curl -s http://127.0.0.1:8020/api/health
@@ -28,7 +28,7 @@ curl -s http://127.0.0.1:8020/api/health
 
 - Docker + Docker Compose
 - 2 GB RAM minimum
-- `KIMI_API_KEY` и/или `OPENROUTER_API_KEY` (demo работает без ключей — mock)
+- `OPENROUTER_API_KEY` для live chat (demo работает без ключей — mock)
 
 Production additionally:
 
@@ -49,7 +49,8 @@ cp .env.example .env
 | `ENV` | `production` |
 | `DATABASE_URL` | PostgreSQL (required) |
 | `REDIS_URL` | Redis (required) |
-| `KIMI_API_KEY` | Primary LLM |
+| `OPENROUTER_API_KEY` | Primary LLM |
+| `KIMI_API_KEY` | Fallback LLM (optional) |
 | `AGENT_SECRET_KEY` | Random 32+ chars |
 | `AGENT_PASSWORD` | Change from default |
 
