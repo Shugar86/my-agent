@@ -1,6 +1,6 @@
 # Handoff Instructions — My Agent
 
-> **Date:** 2026-05-27  
+> **Date:** 2026-06-04  
 > **Version:** 3.5.2  
 > **Docs index:** [docs/README.md](./docs/README.md)
 
@@ -60,17 +60,17 @@ docker compose exec -T agent python -m pytest tests/test_demo_flow.py -q
 
 ---
 
-## Key Files (3.4.0)
+## Key Files
 
 | Area | Files |
 |------|-------|
+| LLM config | `config/agent.json`, `core/kimi_provider.py`, `core/llm_gateway.py` |
 | Run queue | `core/workflow/run_queue.py`, `core/redis_client.py` |
-| Prod DB | `core/db_manager.py` (fail-fast PG in production) |
+| Prod DB | `core/db_manager.py`, `core/pg_state.py` |
 | systemd | `deploy/my-agent.service` |
 | Backup | `deploy/scripts/backup-db.sh` |
-| Migration | `scripts/migrate_sqlite_to_postgres.py` |
-| Monitoring | `deploy/monitoring/` (Grafana dashboard, Prometheus alerts) |
-| Audits | `AUDIT_PRODUCTION_2026.md`, `AUDIT_PRODUCT_2026.md`, `SERVER.md` |
+| Monitoring | `deploy/monitoring/` |
+| Docs index | `docs/README.md` |
 
 ---
 

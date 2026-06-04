@@ -6,7 +6,7 @@ Pick the path that matches your stack. Each flow ends with a working
 ## Self-host: Docker compose (recommended for VPS)
 
 ```bash
-git clone https://github.com/your-org/my-agent.git
+git clone https://github.com/Shugar86/my-agent.git
 cd my-agent
 cp deploy/.env.example .env
 # fill OPENROUTER_API_KEY, JWT_SECRET, ENCRYPTION_KEY, POSTGRES_PASSWORD, DOMAIN

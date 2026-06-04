@@ -218,18 +218,12 @@ ls web/static/
 ### 4.1 Slow Responses
 
 **Causes:**
-- LLM API latency (normal: 2-5s)
-- Rate limiting
-- Blocking I/O (known issue)
+- LLM API latency (normal: 2–5s)
+- Rate limiting on free OpenRouter models
 
 **Solutions:**
-```bash
-# Check if using async runtime
-# Currently blocking - see Architecture.md for fix
-
-# Use faster model
-# Change to non-free model in config
-```
+- Use a paid OpenRouter key for higher limits
+- Switch to a faster model in `config/agent.json`
 
 ---
 
@@ -249,17 +243,13 @@ rm memory/sessions/*.json
 
 ### 4.3 Server Hangs
 
-**Cause:** Blocking LLM call in async endpoint
+**Cause:** Long-running LLM call or stuck workflow run.
 
-**Workaround:**
+**Solution:**
 ```bash
-# Restart server
 pkill -f uvicorn
 python -m uvicorn web.server:app --host 0.0.0.0 --port 8020
 ```
-
-**Fix:** Implement async runtime (see Architecture.md)
-
 ---
 
 ## 5. Data Issues
@@ -393,13 +383,8 @@ export PYTHONPATH="${PYTHONPATH}:$(pwd)"
 
 **Solution:**
 ```bash
-# Use --reload flag
-python -m uvicorn web.server:app --reload
-
-# Or use start_server.py script
-python start_server.py
+python -m uvicorn web.server:app --host 0.0.0.0 --port 8020 --reload
 ```
-
 ---
 
 ## 8. Windows-Specific Issues
@@ -495,8 +480,8 @@ echo ""
 echo "Tests:"
 pytest tests/ --co -q 2>/dev/null | tail -1
 echo ""
-echo "Port 8000:"
-netstat -ano 2>/dev/null | grep :8000 || echo "Not in use"
+echo "Port 8020:"
+netstat -ano 2>/dev/null | grep :8020 || echo "Not in use"
 ```
 
 ---
