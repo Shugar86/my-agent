@@ -1,7 +1,7 @@
 # Architecture
 
 > My Agent — System Architecture  
-> Version: **3.5.0**
+> Version: **3.5.3**
 
 ---
 
@@ -28,7 +28,7 @@
        │          └──────┬───────┘
        ▼                 │
 ┌─────────────────────────────────────────────────────────────┐
-│  AgentBuilder → AgentRuntime → LLMGateway (Kimi + litellm)   │
+│  AgentBuilder → AgentRuntime → LLMGateway (OpenRouter + litellm) │
 │  SkillLoader · ToolRegistry · MemoryManager                  │
 └──────────────────────────┬──────────────────────────────────┘
                            │
@@ -101,6 +101,7 @@ Runs async по умолчанию; sync с `{"wait": true}`.
 | PostgreSQL | Users, workflows, templates, billing |
 | Redis | Sessions blacklist, rate limits, run queue |
 | JSON files | Dev memory sessions (`memory/sessions/`) |
+| PostgreSQL sessions | Chat history in prod (`core/pg_state.py`, lazy pool + schema migrate) |
 | ChromaDB | RAG knowledge base |
 
 При `ENV=production` SQLite для основных данных не используется.
@@ -128,7 +129,8 @@ web/server.py
 ├── core/orchestrator.py → core/builder.py → core/runtime.py
 ├── core/workflow/* 
 ├── core/auth.py, core/billing/*
-├── core/kimi_provider.py
+├── core/kimi_provider.py   # URL routing; Kimi vs OpenRouter keys
+├── core/llm_gateway.py
 └── core/agent_store.py
 
 skills/*/skill.py → tools/*.py

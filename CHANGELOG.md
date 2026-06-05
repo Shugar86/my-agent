@@ -1,5 +1,14 @@
 # Changelog — My Agent
 
+## 3.5.3 — 2026-06-05 (Documentation)
+
+- Синхронизирована версия **3.5.3** и стек LLM (**OpenRouter** primary) во всех актуальных docs
+- Обновлены [docs/README.md](docs/README.md), [PROJECT_GUIDE.md](PROJECT_GUIDE.md), [ARCHITECTURE.md](ARCHITECTURE.md), [DEPLOYMENT.md](DEPLOYMENT.md), [SERVER.md](SERVER.md), [HANDOFF.md](HANDOFF.md)
+- [WINDOWS_LAUNCH.md](WINDOWS_LAUNCH.md): убраны персональные пути, порт 8020, ссылка на Docker
+- `pyproject.toml`: version `3.5.3` (было `2.0.0`)
+
+---
+
 ## 3.5.2 — 2026-05-27 (Live chat + OpenRouter + Postgres stability)
 
 ### LLM & Demo

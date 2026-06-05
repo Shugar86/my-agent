@@ -1,6 +1,6 @@
 # Security & Production Readiness
 
-> Статус аудита: 2026-05-25. См. также `SERVER.md`, `ARCHITECTURE.md`.
+> Статус аудита: 2026-05-25 (матрица актуальна для 3.5.2). См. [SERVER.md](SERVER.md), [ARCHITECTURE.md](ARCHITECTURE.md), [docs/README.md](docs/README.md).
 
 ## Матрица рисков
 
