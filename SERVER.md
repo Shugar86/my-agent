@@ -1,11 +1,11 @@
 # My Agent — развёртывание на VDS
 
 > Сервер: `159.195.31.95` | Путь: `/opt/projects/my-agent/`  
-> Статус: **v3.4.0** (Production readiness — systemd, PostgreSQL, Redis queue, Grafana)
+> Статус: **v3.5.3** (systemd, PostgreSQL, Redis queue, OpenRouter live chat, Grafana)
 
 ---
 
-## Prod runtime (v3.4)
+## Prod runtime (v3.5)
 
 **Stack:** `systemd` → bare uvicorn `:8020` + Docker `db` + `redis` + optional `monitoring` profile.
 
@@ -19,6 +19,8 @@ ssh vds-root 'cd /opt/projects/my-agent && git fetch /root/git/my-agent.git main
 # ENV=production
 # DATABASE_URL=postgresql://agent:agentpass@127.0.0.1:5437/agent_db
 # REDIS_URL=redis://127.0.0.1:6380/0
+# OPENROUTER_API_KEY=sk-or-v1-...
+# TAVILY_API_KEY=tvly-...
 
 docker compose up -d db redis
 # Не поднимайте контейнер `agent` на VDS — API работает через systemd (порт 8020).

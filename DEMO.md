@@ -13,7 +13,8 @@
 ## One-command launch (works without API keys)
 
 ```bash
-cd /opt/projects/my-agent
+git clone <repo-url> my-agent && cd my-agent
+cp .env.example .env
 docker compose --profile demo up -d --build
 # Wait ~30s, then open:
 # - http://localhost:8020/app   (My Agent)
