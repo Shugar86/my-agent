@@ -1,7 +1,7 @@
 # Troubleshooting Guide
 
 > My Agent — Common Issues & Solutions  
-> Version: **3.5.2** · Default port: **8020** (Docker / VDS)
+> Version: **3.5.3** · Default port: **8020** (Docker / VDS)
 
 ---
 

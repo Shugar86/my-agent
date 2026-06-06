@@ -322,7 +322,7 @@ const TAB_STATUS: Partial<Record<TabId, FeatureStatus>> = {
           <div className="card">
             <h2 style={{ fontSize: 15, marginBottom: 12 }}>{t('settings.workspaceInfo')}</h2>
             <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>{me?.username} · {me?.email || '—'}</p>
-            <p style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 8 }}>{t('settings.version')}: 3.5.0</p>
+            <p style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 8 }}>{t('settings.version')}: 3.5.3</p>
             <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>{t('settings.framework')}: FastAPI</p>
             <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>{t('settings.defaultModel')}: {primaryModel}</p>
           </div>

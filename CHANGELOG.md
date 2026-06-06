@@ -1,5 +1,16 @@
 # Changelog — My Agent
 
+## 3.5.3 — 2026-06-06 (Documentation sync)
+
+### Documentation
+- Синхронизирована версия **3.5.3** во всех активных документах (`docs/README.md`, `PROJECT_GUIDE.md`, `ARCHITECTURE.md`, `DEPLOYMENT.md`, `SERVER.md`).
+- Primary LLM везде указан как **OpenRouter** (`balanced` / `openrouter/owl-alpha`); Kimi — опциональный профиль.
+- Обновлены маршруты UI: agents/knowledge/MCP → Settings tabs; канонический demo — `/showcase#playground`.
+- [WINDOWS_LAUNCH.md](WINDOWS_LAUNCH.md): убраны персональные пути, добавлен Docker-first сценарий.
+- [docs/README.md](docs/README.md): добавлены `WINDOWS_LAUNCH.md`, `config/agent.json`, `core/configurator.py`; в архив — `graphify-out/`, deprecated `config/models.yaml`.
+
+---
+
 ## 3.5.2 — 2026-05-27 (Live chat + OpenRouter + Postgres stability)
 
 ### LLM & Demo
