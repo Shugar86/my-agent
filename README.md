@@ -1,10 +1,10 @@
 # My Agent
 
-**Autonomous Workflow OS** — визуальный конструктор workflow, маркетплейс шаблонов, multi-agent чат и deep research на базе Kimi K2.
+**Autonomous Workflow OS** — визуальный конструктор workflow, маркетплейс шаблонов, multi-agent чат и deep research на базе OpenRouter (профиль `balanced` / `openrouter/owl-alpha`).
 
 | | |
 |---|---|
-| **Версия** | 3.5.2 |
+| **Версия** | 3.5.3 |
 | **Стек** | Python 3.11 · FastAPI · React 18 · PostgreSQL · Redis |
 | **Документация** | [docs/README.md](docs/README.md) — полный индекс |
 
@@ -14,7 +14,7 @@
 
 ```bash
 cp .env.example .env
-# Минимум: KIMI_API_KEY или OPENROUTER_API_KEY (demo работает и без ключей)
+# Минимум: OPENROUTER_API_KEY (+ TAVILY_API_KEY для live search); demo работает и без ключей
 
 docker compose up -d --build
 # Первый старт: seed шаблонов + demo DOCX (entrypoint)
@@ -132,12 +132,12 @@ docker compose exec -T agent python -m pytest tests/test_demo_flow.py -q
 
 | Переменная | Назначение |
 |------------|------------|
-| `KIMI_API_KEY` | Primary LLM (Kimi Code API) |
-| `OPENROUTER_API_KEY` | Fallback LLM |
+| `OPENROUTER_API_KEY` | Primary LLM (OpenRouter, профиль `balanced`) |
+| `KIMI_API_KEY` | Опционально — профиль `kimi` в CLI / Settings |
+| `TAVILY_API_KEY` | Веб-поиск для live demo и research |
 | `DATABASE_URL` | PostgreSQL (обязателен в production) |
 | `REDIS_URL` | Кэш, rate limits, workflow queue |
 | `AGENT_PASSWORD` / `AGENT_SECRET_KEY` | Админ и JWT |
-| `TAVILY_API_KEY` | Веб-поиск (опционально) |
 
 Полный список: [.env.example](.env.example).
 
@@ -147,7 +147,7 @@ docker compose exec -T agent python -m pytest tests/test_demo_flow.py -q
 
 | Тема | Файл |
 |------|------|
-| RU-руководство | [PROJECT_GUIDE.md](PROJECT_GUIDE.md) |
+| RU-руководство | [PROJECT_GUIDE.md](PROJECT_GUIDE.md) · [WINDOWS_LAUNCH.md](WINDOWS_LAUNCH.md) |
 | Деплой | [DEPLOYMENT.md](DEPLOYMENT.md) · [SERVER.md](SERVER.md) |
 | Безопасность | [SECURITY.md](SECURITY.md) |
 | Демо инвесторам | [DEMO.md](DEMO.md) · [INVESTOR.md](INVESTOR.md) |

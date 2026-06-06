@@ -1,85 +1,92 @@
 # Запуск My Agent на Windows
 
-## Быстрый старт (3 способа)
+> Версия **3.5.3** · см. также [README.md](README.md) и [PROJECT_GUIDE.md](PROJECT_GUIDE.md).
 
-### Способ 1: Через командную строку (РЕКОМЕНДУЕТСЯ)
+---
 
-1. Открой терминал (Win+R → `cmd` → Enter)
-2. Перейди в папку агента:
-   ```cmd
-   cd "C:\Users\Тема\Desktop\moy agent\my-agent"
-   ```
-3. Запусти:
-   ```cmd
-   python agent.py
-   ```
-   Или с выбором модели:
-   ```cmd
-   python agent.py --model smart
-   ```
+## Способ 1: Docker (рекомендуется)
 
-### Способ 2: Через setup.bat
+Требуется [Docker Desktop](https://www.docker.com/products/docker-desktop/).
 
-1. Дважды кликни `setup.bat`
-2. Выбери опцию:
-   - **1** — Создать ярлык на рабочем столе
-   - **2** — Добавить в PATH (можно запускать из любой папки)
-   - **3** — Просто запустить сейчас
+```powershell
+cd C:\path\to\my-agent
+copy .env.example .env
+# Заполнить OPENROUTER_API_KEY (опционально для live chat)
 
-### Способ 3: Ярлык вручную
+docker compose up -d --build
+start http://127.0.0.1:8020/showcase#playground
+```
 
-1. Правый клик на рабочем столе → Создать → Ярлык
-2. В поле "Укажите расположение" введи:
-   ```
-   cmd /k cd /d "C:\Users\Тема\Desktop\moy agent\my-agent" && python agent.py chat
-   ```
-3. Назови ярлык "My Agent"
-4. Готово! Двойной клик открывает TUI.
+Логин: `admin` / `admin` (сменить `AGENT_PASSWORD` в `.env`).
 
-## Почему .bat может не работать при двойном клике
+---
 
-При двойном клике по `.bat` файл Windows может:
-- Не найти Python (если он не в PATH)
-- Закрыть окно слишком быстро
-- Использовать неправильную кодировку
+## Способ 2: CLI (Python)
 
-**Решение:** Используй `setup.bat` или запускай через командную строку.
+1. Установить Python 3.11+ и добавить в PATH.
+2. Открыть терминал (Win+R → `cmd` → Enter).
+3. Перейти в каталог репозитория:
+
+```cmd
+cd C:\path\to\my-agent
+python -m venv .venv
+.venv\Scripts\activate
+pip install -r requirements.txt
+copy .env.example .env
+```
+
+4. Запуск:
+
+```cmd
+python agent.py chat
+python agent.py chat --model balanced
+python agent.py serve --port 8020
+```
+
+Или через `my-agent.bat` / `run.bat` в корне репозитория.
+
+---
+
+## Способ 3: setup.bat
+
+1. Дважды кликнуть `setup.bat`.
+2. Выбрать опцию:
+   - **1** — ярлык на рабочем столе
+   - **2** — добавить в PATH
+   - **3** — запустить сейчас
+
+При создании ярлыка укажите путь к **вашему** каталогу `my-agent`, не копируйте чужой абсолютный путь.
+
+---
 
 ## Полезные команды
 
-```bash
-# Интерактивный чат (по умолчанию)
-python agent.py
-python agent.py chat
-
-# С конкретной моделью
-python agent.py chat --model fast      # Быстрая
-python agent.py chat --model smart     # Умная
-python agent.py chat --model balanced  # Сбалансированная
-
-# Статус системы
+```cmd
+python agent.py chat --model fast       REM быстрый профиль
+python agent.py chat --model smart      REM умный профиль
+python agent.py chat --agent developer  REM конкретный агент
 python agent.py status
-
-# Веб-сервер
-python agent.py serve
-
-# Запуск конкретного агента
-python agent.py chat --agent developer
+python agent.py test --fast
 ```
 
-## Добавление в PATH (для запуска из любой папки)
+---
+
+## Почему .bat может не работать при двойном клике
+
+- Python не в PATH → установить Python 3.11+ с галочкой «Add to PATH»
+- Окно закрывается сразу → запускать через `cmd`, не двойным кликом
+- Кодировка → предпочитать PowerShell или `setup.bat`
+
+---
+
+## Frontend (опционально)
+
+Для сборки React UI нужен [Bun](https://bun.sh/) или Node 20+:
 
 ```powershell
-# PowerShell (от админа)
-[Environment]::SetEnvironmentVariable(
-    "Path", 
-    $env:Path + ";C:\Users\Тема\Desktop\moy agent\my-agent", 
-    "User"
-)
+cd web\frontend
+bun install
+bun run build
 ```
 
-После этого можно просто писать в любом терминале:
-```cmd
-agent
-agent --model smart
-```
+Dev-режим с hot reload: `bun run dev` (proxy на `:8020`).

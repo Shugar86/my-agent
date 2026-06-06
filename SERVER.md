@@ -1,11 +1,11 @@
 # My Agent — развёртывание на VDS
 
-> Сервер: `159.195.31.95` | Путь: `/opt/projects/my-agent/`  
-> Статус: **v3.4.0** (Production readiness — systemd, PostgreSQL, Redis queue, Grafana)
+> Пример VDS: `159.195.31.95` | Путь: `/opt/projects/my-agent/`  
+> Статус: **v3.5.3** (OpenRouter primary, live chat, systemd + PostgreSQL + Redis queue)
 
 ---
 
-## Prod runtime (v3.4)
+## Prod runtime (v3.5)
 
 **Stack:** `systemd` → bare uvicorn `:8020` + Docker `db` + `redis` + optional `monitoring` profile.
 
@@ -117,25 +117,22 @@ docker compose exec agent python scripts/generate_demo_artifact.py
 | URL | Назначение |
 |-----|------------|
 | `/login` | JWT login + Google |
-| `/welcome` | Маркетинговый лендинг |
-| `/showcase` | **Demo-MVP showcase** — 7 vertical cases + playground + CTA |
-| `/demo` | Public Competitor Intelligence demo (90 сек) |
-| `/app` | Панель (dashboard) |
+| `/` | React landing |
+| `/showcase#playground` | **Канонический public demo** (Competitor Intelligence 90s) |
+| `/showcase` | 7 vertical cases + playground |
+| `/demo` | Shortcut на playground |
+| `/app` | Dashboard |
 | `/app/showcase` | Authenticated mirror of `/showcase` |
-| `/app/chat` | Чат (markdown, SSE, `/run workflow`) |
+| `/app/chat` | Чат (live через OpenRouter при наличии ключа) |
 | `/app/workflows` | Workflow list + builder |
-| `/app/marketplace` | Templates |
-| `/app/agents` | Управление агентами |
-| `/app/knowledge` | База знаний (RAG) |
-| `/app/mcp` | MCP-серверы |
+| `/app/marketplace` | 52 шаблона |
 | `/app/analytics` | Usage dashboard |
-| `/app/admin` | Team members + system health (owner/admin) |
-| `/app/settings` | Интеграции, API keys, billing, модели, workspace |
+| `/app/settings` | Интеграции, API keys, billing, agents/knowledge/MCP (tabs) |
 | `/app/onboarding` | Team → integrations → template → 90s demo |
-| `/app/builder` | Agent Builder wizard |
 | `/metrics` | Prometheus scrape |
 
-Legacy paths (`/chat`, `/agents`, `/knowledge`, `/mcp`, `/onboarding`, …) → **301** на `/app/*` для авторизованных пользователей. Новый пользователь без onboarding → `/app/onboarding`.
+Редиректы: `/app/agents`, `/app/knowledge`, `/app/mcp`, `/app/builder` → `/app/settings?tab=…`.  
+Legacy paths (`/chat`, `/agents`, …) → **301** на `/app/*`. Новый пользователь → `/app/onboarding`.
 
 ### Demo API
 
@@ -198,7 +195,7 @@ Playwright smoke tests требуют запущенный сервер на `:8
 | 1 | Workflow Engine | `core/workflow/` |
 | 1 | API routes | `web/workflow_router.py` |
 | 2 | React SPA | `web/frontend/` → `web/static/app/` |
-| 2 | 25 templates | `scripts/seed_workflow_templates.py` |
+| 2 | 52 templates | `scripts/seed_workflow_templates.py` |
 | 3 | Teams / RBAC | `core/teams/`, `web/teams_router.py` |
 | 3 | Usage ledger | `core/usage/`, `web/usage_router.py` |
 | 3 | Google auth | `web/auth_router.py` |
