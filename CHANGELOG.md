@@ -17,6 +17,12 @@
 - Minor runtime blockers resolved: `from ddgs import` → `from duckduckgo_search import`, f-string backslash syntax error in `skills/browser/skill.py`, `.dockerignore` now excludes `.env`.
 - Verified end-to-end inside the real Docker stack: `POST /api/chat` returns real LLM answers via OpenRouter.
 
+### Documentation (2026-06-07)
+- Synced canonical docs to product state: OpenRouter primary LLM, 10 agents, 33 skills
+- Updated [docs/README.md](docs/README.md) — `WINDOWS_LAUNCH.md`, deprecated `config/models.yaml`
+- Refreshed [PROJECT_GUIDE.md](PROJECT_GUIDE.md), [SERVER.md](SERVER.md), [DEPLOYMENT.md](DEPLOYMENT.md), [ARCHITECTURE.md](ARCHITECTURE.md)
+- Cleaned [WINDOWS_LAUNCH.md](WINDOWS_LAUNCH.md) — Docker-first, no personal paths
+
 ---
 
 ## 3.5.1 — 2026-05-27 (Documentation)

@@ -1,6 +1,6 @@
 # My Agent — Руководство (RU)
 
-> Версия **3.5.0** · 2026-05-27  
+> Версия **3.5.2** · обновлено 2026-06-07  
 > Краткое RU-руководство. Полный индекс: [docs/README.md](docs/README.md).
 
 ---
@@ -11,8 +11,9 @@
 
 | Компонент | Значение |
 |-----------|----------|
-| Primary LLM | Kimi Code API (`KIMI_API_KEY`) |
-| Fallback | OpenRouter (`OPENROUTER_API_KEY`) |
+| Primary LLM | OpenRouter (`OPENROUTER_API_KEY`, `openrouter/owl-alpha`) |
+| Fallback | Gemini через OpenRouter; опционально Kimi (`KIMI_API_KEY`) |
+| Web search | Tavily (`TAVILY_API_KEY`) для live demo и research |
 | UI | React SPA на `/app/*`, RU i18n |
 | БД | PostgreSQL (prod), SQLite (dev без `ENV=production`) |
 | Очередь | Redis — rate limits, workflow runs |
@@ -25,8 +26,10 @@
 
 ```bash
 cp .env.example .env
+# Для live chat: OPENROUTER_API_KEY + TAVILY_API_KEY
+
 docker compose up -d --build
-open http://127.0.0.1:8020/app
+open http://127.0.0.1:8020/showcase#playground
 ```
 
 Порты: **8020** (web), **5437** (PostgreSQL localhost), **6380** (Redis localhost).
@@ -58,7 +61,8 @@ python agent.py test --fast            # pytest без slow/docker
 
 В чате: `/help`, `/exit`, `/clear`, `/model`.
 
-Профили моделей: `config/models.yaml` (`fast`, `balanced`, `smart`, `local`).
+Профили моделей: `core/configurator.py` (`fast`, `balanced`, `smart`, `local`).  
+`config/models.yaml` — deprecated, не загружается runtime.
 
 ---
 
@@ -66,13 +70,13 @@ python agent.py test --fast            # pytest без slow/docker
 
 | URL | Описание |
 |-----|----------|
+| `/showcase#playground` | **Канонический demo** — без login |
 | `/login` | Вход, регистрация, Google OAuth |
 | `/app/` | Dashboard |
-| `/app/chat` | Чат (Beta — нужен API key) |
+| `/app/chat` | Чат (нужен `OPENROUTER_API_KEY` для live) |
 | `/app/workflows` | Workflow list + builder |
 | `/app/marketplace` | Шаблоны, demo-run |
-| `/app/settings` | Ключи, billing, agents/knowledge/MCP |
-| `/showcase` | Публичные кейсы (без login) |
+| `/app/settings` | Ключи, billing, agents/knowledge/MCP (tabs) |
 
 ---
 
@@ -87,7 +91,7 @@ python agent.py test --fast            # pytest без slow/docker
 | GET/POST | `/api/agents` | CRUD агентов |
 | GET | `/api/workflow-templates` | Marketplace |
 | POST | `/api/workflows/{id}/run` | Запуск workflow |
-| POST | `/api/demo/run` | Investor demo presets |
+| POST | `/api/demo/public/run` | Public investor demo |
 
 Полный список: OpenAPI `http://localhost:8020/docs` (при запущенном сервере).
 
@@ -95,15 +99,26 @@ python agent.py test --fast            # pytest без slow/docker
 
 ## Агенты
 
-7 профилей в `agents/registry.json`: **universal**, researcher, developer, marketer, data_analyst, slides, docs.
+10 профилей в `agents/registry.json`:
 
-Universal подключает все skills автоматически; остальные — узкоспециализированные.
+| ID | Назначение |
+|----|------------|
+| **universal** | Все skills, авто-выбор инструментов |
+| researcher | Deep research, парсинг |
+| developer | Код, Git, анализ |
+| marketer | Контент, соцсети |
+| data_analyst | CSV, графики, SQL |
+| slides | Презентации |
+| docs | DOCX, PDF |
+| media_processor | OCR, аудио, видео |
+| data_engineer | ETL, API интеграции |
+| news_monitor | RSS, мониторинг новостей |
 
 ---
 
 ## Навыки (Skills)
 
-Каталог в `skills/<name>/SKILL.md`. Регистрация через `register_tools()` в `skill.py`.
+33 навыка в `skills/<name>/SKILL.md`. Регистрация через `register_tools()` в `skill.py`.
 
 Примеры: `deep_research`, `browser`, `rag`, `docs`, `slides`, `messaging`, `scheduler`, `git_integration`.
 
@@ -140,10 +155,11 @@ E2E: `cd web/frontend && bun run test:e2e` (сервер на `:8020`).
 
 | Симптом | Решение |
 |---------|---------|
-| 500 в чате | Проверить `KIMI_API_KEY` / `OPENROUTER_API_KEY`, перезапустить сервер |
+| 500 в чате | Проверить `OPENROUTER_API_KEY`, перезапустить сервер |
 | `redis: false` в health | Запустить Redis, проверить `REDIS_URL` |
 | Порт занят | `docker compose` использует **8020**, не 8000 |
 | Demo без ключей | Mock fallback — см. [DEMO.md](DEMO.md) |
+| Postgres sessions error | Lazy pool + auto-migration в 3.5.2 — см. [TROUBLESHOOTING.md](TROUBLESHOOTING.md) |
 
 Полный список: [TROUBLESHOOTING.md](TROUBLESHOOTING.md).
 

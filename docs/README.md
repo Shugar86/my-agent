@@ -1,6 +1,6 @@
 # Документация My Agent
 
-> Индекс актуальной документации. Версия продукта: **3.5.0** (2026-05-27).
+> Индекс актуальной документации. Версия продукта: **3.5.2** · обновлено 2026-06-07.
 
 ---
 
@@ -27,6 +27,7 @@
 | [SECURITY.md](../SECURITY.md) | JWT, rate limits, production checklist |
 | [TROUBLESHOOTING.md](../TROUBLESHOOTING.md) | Типичные ошибки |
 | [HANDOFF.md](../HANDOFF.md) | Состояние продукта для новой сессии |
+| [WINDOWS_LAUNCH.md](../WINDOWS_LAUNCH.md) | Запуск на Windows (CLI + Docker) |
 | [web/frontend/DESIGN.md](../web/frontend/DESIGN.md) | UI design system (React) |
 
 ---
@@ -36,8 +37,10 @@
 | Документ | Содержание |
 |----------|------------|
 | [CHANGELOG.md](../CHANGELOG.md) | История релизов |
-| [skills/*/SKILL.md](../skills/) | Документация каждого skill |
+| [skills/*/SKILL.md](../skills/) | Документация каждого skill (33 навыка) |
 | [.env.example](../.env.example) | Переменные окружения |
+| [agents/registry.json](../agents/registry.json) | 10 профилей агентов |
+| [config/agent.json](../config/agent.json) | Primary LLM (OpenRouter) |
 
 ---
 
@@ -61,6 +64,7 @@
 | Путь | Причина |
 |------|---------|
 | `website/*.html` | Статический лендинг заменён React SPA — см. [website/README-DEPRECATED.md](../website/README-DEPRECATED.md) |
-| `AI_SKILLS.md` (удалён) | Сводка перенесена в `skills/*/SKILL.md` и [PROJECT_GUIDE.md](../PROJECT_GUIDE.md) |
+| `config/models.yaml` | Deprecated — runtime использует `config/agent.json` + `core/configurator.py` |
 | `web/static/*.html` (кроме login) | Legacy HTML; продукт в `/app/*` |
 | Порт **8000** в старых заметках | Актуальный порт Docker/VDS: **8020** |
+| Kimi как primary LLM | С 3.5.2 primary — **OpenRouter** (`OPENROUTER_API_KEY`) |

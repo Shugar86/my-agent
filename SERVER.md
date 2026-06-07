@@ -1,7 +1,7 @@
 # My Agent — развёртывание на VDS
 
 > Сервер: `159.195.31.95` | Путь: `/opt/projects/my-agent/`  
-> Статус: **v3.4.0** (Production readiness — systemd, PostgreSQL, Redis queue, Grafana)
+> Статус: **v3.5.2** (OpenRouter live chat, canonical demo `/showcase#playground`)
 
 ---
 
@@ -79,8 +79,8 @@ cd /opt/projects/my-agent
 
 # 1. Конфиг
 cp .env.example .env
-# Заполнить: OPENROUTER_API_KEY, AGENT_SECRET_KEY, AGENT_PASSWORD
-# Опционально: GOOGLE_AUTH_CLIENT_ID/SECRET, N8N_WEBHOOK_URL
+# Заполнить: OPENROUTER_API_KEY, TAVILY_API_KEY, AGENT_SECRET_KEY, AGENT_PASSWORD
+# Опционально: GOOGLE_AUTH_CLIENT_ID/SECRET, N8N_WEBHOOK_URL, KIMI_API_KEY
 
 # 2. Собрать frontend (если менялся web/frontend/)
 cd web/frontend && npm install && npm run build && cd ../..
@@ -102,7 +102,7 @@ curl -s http://127.0.0.1:8020/api/health | python3 -m json.tool
 docker compose --profile demo up -d --build
 docker compose exec agent python scripts/seed_workflow_templates.py
 docker compose exec agent python scripts/generate_demo_artifact.py
-# http://127.0.0.1:8020/app → "Try 90s demo"
+# http://127.0.0.1:8020/showcase#playground → canonical 90s demo
 # n8n UI: http://127.0.0.1:5678 (admin / demo)
 ```
 
@@ -116,26 +116,23 @@ docker compose exec agent python scripts/generate_demo_artifact.py
 
 | URL | Назначение |
 |-----|------------|
+| `/` | React landing |
+| `/showcase#playground` | **Канонический demo** — Competitor Intelligence 90s → DOCX |
+| `/showcase` | 7 vertical cases + playground |
+| `/demo` | Shortcut на playground (вторичный) |
 | `/login` | JWT login + Google |
-| `/welcome` | Маркетинговый лендинг |
-| `/showcase` | **Demo-MVP showcase** — 7 vertical cases + playground + CTA |
-| `/demo` | Public Competitor Intelligence demo (90 сек) |
-| `/app` | Панель (dashboard) |
+| `/app` | Dashboard |
 | `/app/showcase` | Authenticated mirror of `/showcase` |
-| `/app/chat` | Чат (markdown, SSE, `/run workflow`) |
+| `/app/chat` | Чат (live через OpenRouter) |
 | `/app/workflows` | Workflow list + builder |
-| `/app/marketplace` | Templates |
-| `/app/agents` | Управление агентами |
-| `/app/knowledge` | База знаний (RAG) |
-| `/app/mcp` | MCP-серверы |
+| `/app/marketplace` | 52+ templates |
+| `/app/settings` | Интеграции, API keys, billing; tabs: agents, knowledge, MCP |
+| `/app/onboarding` | 4-step wizard |
 | `/app/analytics` | Usage dashboard |
-| `/app/admin` | Team members + system health (owner/admin) |
-| `/app/settings` | Интеграции, API keys, billing, модели, workspace |
-| `/app/onboarding` | Team → integrations → template → 90s demo |
-| `/app/builder` | Agent Builder wizard |
 | `/metrics` | Prometheus scrape |
 
-Legacy paths (`/chat`, `/agents`, `/knowledge`, `/mcp`, `/onboarding`, …) → **301** на `/app/*` для авторизованных пользователей. Новый пользователь без onboarding → `/app/onboarding`.
+Редиректы: `/app/agents` → `settings?tab=agents`, `/welcome` → `/`.  
+Legacy paths (`/chat`, `/agents`, …) → **301** на `/app/*`.
 
 ### Demo API
 
@@ -198,7 +195,7 @@ Playwright smoke tests требуют запущенный сервер на `:8
 | 1 | Workflow Engine | `core/workflow/` |
 | 1 | API routes | `web/workflow_router.py` |
 | 2 | React SPA | `web/frontend/` → `web/static/app/` |
-| 2 | 25 templates | `scripts/seed_workflow_templates.py` |
+| 2 | 52 templates | `scripts/seed_workflow_templates.py` |
 | 3 | Teams / RBAC | `core/teams/`, `web/teams_router.py` |
 | 3 | Usage ledger | `core/usage/`, `web/usage_router.py` |
 | 3 | Google auth | `web/auth_router.py` |
