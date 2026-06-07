@@ -1,7 +1,7 @@
 # Architecture
 
 > My Agent — System Architecture  
-> Version: **3.5.0**
+> Version: **3.5.2**
 
 ---
 
@@ -28,7 +28,7 @@
        │          └──────┬───────┘
        ▼                 │
 ┌─────────────────────────────────────────────────────────────┐
-│  AgentBuilder → AgentRuntime → LLMGateway (Kimi + litellm)   │
+│  AgentBuilder → AgentRuntime → LLMGateway (OpenRouter + litellm)│
 │  SkillLoader · ToolRegistry · MemoryManager                  │
 └──────────────────────────┬──────────────────────────────────┘
                            │
@@ -128,7 +128,7 @@ web/server.py
 ├── core/orchestrator.py → core/builder.py → core/runtime.py
 ├── core/workflow/* 
 ├── core/auth.py, core/billing/*
-├── core/kimi_provider.py
+├── core/kimi_provider.py, core/configurator.py (model profiles)
 └── core/agent_store.py
 
 skills/*/skill.py → tools/*.py
