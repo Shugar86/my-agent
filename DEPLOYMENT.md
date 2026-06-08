@@ -1,7 +1,7 @@
 # Deployment Guide
 
 > My Agent — Production Deployment  
-> Version: **3.5.0**
+> Version: **3.5.2**
 
 **VDS:** см. [SERVER.md](./SERVER.md) — порт **8020**.  
 **Investor demo:** [DEMO.md](./DEMO.md).
@@ -12,7 +12,7 @@
 
 ```bash
 cp .env.example .env
-# KIMI_API_KEY=sk-kimi-...  (или OPENROUTER_API_KEY для fallback)
+# OPENROUTER_API_KEY=sk-or-v1-...  (для live-чата; demo работает без ключей)
 
 docker compose up -d --build
 curl -s http://127.0.0.1:8020/api/health
@@ -28,7 +28,8 @@ curl -s http://127.0.0.1:8020/api/health
 
 - Docker + Docker Compose
 - 2 GB RAM minimum
-- `KIMI_API_KEY` и/или `OPENROUTER_API_KEY` (demo работает без ключей — mock)
+- `OPENROUTER_API_KEY` для live LLM (demo работает без ключей — mock)
+- `TAVILY_API_KEY` опционально — реальный веб-поиск в demo/чате
 
 Production additionally:
 
@@ -49,9 +50,12 @@ cp .env.example .env
 | `ENV` | `production` |
 | `DATABASE_URL` | PostgreSQL (required) |
 | `REDIS_URL` | Redis (required) |
-| `KIMI_API_KEY` | Primary LLM |
+| `OPENROUTER_API_KEY` | Primary LLM |
+| `TAVILY_API_KEY` | Web search (recommended for live demo) |
 | `AGENT_SECRET_KEY` | Random 32+ chars |
 | `AGENT_PASSWORD` | Change from default |
+
+Для managed deploy (Render/Railway/Fly): см. [deploy/.env.example](./deploy/.env.example) и [deploy/README.md](./deploy/README.md).
 
 `docker-compose.yml` выставляет `ENV=production` и подключает db/redis автоматически.
 
@@ -72,7 +76,7 @@ python -m uvicorn web.server:app --host 0.0.0.0 --port 8020 --reload
 Frontend rebuild after UI changes:
 
 ```bash
-cd web/frontend && bun run build
+cd web/frontend && bun install && bun run build
 ```
 
 ---
@@ -84,7 +88,7 @@ python -m pytest tests/ -q
 
 # Smoke (in container):
 docker compose exec -T agent python -m pytest \
-  tests/test_production_v34.py tests/test_marketplace.py -q
+  tests/test_production_v34.py tests/test_marketplace.py tests/test_demo_flow.py -q
 ```
 
 ---
@@ -98,7 +102,7 @@ docker compose exec -T agent python -m pytest \
 | Monitoring | `docker compose --profile monitoring up -d` |
 | Backup | `deploy/scripts/backup-db.sh` |
 
-Подробный runbook: [deploy/README.md](./deploy/README.md), [AUDIT_PRODUCTION_2026.md](./AUDIT_PRODUCTION_2026.md).
+Подробный runbook: [deploy/README.md](./deploy/README.md), [SERVER.md](./SERVER.md).
 
 ---
 
@@ -106,6 +110,7 @@ docker compose exec -T agent python -m pytest \
 
 - [ ] `.env` с уникальными `AGENT_PASSWORD`, `AGENT_SECRET_KEY`
 - [ ] `DATABASE_URL` + `REDIS_URL` заданы
+- [ ] `OPENROUTER_API_KEY` для live-чата (опционально для demo-only)
 - [ ] `curl http://127.0.0.1:8020/api/health` → `redis: true`
 - [ ] TLS перед публичным доступом
 - [ ] `cd web/frontend && bun run build` после изменений UI
@@ -120,6 +125,7 @@ docker compose exec -T agent python -m pytest \
 | Health `redis: false` | Start redis service, check `REDIS_URL` |
 | PG connection refused | `docker compose up db -d`, port 5437 on host |
 | 502 behind nginx | Agent listens on **8020**, not 8000 |
+| Chat 500 in Docker | Проверить PG pool / legacy sessions — см. [TROUBLESHOOTING.md](./TROUBLESHOOTING.md) §1.1 |
 | Templates empty | `docker compose exec agent python scripts/seed_workflow_templates.py` |
 
 См. [TROUBLESHOOTING.md](./TROUBLESHOOTING.md).

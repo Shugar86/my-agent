@@ -54,7 +54,7 @@ a Docker healthcheck that uses the same endpoint.
 
 | Platform | Command |
 |----------|---------|
-| Docker compose | `git checkout v3.0 && docker compose -f deploy/docker-compose.prod.yml up -d --build` |
+| Docker compose | `git checkout <previous-tag> && docker compose -f deploy/docker-compose.prod.yml up -d --build` |
 | Render | "Manual deploy" → previous commit |
 | Railway | `railway rollback` |
 | Fly.io | `flyctl releases list` then `flyctl deploy --image registry.fly.io/<app>:<release>` |

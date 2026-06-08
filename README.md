@@ -1,6 +1,6 @@
 # My Agent
 
-**Autonomous Workflow OS** — визуальный конструктор workflow, маркетплейс шаблонов, multi-agent чат и deep research на базе Kimi K2.
+**Autonomous Workflow OS** — визуальный конструктор workflow, маркетплейс шаблонов, multi-agent чат и deep research на базе OpenRouter (опционально Kimi).
 
 | | |
 |---|---|
@@ -14,7 +14,7 @@
 
 ```bash
 cp .env.example .env
-# Минимум: KIMI_API_KEY или OPENROUTER_API_KEY (demo работает и без ключей)
+# Для live-чата: OPENROUTER_API_KEY (+ TAVILY_API_KEY для веб-поиска); demo работает и без ключей
 
 docker compose up -d --build
 # Первый старт: seed шаблонов + demo DOCX (entrypoint)
@@ -132,8 +132,9 @@ docker compose exec -T agent python -m pytest tests/test_demo_flow.py -q
 
 | Переменная | Назначение |
 |------------|------------|
-| `KIMI_API_KEY` | Primary LLM (Kimi Code API) |
-| `OPENROUTER_API_KEY` | Fallback LLM |
+| `OPENROUTER_API_KEY` | Primary LLM (OpenRouter) |
+| `KIMI_API_KEY` | Опциональный LLM (Kimi Code API) |
+| `TAVILY_API_KEY` | Веб-поиск в live demo и чате |
 | `DATABASE_URL` | PostgreSQL (обязателен в production) |
 | `REDIS_URL` | Кэш, rate limits, workflow queue |
 | `AGENT_PASSWORD` / `AGENT_SECRET_KEY` | Админ и JWT |
@@ -153,5 +154,6 @@ docker compose exec -T agent python -m pytest tests/test_demo_flow.py -q
 | Демо инвесторам | [DEMO.md](DEMO.md) · [INVESTOR.md](INVESTOR.md) |
 | Изменения | [CHANGELOG.md](CHANGELOG.md) |
 | Проблемы | [TROUBLESHOOTING.md](TROUBLESHOOTING.md) |
+| Windows | [WINDOWS_LAUNCH.md](WINDOWS_LAUNCH.md) |
 
 **Лицензия:** MIT

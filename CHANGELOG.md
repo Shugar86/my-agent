@@ -1,5 +1,15 @@
 # Changelog — My Agent
 
+## 3.5.3 — 2026-06-08 (Documentation sync)
+
+- Синхронизирована документация с v3.5.2: **OpenRouter** как primary LLM во всех гайдах
+- Обновлены [README.md](README.md), [PROJECT_GUIDE.md](PROJECT_GUIDE.md), [ARCHITECTURE.md](ARCHITECTURE.md), [DEPLOYMENT.md](DEPLOYMENT.md), [SERVER.md](SERVER.md), [docs/README.md](docs/README.md)
+- [.env.example](.env.example): порядок и комментарии API keys (OpenRouter + Tavily first)
+- [WINDOWS_LAUNCH.md](WINDOWS_LAUNCH.md): убраны персональные пути, добавлен Docker Desktop
+- [docs/README.md](docs/README.md): `config/models.yaml` и `graphify-out/` в списке устаревшего
+
+---
+
 ## 3.5.2 — 2026-05-27 (Live chat + OpenRouter + Postgres stability)
 
 ### LLM & Demo

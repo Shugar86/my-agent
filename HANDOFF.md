@@ -1,6 +1,6 @@
 # Handoff Instructions — My Agent
 
-> **Date:** 2026-05-27  
+> **Date:** 2026-06-08  
 > **Version:** 3.5.2  
 > **Docs index:** [docs/README.md](./docs/README.md)
 
@@ -60,7 +60,7 @@ docker compose exec -T agent python -m pytest tests/test_demo_flow.py -q
 
 ---
 
-## Key Files (3.4.0)
+## Key Files
 
 | Area | Files |
 |------|-------|
