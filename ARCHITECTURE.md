@@ -1,7 +1,7 @@
 # Architecture
 
 > My Agent — System Architecture  
-> Version: **3.5.0**
+> Version: **3.5.2**
 
 ---
 
@@ -28,8 +28,8 @@
        │          └──────┬───────┘
        ▼                 │
 ┌─────────────────────────────────────────────────────────────┐
-│  AgentBuilder → AgentRuntime → LLMGateway (Kimi + litellm)   │
-│  SkillLoader · ToolRegistry · MemoryManager                  │
+│  AgentBuilder → AgentRuntime → LLMGateway (OpenRouter + litellm) │
+│  SkillLoader · ToolRegistry · MemoryManager (PG + legacy migrate) │
 └──────────────────────────┬──────────────────────────────────┘
                            │
                            ▼
@@ -53,7 +53,7 @@ React 18 SPA (`web/frontend/`), собирается в `web/static/app/`.
 | Product | `/app/*` | JWT cookie |
 | Auth | `/login` | — |
 
-Legacy static HTML в `website/` и `web/static/*.html` не используются для основного UI (кроме `login.html` при необходимости).
+Legacy static HTML в `website/` и `web/static/*.html` не используются для основного UI. Данные showcase: `website/data/showcase.json`.
 
 ---
 
@@ -76,6 +76,12 @@ Fluent configuration → `AgentRuntime`. Загружает skills, создаё
 
 LLM планирует sub-agents → временные профили → parallel run → cleanup.
 
+### LLM configuration
+
+- Default model: `openrouter/owl-alpha` (`config/agent.json`)
+- Profiles: `core/configurator.py` → `MODEL_PROFILES` (fast, balanced, smart, …)
+- Optional Kimi: `KIMI_API_KEY` + `core/kimi_provider.py` (не primary с v3.5.2)
+
 ---
 
 ## Workflow engine
@@ -88,7 +94,7 @@ web/workflow_router.py
     → core/workflow/run_queue.py  (Redis RPOPLPUSH)
 ```
 
-Узлы: `trigger.*`, `agent.skill`, `condition`, `action.webhook`, `action.n8n_webhook`, …
+21 зарегистрированный тип узла: `trigger.*`, `agent.skill`, `condition`, `util.*`, `action.*` (включая `action.n8n_webhook`).
 
 Runs async по умолчанию; sync с `{"wait": true}`.
 
@@ -98,12 +104,12 @@ Runs async по умолчанию; sync с `{"wait": true}`.
 
 | Store | Usage |
 |-------|--------|
-| PostgreSQL | Users, workflows, templates, billing |
+| PostgreSQL | Users, workflows, templates, billing, chat sessions |
 | Redis | Sessions blacklist, rate limits, run queue |
 | JSON files | Dev memory sessions (`memory/sessions/`) |
 | ChromaDB | RAG knowledge base |
 
-При `ENV=production` SQLite для основных данных не используется.
+При `ENV=production` SQLite для основных данных не используется. `PGStateManager` лениво инициализирует pool и мигрирует legacy-схему `sessions` при первом подключении.
 
 ---
 
@@ -128,8 +134,8 @@ web/server.py
 ├── core/orchestrator.py → core/builder.py → core/runtime.py
 ├── core/workflow/* 
 ├── core/auth.py, core/billing/*
-├── core/kimi_provider.py
-└── core/agent_store.py
+├── core/kimi_provider.py, core/llm_gateway.py
+└── core/agent_store.py, core/pg_state.py
 
 skills/*/skill.py → tools/*.py
 ```

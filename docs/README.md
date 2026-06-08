@@ -1,6 +1,8 @@
 # Документация My Agent
 
-> Индекс актуальной документации. Версия продукта: **3.5.0** (2026-05-27).
+> Индекс актуальной документации. Версия продукта: **3.5.2** · обновлено 2026-06-08.
+
+**Primary LLM:** OpenRouter (`OPENROUTER_API_KEY`). Demo и showcase работают без ключей (mock fallback).
 
 ---
 
@@ -20,13 +22,14 @@
 
 | Документ | Содержание |
 |----------|------------|
-| [ARCHITECTURE.md](../ARCHITECTURE.md) | Слои системы, workflow engine, паттерны |
+| [ARCHITECTURE.md](../ARCHITECTURE.md) | Слои системы, workflow engine, LLM, паттерны |
 | [DEPLOYMENT.md](../DEPLOYMENT.md) | Локальный и production деплой |
 | [SERVER.md](../SERVER.md) | VDS, порты, nginx, бэкапы |
-| [deploy/README.md](../deploy/README.md) | Docker Compose prod, systemd, мониторинг |
+| [deploy/README.md](../deploy/README.md) | Docker Compose prod, Render/Railway/Fly |
 | [SECURITY.md](../SECURITY.md) | JWT, rate limits, production checklist |
-| [TROUBLESHOOTING.md](../TROUBLESHOOTING.md) | Типичные ошибки |
+| [TROUBLESHOOTING.md](../TROUBLESHOOTING.md) | Типичные ошибки (включая PG sessions fix) |
 | [HANDOFF.md](../HANDOFF.md) | Состояние продукта для новой сессии |
+| [WINDOWS_LAUNCH.md](../WINDOWS_LAUNCH.md) | Запуск на Windows (CLI / Docker) |
 | [web/frontend/DESIGN.md](../web/frontend/DESIGN.md) | UI design system (React) |
 
 ---
@@ -36,8 +39,9 @@
 | Документ | Содержание |
 |----------|------------|
 | [CHANGELOG.md](../CHANGELOG.md) | История релизов |
-| [skills/*/SKILL.md](../skills/) | Документация каждого skill |
-| [.env.example](../.env.example) | Переменные окружения |
+| [skills/*/SKILL.md](../skills/) | Документация каждого skill (33 навыка) |
+| [.env.example](../.env.example) | Переменные окружения (локальный Docker) |
+| [deploy/.env.example](../deploy/.env.example) | Переменные для `deploy/docker-compose.prod.yml` |
 
 ---
 
@@ -51,7 +55,7 @@
 | [AUDIT_PRODUCT_2026.md](../AUDIT_PRODUCT_2026.md) | Product depth |
 | [AUDIT_2026.md](../AUDIT_2026.md) | Общий аудит 2026 |
 | [AUDIT_REPORT.md](../AUDIT_REPORT.md) | UX/metrics snapshot (3.5.0) |
-| [ROADMAP_90_DAYS.md](../ROADMAP_90_DAYS.md) | Дорожная карта |
+| [ROADMAP_90_DAYS.md](../ROADMAP_90_DAYS.md) | Дорожная карта (завершённые фазы) |
 | [.planning/](../.planning/) | Внутреннее планирование |
 
 ---
@@ -61,6 +65,7 @@
 | Путь | Причина |
 |------|---------|
 | `website/*.html` | Статический лендинг заменён React SPA — см. [website/README-DEPRECATED.md](../website/README-DEPRECATED.md) |
-| `AI_SKILLS.md` (удалён) | Сводка перенесена в `skills/*/SKILL.md` и [PROJECT_GUIDE.md](../PROJECT_GUIDE.md) |
 | `web/static/*.html` (кроме login) | Legacy HTML; продукт в `/app/*` |
+| `config/models.yaml` | Не загружается runtime; см. `config/agent.json` |
+| `graphify-out/` | Сгенерированные артефакты анализа кода, не документация |
 | Порт **8000** в старых заметках | Актуальный порт Docker/VDS: **8020** |
