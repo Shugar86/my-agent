@@ -1,7 +1,7 @@
 # Handoff Instructions — My Agent
 
-> **Date:** 2026-05-27  
-> **Version:** 3.5.2  
+> **Date:** 2026-06-09  
+> **Version:** 3.5.3  
 > **Docs index:** [docs/README.md](./docs/README.md)
 
 ---
@@ -60,17 +60,19 @@ docker compose exec -T agent python -m pytest tests/test_demo_flow.py -q
 
 ---
 
-## Key Files (3.4.0)
+## Key Files (3.5.3)
 
 | Area | Files |
 |------|-------|
+| LLM config | `config/agent.json`, `core/configurator.py` (`MODEL_PROFILES`) |
+| Chat sessions | `core/pg_state.py` (`ensure_connected`, legacy schema migration) |
 | Run queue | `core/workflow/run_queue.py`, `core/redis_client.py` |
 | Prod DB | `core/db_manager.py` (fail-fast PG in production) |
 | systemd | `deploy/my-agent.service` |
 | Backup | `deploy/scripts/backup-db.sh` |
 | Migration | `scripts/migrate_sqlite_to_postgres.py` |
 | Monitoring | `deploy/monitoring/` (Grafana dashboard, Prometheus alerts) |
-| Audits | `AUDIT_PRODUCTION_2026.md`, `AUDIT_PRODUCT_2026.md`, `SERVER.md` |
+| Docs index | `docs/README.md` |
 
 ---
 

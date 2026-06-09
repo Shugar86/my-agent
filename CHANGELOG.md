@@ -1,5 +1,15 @@
 # Changelog — My Agent
 
+## 3.5.3 — 2026-06-09 (Documentation)
+
+- Synced docs to **v3.5.2** product state: OpenRouter as primary LLM, 33 skills, port **8020**
+- Updated [docs/README.md](docs/README.md) — added `WINDOWS_LAUNCH.md`, `config/models.yaml` and `graphify-out/` to obsolete list
+- Refreshed [README.md](README.md), [PROJECT_GUIDE.md](PROJECT_GUIDE.md), [ARCHITECTURE.md](ARCHITECTURE.md), [DEPLOYMENT.md](DEPLOYMENT.md), [SERVER.md](SERVER.md), [HANDOFF.md](HANDOFF.md)
+- [WINDOWS_LAUNCH.md](WINDOWS_LAUNCH.md) — generalized paths, Docker-first recommendation
+- [ROADMAP_90_DAYS.md](ROADMAP_90_DAYS.md) — marked as archive, fixed React showcase references
+
+---
+
 ## 3.5.2 — 2026-05-27 (Live chat + OpenRouter + Postgres stability)
 
 ### LLM & Demo
