@@ -1,85 +1,79 @@
 # Запуск My Agent на Windows
 
-## Быстрый старт (3 способа)
+> CLI и локальная разработка. Для полного стека (PostgreSQL, Redis, Web UI) используйте **Docker** — см. [README.md](README.md).
 
-### Способ 1: Через командную строку (РЕКОМЕНДУЕТСЯ)
+---
 
-1. Открой терминал (Win+R → `cmd` → Enter)
-2. Перейди в папку агента:
-   ```cmd
-   cd "C:\Users\Тема\Desktop\moy agent\my-agent"
+## Рекомендуемый способ: Docker Desktop
+
+```powershell
+cd C:\path\to\my-agent
+copy .env.example .env
+docker compose up -d --build
+```
+
+Откройте http://localhost:8020/app (логин: `admin` / `admin`).
+
+---
+
+## CLI без Docker
+
+### Требования
+
+- Python 3.11+
+- Git Bash или PowerShell
+
+### Быстрый старт
+
+```cmd
+cd C:\path\to\my-agent
+python -m venv .venv
+.venv\Scripts\activate
+pip install -r requirements.txt
+copy .env.example .env
+
+python agent.py chat --model balanced
+```
+
+Или через `my-agent.bat` / `run.bat` в корне репозитория.
+
+### Полезные команды
+
+```bash
+python agent.py chat                    # интерактивный чат
+python agent.py chat --model fast       # быстрый профиль
+python agent.py chat --model smart      # Claude Sonnet via OpenRouter
+python agent.py chat --agent developer  # конкретный агент
+python agent.py serve --port 8020       # web-сервер
+python agent.py status                  # статус системы
+python agent.py test --fast             # быстрые тесты
+```
+
+Профили моделей: `core/configurator.py` (`fast`, `balanced`, `smart`, `kimi`, `local`).
+
+---
+
+## Ярлык на рабочем столе
+
+1. Правый клик → Создать → Ярлык
+2. Расположение:
    ```
-3. Запусти:
-   ```cmd
-   python agent.py
+   cmd /k cd /d "C:\path\to\my-agent" && .venv\Scripts\activate && python agent.py chat
    ```
-   Или с выбором модели:
-   ```cmd
-   python agent.py --model smart
-   ```
+3. Назовите «My Agent»
 
-### Способ 2: Через setup.bat
-
-1. Дважды кликни `setup.bat`
-2. Выбери опцию:
-   - **1** — Создать ярлык на рабочем столе
-   - **2** — Добавить в PATH (можно запускать из любой папки)
-   - **3** — Просто запустить сейчас
-
-### Способ 3: Ярлык вручную
-
-1. Правый клик на рабочем столе → Создать → Ярлык
-2. В поле "Укажите расположение" введи:
-   ```
-   cmd /k cd /d "C:\Users\Тема\Desktop\moy agent\my-agent" && python agent.py chat
-   ```
-3. Назови ярлык "My Agent"
-4. Готово! Двойной клик открывает TUI.
+---
 
 ## Почему .bat может не работать при двойном клике
 
-При двойном клике по `.bat` файл Windows может:
-- Не найти Python (если он не в PATH)
-- Закрыть окно слишком быстро
-- Использовать неправильную кодировку
+- Python не в PATH → используйте полный путь к `.venv\Scripts\python.exe`
+- Окно закрывается сразу → добавьте `pause` в конец `.bat`
+- Неверная кодировка → запускайте через `cmd`, не Explorer
 
-**Решение:** Используй `setup.bat` или запускай через командную строку.
+---
 
-## Полезные команды
+## См. также
 
-```bash
-# Интерактивный чат (по умолчанию)
-python agent.py
-python agent.py chat
-
-# С конкретной моделью
-python agent.py chat --model fast      # Быстрая
-python agent.py chat --model smart     # Умная
-python agent.py chat --model balanced  # Сбалансированная
-
-# Статус системы
-python agent.py status
-
-# Веб-сервер
-python agent.py serve
-
-# Запуск конкретного агента
-python agent.py chat --agent developer
-```
-
-## Добавление в PATH (для запуска из любой папки)
-
-```powershell
-# PowerShell (от админа)
-[Environment]::SetEnvironmentVariable(
-    "Path", 
-    $env:Path + ";C:\Users\Тема\Desktop\moy agent\my-agent", 
-    "User"
-)
-```
-
-После этого можно просто писать в любом терминале:
-```cmd
-agent
-agent --model smart
-```
+- [README.md](README.md) — полный quick start
+- [PROJECT_GUIDE.md](PROJECT_GUIDE.md) — RU-руководство
+- [TROUBLESHOOTING.md](TROUBLESHOOTING.md) — типичные ошибки
