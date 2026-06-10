@@ -1,85 +1,104 @@
 # Запуск My Agent на Windows
 
-## Быстрый старт (3 способа)
+> CLI и локальная разработка. Для production используйте Docker — см. [README.md](README.md).
 
-### Способ 1: Через командную строку (РЕКОМЕНДУЕТСЯ)
+Замените `%REPO%` на путь к клону репозитория (например `C:\Projects\my-agent`).
 
-1. Открой терминал (Win+R → `cmd` → Enter)
-2. Перейди в папку агента:
-   ```cmd
-   cd "C:\Users\Тема\Desktop\moy agent\my-agent"
-   ```
-3. Запусти:
-   ```cmd
-   python agent.py
-   ```
-   Или с выбором модели:
-   ```cmd
-   python agent.py --model smart
-   ```
+---
 
-### Способ 2: Через setup.bat
+## Быстрый старт
 
-1. Дважды кликни `setup.bat`
-2. Выбери опцию:
-   - **1** — Создать ярлык на рабочем столе
-   - **2** — Добавить в PATH (можно запускать из любой папки)
-   - **3** — Просто запустить сейчас
+### Способ 1: Командная строка (рекомендуется)
+
+```cmd
+cd /d %REPO%
+python agent.py chat
+```
+
+С профилем модели:
+
+```cmd
+python agent.py chat --model balanced
+```
+
+### Способ 2: setup.bat
+
+1. Дважды кликните `setup.bat` в корне репозитория.
+2. Выберите опцию:
+   - **1** — создать ярлык на рабочем столе
+   - **2** — добавить в PATH
+   - **3** — запустить сейчас
 
 ### Способ 3: Ярлык вручную
 
 1. Правый клик на рабочем столе → Создать → Ярлык
-2. В поле "Укажите расположение" введи:
+2. Расположение:
    ```
-   cmd /k cd /d "C:\Users\Тема\Desktop\moy agent\my-agent" && python agent.py chat
+   cmd /k cd /d "%REPO%" && python agent.py chat
    ```
-3. Назови ярлык "My Agent"
-4. Готово! Двойной клик открывает TUI.
+3. Имя: `My Agent`
 
-## Почему .bat может не работать при двойном клике
+---
 
-При двойном клике по `.bat` файл Windows может:
-- Не найти Python (если он не в PATH)
-- Закрыть окно слишком быстро
-- Использовать неправильную кодировку
+## Веб-интерфейс
 
-**Решение:** Используй `setup.bat` или запускай через командную строку.
+```cmd
+cd /d %REPO%
+python agent.py serve --port 8020
+```
+
+Откройте http://127.0.0.1:8020/app
+
+Или через Docker (предпочтительно):
+
+```cmd
+docker compose up -d --build
+```
+
+---
 
 ## Полезные команды
 
-```bash
-# Интерактивный чат (по умолчанию)
-python agent.py
-python agent.py chat
-
-# С конкретной моделью
-python agent.py chat --model fast      # Быстрая
-python agent.py chat --model smart     # Умная
-python agent.py chat --model balanced  # Сбалансированная
-
-# Статус системы
+```cmd
+python agent.py --help
+python agent.py chat --model fast
+python agent.py chat --model smart
 python agent.py status
-
-# Веб-сервер
-python agent.py serve
-
-# Запуск конкретного агента
+python agent.py list-agents
 python agent.py chat --agent developer
 ```
 
-## Добавление в PATH (для запуска из любой папки)
+Профили моделей: `core/configurator.py` (`fast`, `balanced`, `smart`, `kimi`, `local`).
+
+---
+
+## Добавление в PATH
 
 ```powershell
-# PowerShell (от админа)
+# PowerShell (от администратора)
 [Environment]::SetEnvironmentVariable(
-    "Path", 
-    $env:Path + ";C:\Users\Тема\Desktop\moy agent\my-agent", 
+    "Path",
+    $env:Path + ";%REPO%",
     "User"
 )
 ```
 
-После этого можно просто писать в любом терминале:
+После этого из любой папки:
+
 ```cmd
-agent
-agent --model smart
+my-agent.bat
 ```
+
+Или используйте `my-agent.bat` / `run.bat` из корня репозитория.
+
+---
+
+## Почему .bat может не работать при двойном клике
+
+- Python не в PATH
+- Окно закрывается до чтения ошибки
+- Неверная кодировка консоли
+
+**Решение:** запускайте через `cmd` или `setup.bat`.
+
+См. также: [TROUBLESHOOTING.md](TROUBLESHOOTING.md).

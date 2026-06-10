@@ -1,5 +1,15 @@
 # Changelog — My Agent
 
+## 3.5.3 — 2026-06-10 (Documentation sync)
+
+- Синхронизирована документация с текущим стеком: **OpenRouter** как primary LLM (не Kimi)
+- Обновлены счётчики: **10 агентов**, **33 skills**, **52 шаблона**, **21 тип узлов**
+- [docs/README.md](docs/README.md): индекс v3.5.2, `WINDOWS_LAUNCH`, архив `ROADMAP_90_DAYS`, deprecated `config/models.yaml`
+- [PROJECT_GUIDE.md](PROJECT_GUIDE.md), [ARCHITECTURE.md](ARCHITECTURE.md), [DEPLOYMENT.md](DEPLOYMENT.md), [SERVER.md](SERVER.md), [WINDOWS_LAUNCH.md](WINDOWS_LAUNCH.md) — актуализированы
+- Убраны персональные пути из Windows-гайда; `pyproject.toml` version → 3.5.2
+
+---
+
 ## 3.5.2 — 2026-05-27 (Live chat + OpenRouter + Postgres stability)
 
 ### LLM & Demo

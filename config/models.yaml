@@ -1,5 +1,5 @@
-# DEPRECATED: runtime uses core/configurator.py MODEL_PROFILES + config/agent.json.
-# Kept for reference only — not loaded by the application.
+# DEPRECATED (2026-06): runtime uses core/configurator.py MODEL_PROFILES + config/agent.json.
+# Not loaded by the application. See docs/README.md → «Устаревшее».
 models:
   primary:
     model: openrouter/mistralai/mistral-large
