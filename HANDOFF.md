@@ -60,7 +60,7 @@ docker compose exec -T agent python -m pytest tests/test_demo_flow.py -q
 
 ---
 
-## Key Files (3.4.0)
+## Key Files (3.5.2)
 
 | Area | Files |
 |------|-------|
