@@ -28,8 +28,9 @@
 
 ### Data source
 
-- [website/data/showcase.json](website/data/showcase.json) — cards, templates, presets
-- [website/showcase.html](website/showcase.html) + showcase.css + showcase.js
+- [website/data/showcase.json](website/data/showcase.json) — cards, templates, presets (отдаётся через `/welcome-assets/data/showcase.json`)
+- React: `PublicShowcasePage` / `ShowcasePage` в `web/frontend/`
+- Legacy HTML (`website/showcase.html`) — **deprecated**, см. [website/README-DEPRECATED.md](website/README-DEPRECATED.md)
 
 ---
 

@@ -1,5 +1,16 @@
 # Changelog — My Agent
 
+## 3.5.3 — 2026-06-11 (Documentation refresh)
+
+- Синхронизированы версии и факты во всех основных документах (**3.5.2** product baseline).
+- **OpenRouter** зафиксирован как primary LLM; Kimi — optional fallback.
+- Обновлены счётчики: 10 агентов, 33 skills, 52+ marketplace templates, 21 node types.
+- [docs/README.md](docs/README.md): таблица ключевых фактов, ссылка на `WINDOWS_LAUNCH.md`, пометка `graphify-out/` как не-документация.
+- [SERVER.md](SERVER.md): актуальные UI routes (Settings tabs вместо `/app/agents`).
+- [WINDOWS_LAUNCH.md](WINDOWS_LAUNCH.md): убраны персональные пути, добавлен Docker quick start.
+
+---
+
 ## 3.5.2 — 2026-05-27 (Live chat + OpenRouter + Postgres stability)
 
 ### LLM & Demo

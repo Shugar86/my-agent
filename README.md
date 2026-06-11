@@ -1,6 +1,6 @@
 # My Agent
 
-**Autonomous Workflow OS** — визуальный конструктор workflow, маркетплейс шаблонов, multi-agent чат и deep research на базе Kimi K2.
+**Autonomous Workflow OS** — визуальный конструктор workflow, маркетплейс шаблонов, multi-agent чат и deep research на базе OpenRouter (litellm).
 
 | | |
 |---|---|
@@ -14,7 +14,7 @@
 
 ```bash
 cp .env.example .env
-# Минимум: KIMI_API_KEY или OPENROUTER_API_KEY (demo работает и без ключей)
+# Минимум: OPENROUTER_API_KEY для live chat (demo работает и без ключей — mock)
 
 docker compose up -d --build
 # Первый старт: seed шаблонов + demo DOCX (entrypoint)
@@ -39,8 +39,8 @@ docker compose up -d --build
 
 - **Workflow engine** — DAG builder (React Flow), 21+ типов узлов, async runs, Redis queue
 - **Marketplace** — 52+ шаблона, demo-run, публичный share `/app/share/templates/:id`
-- **7 агентов** — universal, researcher, developer, marketer, data_analyst, slides, docs
-- **30+ skills** — research, browser, RAG, docs/slides, messaging, scheduler, …
+- **10 агентов** — universal, researcher, developer, marketer, data_analyst, slides, docs, media_processor, data_engineer, news_monitor
+- **33 skills** — research, browser, RAG, docs/slides, messaging, scheduler, …
 - **Интеграции** — Telegram, Slack, n8n webhook, Google OAuth
 - **Production** — PostgreSQL + Redis обязательны при `ENV=production`; Prometheus/Grafana (`--profile monitoring`)
 
@@ -132,8 +132,8 @@ docker compose exec -T agent python -m pytest tests/test_demo_flow.py -q
 
 | Переменная | Назначение |
 |------------|------------|
-| `KIMI_API_KEY` | Primary LLM (Kimi Code API) |
-| `OPENROUTER_API_KEY` | Fallback LLM |
+| `OPENROUTER_API_KEY` | Primary LLM (OpenRouter, `config/agent.json`) |
+| `KIMI_API_KEY` | Опциональный fallback / Kimi Code API |
 | `DATABASE_URL` | PostgreSQL (обязателен в production) |
 | `REDIS_URL` | Кэш, rate limits, workflow queue |
 | `AGENT_PASSWORD` / `AGENT_SECRET_KEY` | Админ и JWT |
@@ -148,6 +148,7 @@ docker compose exec -T agent python -m pytest tests/test_demo_flow.py -q
 | Тема | Файл |
 |------|------|
 | RU-руководство | [PROJECT_GUIDE.md](PROJECT_GUIDE.md) |
+| Windows | [WINDOWS_LAUNCH.md](WINDOWS_LAUNCH.md) |
 | Деплой | [DEPLOYMENT.md](DEPLOYMENT.md) · [SERVER.md](SERVER.md) |
 | Безопасность | [SECURITY.md](SECURITY.md) |
 | Демо инвесторам | [DEMO.md](DEMO.md) · [INVESTOR.md](INVESTOR.md) |

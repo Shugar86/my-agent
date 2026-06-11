@@ -1,6 +1,6 @@
 # My Agent — Руководство (RU)
 
-> Версия **3.5.0** · 2026-05-27  
+> Версия **3.5.2** · 2026-06-11  
 > Краткое RU-руководство. Полный индекс: [docs/README.md](docs/README.md).
 
 ---
@@ -11,8 +11,8 @@
 
 | Компонент | Значение |
 |-----------|----------|
-| Primary LLM | Kimi Code API (`KIMI_API_KEY`) |
-| Fallback | OpenRouter (`OPENROUTER_API_KEY`) |
+| Primary LLM | OpenRouter (`OPENROUTER_API_KEY`, `openrouter/owl-alpha`) |
+| Fallback | Kimi / Gemini через litellm (`KIMI_API_KEY` опционально) |
 | UI | React SPA на `/app/*`, RU i18n |
 | БД | PostgreSQL (prod), SQLite (dev без `ENV=production`) |
 | Очередь | Redis — rate limits, workflow runs |
@@ -95,9 +95,9 @@ python agent.py test --fast            # pytest без slow/docker
 
 ## Агенты
 
-7 профилей в `agents/registry.json`: **universal**, researcher, developer, marketer, data_analyst, slides, docs.
+10 профилей в `agents/registry.json`: **universal**, researcher, developer, marketer, data_analyst, slides, docs, media_processor, data_engineer, news_monitor.
 
-Universal подключает все skills автоматически; остальные — узкоспециализированные.
+Universal подключает все skills автоматически; остальные — узкоспециализированные. Управление — вкладка **Agents** в `/app/settings?tab=agents`.
 
 ---
 
@@ -140,7 +140,7 @@ E2E: `cd web/frontend && bun run test:e2e` (сервер на `:8020`).
 
 | Симптом | Решение |
 |---------|---------|
-| 500 в чате | Проверить `KIMI_API_KEY` / `OPENROUTER_API_KEY`, перезапустить сервер |
+| 500 в чате | Проверить `OPENROUTER_API_KEY` (primary), перезапустить сервер |
 | `redis: false` в health | Запустить Redis, проверить `REDIS_URL` |
 | Порт занят | `docker compose` использует **8020**, не 8000 |
 | Demo без ключей | Mock fallback — см. [DEMO.md](DEMO.md) |
