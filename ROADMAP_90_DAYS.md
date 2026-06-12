@@ -1,5 +1,7 @@
 # My Agent — 90-Day Roadmap (Workflow + UX/UI + Marketplace)
 
+> **Архив.** Roadmap завершён в May 2026. Актуальное состояние продукта — [HANDOFF.md](HANDOFF.md) и [CHANGELOG.md](CHANGELOG.md).
+
 **Стратегическая цель:** Превратить My Agent из мощного технического фреймворка в продукт для бизнеса, который конкурирует с ASCN.ai по простоте запуска и при этом сохраняет техническое превосходство.
 
 **Ключевой дифференциатор:** "Мощь My Agent + простота ASCN + безопасность Docker sandbox"
@@ -29,7 +31,7 @@
 ### Data source
 
 - [website/data/showcase.json](website/data/showcase.json) — cards, templates, presets
-- [website/showcase.html](website/showcase.html) + showcase.css + showcase.js
+- React: `web/frontend/src/pages/PublicShowcasePage.tsx`, `ShowcasePage.tsx`
 
 ---
 
