@@ -1,5 +1,16 @@
 # Changelog — My Agent
 
+## 3.5.3 — 2026-06-12 (Documentation refresh)
+
+### Documentation
+- Synced all user-facing docs to **3.5.2** product state: OpenRouter as primary LLM, port **8020**, 10 agents, 33 skills, 20 workflow node types, 52 marketplace templates.
+- Updated [docs/README.md](docs/README.md) — canonical index with archive section and deprecated paths.
+- Fixed outdated routes in [SERVER.md](SERVER.md) (Settings tabs instead of legacy `/app/agents` pages).
+- Generalized [WINDOWS_LAUNCH.md](WINDOWS_LAUNCH.md) — removed machine-specific paths.
+- Marked [ROADMAP_90_DAYS.md](ROADMAP_90_DAYS.md) as completed archive.
+
+---
+
 ## 3.5.2 — 2026-05-27 (Live chat + OpenRouter + Postgres stability)
 
 ### LLM & Demo
