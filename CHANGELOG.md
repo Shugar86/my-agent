@@ -1,5 +1,16 @@
 # Changelog — My Agent
 
+## 3.5.3 — 2026-06-13 (Documentation refresh)
+
+- Синхронизированы версии и метрики: **10 агентов**, **33 skills**, **52 шаблона**
+- Primary LLM во всех актуальных доках — **OpenRouter** (`OPENROUTER_API_KEY`), Kimi — legacy/optional
+- Обновлены [docs/README.md](docs/README.md), [README.md](README.md), [PROJECT_GUIDE.md](PROJECT_GUIDE.md), [ARCHITECTURE.md](ARCHITECTURE.md), [DEPLOYMENT.md](DEPLOYMENT.md), [SERVER.md](SERVER.md), [HANDOFF.md](HANDOFF.md)
+- [WINDOWS_LAUNCH.md](WINDOWS_LAUNCH.md) — убраны персональные пути, добавлен Docker/WSL путь
+- [website/BRAND.md](website/BRAND.md) — canonical CTA `/showcase#playground`
+- `graphify-out/` помечен как dev-артефакт, не продуктовая документация
+
+---
+
 ## 3.5.2 — 2026-05-27 (Live chat + OpenRouter + Postgres stability)
 
 ### LLM & Demo

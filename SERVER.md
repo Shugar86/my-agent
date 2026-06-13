@@ -1,11 +1,11 @@
 # My Agent — развёртывание на VDS
 
 > Сервер: `159.195.31.95` | Путь: `/opt/projects/my-agent/`  
-> Статус: **v3.4.0** (Production readiness — systemd, PostgreSQL, Redis queue, Grafana)
+> Статус: **v3.5.3** (OpenRouter primary, live chat, canonical demo `/showcase#playground`)
 
 ---
 
-## Prod runtime (v3.4)
+## Prod runtime (v3.5)
 
 **Stack:** `systemd` → bare uvicorn `:8020` + Docker `db` + `redis` + optional `monitoring` profile.
 
