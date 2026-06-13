@@ -12,16 +12,16 @@
 
 | Metric | Value |
 |--------|-------|
-| Шаблонов в marketplace | 50+ |
+| Шаблонов в marketplace | 52 |
 | Time-to-wow | 90 сек |
 | Стоимость demo-run | $0.42 |
 | Артефакт | DOCX brief |
 
 ## Primary CTAs
 
-1. **Live demo** — `/demo` (landing primary CTA; mock без keys)
+1. **Canonical demo** — `/showcase#playground` (Competitor Intelligence 90s → DOCX; mock без keys)
 2. **7 vertical cases** — `/showcase` (investor meetings)
-3. **Live playground** — `/showcase#playground` or `/app/showcase#playground`
+3. **Landing shortcut** — `/demo` → тот же playground (вторичный entry)
 4. **Начать бесплатно** — `/login?next=/app/onboarding` → dashboard
 
 ## Glue narrative (везде в UI)

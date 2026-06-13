@@ -1,85 +1,96 @@
 # Запуск My Agent на Windows
 
-## Быстрый старт (3 способа)
+> CLI и локальный dev. Для полного стека (PostgreSQL, Redis, UI) используйте [Docker](README.md#быстрый-старт-docker) или WSL2.
 
-### Способ 1: Через командную строку (РЕКОМЕНДУЕТСЯ)
+---
 
-1. Открой терминал (Win+R → `cmd` → Enter)
-2. Перейди в папку агента:
+## Быстрый старт
+
+### Способ 1: Командная строка (рекомендуется)
+
+1. Откройте терминал (`Win+R` → `cmd` или PowerShell).
+2. Перейдите в каталог репозитория:
    ```cmd
-   cd "C:\Users\Тема\Desktop\moy agent\my-agent"
+   cd C:\path\to\my-agent
    ```
-3. Запусти:
+3. Запустите:
    ```cmd
-   python agent.py
+   python agent.py chat
    ```
    Или с выбором модели:
    ```cmd
-   python agent.py --model smart
+   python agent.py chat --model smart
    ```
 
-### Способ 2: Через setup.bat
+### Способ 2: `my-agent.bat` / `run.bat`
 
-1. Дважды кликни `setup.bat`
-2. Выбери опцию:
-   - **1** — Создать ярлык на рабочем столе
-   - **2** — Добавить в PATH (можно запускать из любой папки)
-   - **3** — Просто запустить сейчас
+Дважды кликните `my-agent.bat` в корне репозитория или выполните:
 
-### Способ 3: Ярлык вручную
+```cmd
+run.bat
+```
 
-1. Правый клик на рабочем столе → Создать → Ярлык
-2. В поле "Укажите расположение" введи:
+Если окно сразу закрывается — запускайте через `cmd /k run.bat`, чтобы увидеть ошибку (часто Python не в PATH).
+
+### Способ 3: Ярлык на рабочем столе
+
+1. ПКМ на рабочем столе → Создать → Ярлык.
+2. Расположение (подставьте свой путь):
    ```
-   cmd /k cd /d "C:\Users\Тема\Desktop\moy agent\my-agent" && python agent.py chat
+   cmd /k cd /d "C:\path\to\my-agent" && python agent.py chat
    ```
-3. Назови ярлык "My Agent"
-4. Готово! Двойной клик открывает TUI.
+3. Имя: `My Agent`.
 
-## Почему .bat может не работать при двойном клике
+---
 
-При двойном клике по `.bat` файл Windows может:
-- Не найти Python (если он не в PATH)
-- Закрыть окно слишком быстро
-- Использовать неправильную кодировку
+## Web UI на Windows
 
-**Решение:** Используй `setup.bat` или запускай через командную строку.
+Полный продукт (React + FastAPI + PostgreSQL + Redis):
+
+```cmd
+docker compose up -d --build
+```
+
+Откройте http://localhost:8020/app (логин `admin` / `admin`).
+
+Локально без Docker — см. [README.md](README.md#локальная-разработка).
+
+---
 
 ## Полезные команды
 
 ```bash
-# Интерактивный чат (по умолчанию)
-python agent.py
-python agent.py chat
+python agent.py --help
 
-# С конкретной моделью
-python agent.py chat --model fast      # Быстрая
-python agent.py chat --model smart     # Умная
-python agent.py chat --model balanced  # Сбалансированная
-
-# Статус системы
-python agent.py status
-
-# Веб-сервер
-python agent.py serve
-
-# Запуск конкретного агента
-python agent.py chat --agent developer
+python agent.py chat --model fast      # быстрый профиль
+python agent.py serve --port 8020      # web-сервер
+python agent.py list-agents
+python agent.py test --fast            # pytest без slow/docker
 ```
 
-## Добавление в PATH (для запуска из любой папки)
+В чате: `/help`, `/exit`, `/clear`, `/model`.
 
-```powershell
-# PowerShell (от админа)
-[Environment]::SetEnvironmentVariable(
-    "Path", 
-    $env:Path + ";C:\Users\Тема\Desktop\moy agent\my-agent", 
-    "User"
-)
-```
+---
 
-После этого можно просто писать в любом терминале:
-```cmd
-agent
-agent --model smart
-```
+## Переменные окружения
+
+Скопируйте `.env.example` → `.env` и задайте минимум:
+
+| Переменная | Назначение |
+|------------|------------|
+| `OPENROUTER_API_KEY` | Primary LLM для live chat |
+| `TAVILY_API_KEY` | Веб-поиск (опционально) |
+| `AGENT_PASSWORD` | Пароль админа |
+
+---
+
+## Типичные проблемы
+
+| Симптом | Решение |
+|---------|---------|
+| `python` не найден | Установите Python 3.11+ с [python.org](https://www.python.org/downloads/) и отметьте «Add to PATH» |
+| `.bat` закрывается мгновенно | Запуск через `cmd /k` или PowerShell из каталога проекта |
+| Порт 8020 занят | `netstat -ano \| findstr :8020` → завершить процесс или сменить порт |
+| 500 в чате | Проверить `OPENROUTER_API_KEY` в `.env` — см. [TROUBLESHOOTING.md](TROUBLESHOOTING.md) |
+
+См. также [PROJECT_GUIDE.md](PROJECT_GUIDE.md) и [TROUBLESHOOTING.md](TROUBLESHOOTING.md).

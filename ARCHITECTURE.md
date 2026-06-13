@@ -1,7 +1,7 @@
 # Architecture
 
 > My Agent — System Architecture  
-> Version: **3.5.0**
+> Version: **3.5.3**
 
 ---
 
@@ -28,7 +28,7 @@
        │          └──────┬───────┘
        ▼                 │
 ┌─────────────────────────────────────────────────────────────┐
-│  AgentBuilder → AgentRuntime → LLMGateway (Kimi + litellm)   │
+│  AgentBuilder → AgentRuntime → LLMGateway (OpenRouter + litellm) │
 │  SkillLoader · ToolRegistry · MemoryManager                  │
 └──────────────────────────┬──────────────────────────────────┘
                            │
@@ -154,7 +154,7 @@ skills/*/skill.py → tools/*.py
 | Builder | `core/builder.py` |
 | Factory | `core/auto_agent_factory.py` |
 | Strategy | `core/orchestrator.py` |
-| Adapter | `core/llm_gateway.py`, `core/kimi_provider.py` |
+| Adapter | `core/llm_gateway.py`, `core/kimi_provider.py` (OpenRouter/Kimi routing) |
 | Plugin | `core/skill_loader.py` |
 | Repository | `core/memory_manager.py`, workflow store |
 
