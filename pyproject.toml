@@ -1,6 +1,6 @@
 [project]
 name = "my-agent"
-version = "2.0.0"
+version = "4.0.0"
 description = "Modular AI Agent System with Universal Assistant"
 requires-python = ">=3.10"
 readme = "README.md"

@@ -1,7 +1,7 @@
 # Troubleshooting Guide
 
 > My Agent — Common Issues & Solutions  
-> Version: **3.5.2** · Default port: **8020** (Docker / VDS)
+> Version: **4.0.0** · Default port: **8020** (Docker / VDS)
 
 ---
 
@@ -56,7 +56,7 @@ UndefinedColumnError: column "source" of relation "sessions" does not exist
 ```
 Every chat request returns "Internal server error".
 
-**Root cause (as of 3.5.2):**
+**Root cause (as of 3.5.2, still relevant in 4.0):**
 - `DATABASE_URL` present → `MemoryManager` selects the PostgreSQL backend.
 - `PGStateManager._pool` was never initialized (no startup hook called `connect()` for per-request `AgentBuilder` instances).
 - The live database contained the ancient schema (`sessions.agent_id`, `sessions.messages` as blob) instead of the columns the current `PGStateManager` expects.

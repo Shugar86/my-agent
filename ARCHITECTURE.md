@@ -1,7 +1,7 @@
 # Architecture
 
 > My Agent — System Architecture  
-> Version: **3.5.0**
+> Version: **4.0.0**
 
 ---
 
@@ -28,13 +28,13 @@
        │          └──────┬───────┘
        ▼                 │
 ┌─────────────────────────────────────────────────────────────┐
-│  AgentBuilder → AgentRuntime → LLMGateway (Kimi + litellm)   │
+│  AgentBuilder → AgentRuntime → LLMGateway (litellm/OpenRouter)│
 │  SkillLoader · ToolRegistry · MemoryManager                  │
 └──────────────────────────┬──────────────────────────────────┘
                            │
                            ▼
 ┌─────────────────────────────────────────────────────────────┐
-│  skills/* · tools/* · agents/registry.json                   │
+│  skills/* · tools/* · agents/registry.json (10 agents)       │
 └─────────────────────────────────────────────────────────────┘
                            │
                            ▼
@@ -76,6 +76,12 @@ Fluent configuration → `AgentRuntime`. Загружает skills, создаё
 
 LLM планирует sub-agents → временные профили → parallel run → cleanup.
 
+### LLM layer
+
+- `core/llm_gateway.py` — async LiteLLM с retry и fallback
+- `core/configurator.py` — профили моделей (`balanced`, `fast`, `smart`)
+- Primary provider: **OpenRouter** (`OPENROUTER_API_KEY`); public demo — free-модели + mock без ключа
+
 ---
 
 ## Workflow engine
@@ -94,11 +100,22 @@ Runs async по умолчанию; sync с `{"wait": true}`.
 
 ---
 
+## Public demo (`web/demo_router.py`)
+
+| Endpoint | Назначение |
+|----------|------------|
+| `POST /api/demo/public/agent-preview` | LLM → persona из описания задачи |
+| `POST /api/demo/public/agent-chat` | Follow-up в persona preview-агента |
+
+Rate limit: 5 preview + 10 chat req/IP/hour. Без `OPENROUTER_API_KEY` — 503 или mock fallback в UI.
+
+---
+
 ## Data stores
 
 | Store | Usage |
 |-------|--------|
-| PostgreSQL | Users, workflows, templates, billing |
+| PostgreSQL | Users, workflows, templates, billing, chat sessions (prod) |
 | Redis | Sessions blacklist, rate limits, run queue |
 | JSON files | Dev memory sessions (`memory/sessions/`) |
 | ChromaDB | RAG knowledge base |
@@ -126,11 +143,12 @@ Runs async по умолчанию; sync с `{"wait": true}`.
 ```
 web/server.py
 ├── core/orchestrator.py → core/builder.py → core/runtime.py
-├── core/workflow/* 
+├── core/workflow/*
 ├── core/auth.py, core/billing/*
-├── core/kimi_provider.py
+├── core/llm_gateway.py, core/configurator.py
 └── core/agent_store.py
 
+web/demo_router.py          # public agent preview
 skills/*/skill.py → tools/*.py
 ```
 
@@ -154,7 +172,7 @@ skills/*/skill.py → tools/*.py
 | Builder | `core/builder.py` |
 | Factory | `core/auto_agent_factory.py` |
 | Strategy | `core/orchestrator.py` |
-| Adapter | `core/llm_gateway.py`, `core/kimi_provider.py` |
+| Adapter | `core/llm_gateway.py` |
 | Plugin | `core/skill_loader.py` |
 | Repository | `core/memory_manager.py`, workflow store |
 

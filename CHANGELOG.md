@@ -2,13 +2,17 @@
 
 ## [Unreleased]
 
-### Added
-- Vibe-first документация: обновлён README, созданы AGENTS.md, LICENSE (MIT), CONTRIBUTING.md, расширен CHANGELOG.
-- README теперь явно отражает вайб продукта: professional, calm B2B, outcome-first.
-- AGENTS.md — контракт для AI-агентов: стек, DoD, git workflow, эскалация.
+---
+
+## 4.0.1 — 2026-06-14 (Documentation sync)
 
 ### Changed
-- Структура README: hero, быстрый старт, архитектура, маршруты, env-переменные, связанные документы.
+- Документация синхронизирована с v4.0.0: ARCHITECTURE, PROJECT_GUIDE, DEPLOYMENT, SERVER, BRAND, docs/README.
+- Удалены мёртвые ссылки на `AUDIT_*.md`, `HANDOFF.md`; добавлен `website/README-DEPRECATED.md`.
+- `pyproject.toml` version → 4.0.0 (выровнен с README/CHANGELOG).
+- Kimi-ссылки убраны из operational docs; primary LLM — OpenRouter.
+
+---
 
 ## 4.0.0 — 2026-05-28 (Agent OS pivot + landing redesign)
 
