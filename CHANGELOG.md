@@ -1,16 +1,24 @@
 # Changelog — My Agent
 
+Все значимые изменения проекта документируются в этом файле.
+
+Формат основан на [Keep a Changelog](https://keepachangelog.com/ru/1.0.0/), а версионирование следует [SemVer](https://semver.org/lang/ru/).
+
+---
+
 ## [Unreleased]
 
 ### Added
-- Vibe-first документация: обновлён README, созданы AGENTS.md, LICENSE (MIT), CONTRIBUTING.md, расширен CHANGELOG.
+- Vibe-first документация: обновлён [README.md](./README.md), созданы [AGENTS.md](./AGENTS.md), [LICENSE](./LICENSE) (MIT), [CONTRIBUTING.md](./CONTRIBUTING.md), расширен [CHANGELOG.md](./CHANGELOG.md).
 - README теперь явно отражает вайб продукта: professional, calm B2B, outcome-first.
 - AGENTS.md — контракт для AI-агентов: стек, DoD, git workflow, эскалация.
 
 ### Changed
 - Структура README: hero, быстрый старт, архитектура, маршруты, env-переменные, связанные документы.
 
-## 4.0.0 — 2026-05-28 (Agent OS pivot + landing redesign)
+---
+
+## [4.0.0] — 2026-05-28 (Agent OS pivot + landing redesign)
 
 ### Product narrative
 - **Pivot:** «Competitor Intelligence за 90 сек» → «AI-оператор для бизнеса за 2 минуты».
@@ -26,8 +34,8 @@
 - Guard: 503 при отсутствии `OPENROUTER_API_KEY`; prompt injection protection; regex JSON extraction.
 
 ### Kimi cleanup
-- Удалены `api_key` / `base_url` Kimi из всех 10 агентов в `registry.json`.
-- Все агенты используют `model: "balanced"` → OpenRouter через `configurator.py`.
+- Удалены `api_key` / `base_url` Kimi из всех 10 агентов в [`registry.json`](./agents/registry.json).
+- Все агенты используют `model: "balanced"` → OpenRouter через `core/configurator.py`.
 - Удалены Kimi-ссылки из i18n, AgentsPage, `.env.example`.
 
 ### Chat reliability (Phase 2)
@@ -47,7 +55,7 @@
 
 ---
 
-## 3.5.3 — 2026-05-27 (TROUBLES remediation + re-audit)
+## [3.5.3] — 2026-05-27 (TROUBLES remediation + re-audit)
 
 ### Security & build
 - **pyproject.toml**: `[tool.setuptools.packages.find]` — `uv build` / `pip install -e .` работают.
@@ -61,21 +69,21 @@
 - **web/server.py**: `_init_agent_runtime()` на startup; `CORS_ORIGINS`; `get_client_ip()` (X-Forwarded-For); Prometheus request metrics middleware.
 - **memory_manager**: `replace_messages` / atomic compress — без дубликатов сообщений.
 - **alembic/env.py**: миграции читают `DATABASE_URL`.
-- **wizard**: отклонение пароля &lt; 12 символов.
+- **wizard**: отклонение пароля < 12 символов.
 
 ### Fixes (medium backlog)
 - MCP skill URI path traversal; demo_router CWD; MCP stdio lock; session_cache rate-limit key; agent_store KeyError guard; docker-compose без deprecated `version:`.
 
 ### Docs & tests
-- Re-audit gate **60/60 PASS** — см. [TROUBLES.md](TROUBLES.md) § Re-audit post-remediation.
+- Re-audit gate **60/60 PASS** — см. [TROUBLES.md](./TROUBLES.md) § Re-audit post-remediation.
 - `tests/conftest.py`, `tests/test_file_tools.py`.
 
 ---
 
-## 3.5.2 — 2026-05-27 (Live chat + OpenRouter + Postgres stability)
+## [3.5.2] — 2026-05-27 (Live chat + OpenRouter + Postgres stability)
 
 ### LLM & Demo
-- Primary LLM switched from Kimi to **OpenRouter** (`openrouter/owl-alpha` + `balanced` profile in `agents/registry.json` and `config/agent.json`).
+- Primary LLM switched from Kimi to **OpenRouter** (`openrouter/owl-alpha` + `balanced` profile in [`agents/registry.json`](./agents/registry.json) and [`config/agent.json`](./config/agent.json)).
 - Tavily is the default web search backend for live demo runs when `TAVILY_API_KEY` is present.
 - `core/kimi_provider.py`: `resolve_kimi_base_url()` no longer leaks `KIMI_BASE_URL` for non-Kimi models (prevents OpenRouter key being sent to Kimi endpoint).
 
@@ -91,128 +99,141 @@
 
 ---
 
-## 3.5.1 — 2026-05-27 (Documentation)
+## [3.5.1] — 2026-05-27 (Documentation)
 
-- Added [docs/README.md](docs/README.md) as documentation index
-- Streamlined [README.md](README.md) — removed inline changelog blocks, fixed port **8020**
-- Updated [PROJECT_GUIDE.md](PROJECT_GUIDE.md), [ARCHITECTURE.md](ARCHITECTURE.md), [DEPLOYMENT.md](DEPLOYMENT.md)
-- Removed obsolete session/meta docs (`CONTEXT.md`, `SESSION_HISTORY.md`, `AI_SKILLS.md`, audit snapshots)
+- Added [docs/README.md](./docs/README.md) as documentation index.
+- Streamlined [README.md](./README.md) — removed inline changelog blocks, fixed port **8020**.
+- Updated [PROJECT_GUIDE.md](./PROJECT_GUIDE.md), [ARCHITECTURE.md](./ARCHITECTURE.md), [DEPLOYMENT.md](./DEPLOYMENT.md).
+- Removed obsolete session/meta docs (`CONTEXT.md`, `SESSION_HISTORY.md`, `AI_SKILLS.md`, audit snapshots).
 
 ---
 
-## 3.4.1 — 2026-05-26 (UX sprint — investor funnel)
+## [3.4.1] — 2026-05-26 (UX sprint — investor funnel)
 
 ### Frontend — status & demo UX
-- `FeatureTag` component + `featureRegistry.ts` (Live / Beta / Preview / Coming soon)
-- `PlaygroundDemo` + `DemoStepper` embedded in `/app/showcase` and onboarding step 1
-- Marketplace template demo-run: ExecutionTimeline modal instead of raw JSON
-- WorkflowBuilder: demo mode banner (`?demo=mock`), breadcrumbs
-- `demoFallback.ts` for offline showcase data on Dashboard/Showcase
+- `FeatureTag` component + `featureRegistry.ts` (Live / Beta / Preview / Coming soon).
+- `PlaygroundDemo` + `DemoStepper` embedded in `/app/showcase` and onboarding step 1.
+- Marketplace template demo-run: ExecutionTimeline modal instead of raw JSON.
+- WorkflowBuilder: demo mode banner (`?demo=mock`), breadcrumbs.
+- `demoFallback.ts` for offline showcase data on Dashboard/Showcase.
 
 ### Frontend — navigation IA
-- AppShell: Main (Dashboard, Workflows, Marketplace, Chat) + Secondary (Analytics, Settings)
-- Agents / Knowledge / MCP moved to Settings tabs (`?tab=agents|knowledge|mcp`)
-- Redirects from legacy `/app/agents`, `/app/knowledge`, `/app/mcp`
-- Sidebar tagline: «Autonomous Workflow OS»
+- AppShell: Main (Dashboard, Workflows, Marketplace, Chat) + Secondary (Analytics, Settings).
+- Agents / Knowledge / MCP moved to Settings tabs (`?tab=agents|knowledge|mcp`).
+- Redirects from legacy `/app/agents`, `/app/knowledge`, `/app/mcp`.
+- Sidebar tagline: «Autonomous Workflow OS».
 
 ### Public landing
-- `#problems` section (3 pain cards)
-- `#live-demo` iframe embed of `/demo`
-- `#marketplace-preview` from `/api/public/templates?featured=true&limit=3`
+- `#problems` section (3 pain cards).
+- `#live-demo` iframe embed of `/demo`.
+- `#marketplace-preview` from `/api/public/templates?featured=true&limit=3`.
 
 ### Polish
-- Chat: loading skeleton, Beta badge, «Try 90s demo» in empty state
-- Analytics: workflow names, empty CTA to `/demo`
-- Settings billing: Stripe `coming-soon` badge
-- E2E: landing sections, authenticated showcase playground, billing badge
+- Chat: loading skeleton, Beta badge, «Try 90s demo» in empty state.
+- Analytics: workflow names, empty CTA to `/demo`.
+- Settings billing: Stripe `coming-soon` badge.
+- E2E: landing sections, authenticated showcase playground, billing badge.
 
 ---
 
-## 3.4.0 — 2026-05-26 (CEO audit — Production readiness)
+## [3.4.0] — 2026-05-26 (CEO audit — Production readiness)
 
 ### Ops
-- systemd unit: [deploy/my-agent.service](deploy/my-agent.service)
-- PostgreSQL mandatory when `ENV=production` (fail-fast, no SQLite)
-- Redis required in production startup; health `redis: true`
-- Daily backup script + restore runbook in SERVER.md
+- systemd unit: [deploy/my-agent.service](./deploy/my-agent.service).
+- PostgreSQL mandatory when `ENV=production` (fail-fast, no SQLite).
+- Redis required in production startup; health `redis: true`.
+- Daily backup script + restore runbook in SERVER.md.
 
 ### Execution
-- Durable workflow run queue via Redis RPOPLPUSH ([core/workflow/run_queue.py](core/workflow/run_queue.py))
-- Orphaned runs marked failed on restart; stale processing jobs recovered
+- Durable workflow run queue via Redis RPOPLPUSH ([core/workflow/run_queue.py](./core/workflow/run_queue.py)).
+- Orphaned runs marked failed on restart; stale processing jobs recovered.
 
 ### Observability
-- Grafana dashboard + Prometheus alert rules (`--profile monitoring`)
-- Structured workflow run logging (`run_id`, `workflow_id`)
+- Grafana dashboard + Prometheus alert rules (`--profile monitoring`).
+- Structured workflow run logging (`run_id`, `workflow_id`).
 
 ### Migration
-- [scripts/migrate_sqlite_to_postgres.py](scripts/migrate_sqlite_to_postgres.py) for one-time VDS migration
-- [AUDIT_PRODUCTION_2026.md](AUDIT_PRODUCTION_2026.md)
+- [scripts/migrate_sqlite_to_postgres.py](./scripts/migrate_sqlite_to_postgres.py) for one-time VDS migration.
+- `AUDIT_PRODUCTION_2026.md`.
 
 ---
 
-## 3.3.1 — 2026-05-26 (CEO audits — sales readiness + product depth)
+## [3.3.1] — 2026-05-26 (CEO audits — sales readiness + product depth)
 
 ### Sales & onboarding (CEO audit B0–B4)
-- Self-serve signup on `/login` → `/app/onboarding` (password 12+ chars)
-- Template demo-run: `POST /api/workflow-templates/{id}/demo-run` + Marketplace button
-- Plan tiers: `core/billing/plans.py`, quota check on run (429), Billing tab in Settings
-- API Keys UI in Settings (list/create/delete via `/api/keys`)
-- Workspace isolation: access checks on runs + `tests/test_workspace_isolation.py`
-- Audit docs refreshed: `AUDIT_REPORT.md`, `AUDIT_2026.md`, `AUDIT_PRODUCT_2026.md`
+- Self-serve signup on `/login` → `/app/onboarding` (password 12+ chars).
+- Template demo-run: `POST /api/workflow-templates/{id}/demo-run` + Marketplace button.
+- Plan tiers: `core/billing/plans.py`, quota check on run (429), Billing tab in Settings.
+- API Keys UI in Settings (list/create/delete via `/api/keys`).
+- Workspace isolation: access checks on runs + `tests/test_workspace_isolation.py`.
+- Audit docs refreshed: `AUDIT_REPORT.md`, `AUDIT_2026.md`, `AUDIT_PRODUCT_2026.md`.
 
 ### Builder & UX
-- Condition branch modal + edge config side panel (removed `window.prompt`)
-- Stub triggers hidden from palette (`trigger.email`, `trigger.new_lead`)
-- Showcase graceful error state (no raw stack in subtitle)
-- Lazy-loaded `WorkflowBuilder` + `MarketplacePage` (main bundle ~1.05 MB)
+- Condition branch modal + edge config side panel (removed `window.prompt`).
+- Stub triggers hidden from palette (`trigger.email`, `trigger.new_lead`).
+- Showcase graceful error state (no raw stack in subtitle).
+- Lazy-loaded `WorkflowBuilder` + `MarketplacePage` (main bundle ~1.05 MB).
 
 ### Backend & infra
-- Async workflow runs by default (`start_background()`); sync via `{"wait": true}`
-- n8n provider in `integrations_registry.py`
-- Schedule pause/resume API + WorkflowList UI (next/last run)
-- `enable_memory` toggle on `agent.skill` node
-- Agent healthcheck in docker-compose; `--profile monitoring` (Prometheus + Grafana)
+- Async workflow runs by default (`start_background()`); sync via `{"wait": true}`.
+- n8n provider in `integrations_registry.py`.
+- Schedule pause/resume API + WorkflowList UI (next/last run).
+- `enable_memory` toggle on `agent.skill` node.
+- Agent healthcheck in docker-compose; `--profile monitoring` (Prometheus + Grafana).
 
 ### Deploy
-- VDS: `vds-push` → `/opt/projects/my-agent`; prod runs bare uvicorn on `:8020` (see `SERVER.md`)
+- VDS: `vds-push` → `/opt/projects/my-agent`; prod runs bare uvicorn on `:8020` (see SERVER.md).
 
 ---
 
-## 3.3.0 — 2026-05-26 (Architectural fix, iterations 1–2)
+## [3.3.0] — 2026-05-26 (Architectural fix, iterations 1–2)
 
 ### Backend
-- Kimi Code API as primary LLM (`core/kimi_provider.py`, `resolve_agent_model_config`)
-- Docker entrypoint auto-seeds templates + generates demo DOCX on startup
-- Workflow executor: failed actions no longer report run as `success`
-- `agent.skill` node respects `"skill"` config key (singular)
-- `action.webhook` supports GET; `action.n8n_webhook` added to NodeType enum
-- Ghost tools removed from universal agent registry; SKILL.md for web3/voice_io/video_processing
-- Seed upsert for draft templates; `tpl_lead_qualify` uses `trigger.webhook`
-- Draft templates excluded from marketplace popular sort
+- Kimi Code API as primary LLM (`core/kimi_provider.py`, `resolve_agent_model_config`).
+- Docker entrypoint auto-seeds templates + generates demo DOCX on startup.
+- Workflow executor: failed actions no longer report run as `success`.
+- `agent.skill` node respects `"skill"` config key (singular).
+- `action.webhook` supports GET; `action.n8n_webhook` added to NodeType enum.
+- Ghost tools removed from universal agent registry; SKILL.md for web3/voice_io/video_processing.
+- Seed upsert for draft templates; `tpl_lead_qualify` uses `trigger.webhook`.
+- Draft templates excluded from marketplace popular sort.
 
 ### Frontend (RU)
-- WorkflowBuilder full i18n (~40 keys)
-- Marketplace admin Publish modal RU
-- Dashboard integrations stat uses `configured`
-- PublicTemplate install: toast on error, login redirect only on 401
-- Onboarding friendly fallback when template install returns 404
-- Removed orphan `AgentBuilderPage.tsx`
+- WorkflowBuilder full i18n (~40 keys).
+- Marketplace admin Publish modal RU.
+- Dashboard integrations stat uses `configured`.
+- PublicTemplate install: toast on error, login redirect only on 401.
+- Onboarding friendly fallback when template install returns 404.
+- Removed orphan `AgentBuilderPage.tsx`.
 
 ### Demo / ops
-- 3 demo presets (competitor, beauty, lead) + sample JSON/DOCX artifacts
-- A2A queue in Redis; WebSocket JWT auth
-- Tests: `test_kimi_provider.py`, marketplace suite (25 passed in container)
+- 3 demo presets (competitor, beauty, lead) + sample JSON/DOCX artifacts.
+- A2A queue in Redis; WebSocket JWT auth.
+- Tests: `test_kimi_provider.py`, marketplace suite (25 passed in container).
 
 ---
 
-## 3.2.0 — 2026-05-26 (UI/UX polish)
+## [3.2.0] — 2026-05-26 (UI/UX polish)
 
-- React SPA on `/app/*` with RU i18n and PWA
-- Demo-MVP showcase at `/showcase`
-- Onboarding wizard, Dashboard hero, marketplace browse
+- React SPA on `/app/*` with RU i18n and PWA.
+- Demo-MVP showcase at `/showcase`.
+- Onboarding wizard, Dashboard hero, marketplace browse.
 
 ---
 
-## 3.1.0 and earlier
+## [3.1.0] and earlier
 
-See git history and [docs/README.md](docs/README.md).
+See git history and [docs/README.md](./docs/README.md).
+
+---
+
+[Unreleased]: https://github.com/Shugar86/my-agent/compare/main...HEAD
+[4.0.0]: https://github.com/Shugar86/my-agent/compare/3.5.3...4.0.0
+[3.5.3]: https://github.com/Shugar86/my-agent/compare/3.5.2...3.5.3
+[3.5.2]: https://github.com/Shugar86/my-agent/compare/3.5.1...3.5.2
+[3.5.1]: https://github.com/Shugar86/my-agent/compare/3.4.1...3.5.1
+[3.4.1]: https://github.com/Shugar86/my-agent/compare/3.4.0...3.4.1
+[3.4.0]: https://github.com/Shugar86/my-agent/compare/3.3.1...3.4.0
+[3.3.1]: https://github.com/Shugar86/my-agent/compare/3.3.0...3.3.1
+[3.3.0]: https://github.com/Shugar86/my-agent/compare/3.2.0...3.3.0
+[3.2.0]: https://github.com/Shugar86/my-agent/compare/3.1.0...3.2.0
