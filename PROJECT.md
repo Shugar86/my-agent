@@ -40,7 +40,7 @@ Anchor (immutable core). Изменение смысла = новый проек
 | Тесты | pytest, Playwright e2e, `scripts/check-secrets.sh` |
 | Ключевые Python-libs | litellm, slowapi, python-jose, docker SDK, MCP, APScheduler |
 
-Версия продукта в README: **4.0.0**. В `pyproject.toml` указано `2.0.0` — [расхождение, ориентир README].
+Версия продукта: **4.0.0** (`pyproject.toml`, README, CHANGELOG).
 
 ## Key files / entry points
 
@@ -66,7 +66,7 @@ Anchor (immutable core). Изменение смысла = новый проек
 |----------|------------|
 | [README.md](README.md) | Обзор, quick start, маршруты |
 | [docs/README.md](docs/README.md) | Полный индекс |
-| [ARCHITECTURE.md](ARCHITECTURE.md) | Слои, workflow, security (часть текста на v3.5 — сверять с README v4) |
+| [ARCHITECTURE.md](ARCHITECTURE.md) | Слои, workflow, security |
 | [DEPLOYMENT.md](DEPLOYMENT.md) | Деплой |
 | [SERVER.md](SERVER.md) | VDS, порты, nginx |
 | [SECURITY.md](SECURITY.md) | JWT, checklist |
@@ -74,6 +74,8 @@ Anchor (immutable core). Изменение смысла = новый проек
 | [ROADMAP_90_DAYS.md](ROADMAP_90_DAYS.md) | Фазы 1–4 |
 | [TROUBLES.md](TROUBLES.md) | Аудит, gate, OPEN backlog |
 | [CHANGELOG.md](CHANGELOG.md) | История релизов |
+| [COCKPIT.md](COCKPIT.md) | Вайб продукта по слоям |
+| [STATE.md](STATE.md) | Текущий статус и блокеры |
 | [website/BRAND.md](website/BRAND.md) | Positioning, tone, CTAs |
 
 ## Health (как проверить, что работает)

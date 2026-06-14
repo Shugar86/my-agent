@@ -4,35 +4,36 @@
 
 ## Positioning
 
-**Tagline:** Autonomous Workflow OS — n8n + AI-агенты + marketplace
+**Tagline:** AI Agent OS — опишите задачу, получите работающего оператора
 
-**One-liner:** Конкурентный brief за 90 секунд вместо 4 часов работы аналитика.
+**One-liner:** AI-оператор для бизнеса за 2 минуты — без кода, без интегратора.
 
 ## Hero stats (social proof)
 
 | Metric | Value |
 |--------|-------|
 | Шаблонов в marketplace | 50+ |
-| Time-to-wow | 90 сек |
-| Стоимость demo-run | $0.42 |
-| Артефакт | DOCX brief |
+| Time-to-wow | ~10 сек (agent preview) |
+| Готовых агентов | 10 |
+| Live deployments | 7 vertical кейсов |
 
 ## Primary CTAs
 
-1. **Live demo** — `/demo` (landing primary CTA; mock без keys)
+1. **Live agent preview** — `/` hero widget или `/demo` (без login; mock без keys)
 2. **7 vertical cases** — `/showcase` (investor meetings)
-3. **Live playground** — `/showcase#playground` or `/app/showcase#playground`
-4. **Начать бесплатно** — `/login?next=/app/onboarding` → dashboard
+3. **Начать бесплатно** — `/login?next=/app/onboarding` → dashboard
+4. **Chat** — `/app/chat` (после login)
 
 ## Glue narrative (везде в UI)
 
-**Шаблон → Workflow → Результат** — полоска в PublicLayout и AppShell; блок в onboarding и landing `#product`.
+**Задача → Оператор → Результат** — пользователь описывает бизнес-задачу, платформа собирает persona + skills, оператор возвращает артефакт (документ, отчёт, ответ клиенту).
 
 ## Tone
 
 - Professional, calm B2B
-- Outcome-first (часы сэкономлены, документ на выходе)
+- Outcome-first (экономия часов, готовый оператор, артефакт на выходе)
 - Без JWT, pip install, skills catalog на главной
+- Честные статусы: Live / Beta / Preview / Скоро
 
 ## Visual bridge
 
@@ -64,3 +65,5 @@ Static HTML pages deprecated — see [`README-DEPRECATED.md`](README-DEPRECATED.
 ## Investor demo theme
 
 Перед screen share рекомендуется **светлая тема** в `/app`: переключатель в sidebar или `localStorage.setItem('my-agent.theme', 'light')`.
+
+Сценарий: [INVESTOR.md](../INVESTOR.md), [DEMO.md](../DEMO.md).

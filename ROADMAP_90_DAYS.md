@@ -17,6 +17,7 @@
 - Deploy: password validation, env examples
 - Rate limiting + prompt injection protection
 - 7 live deployments (Mary Jewelry, PEGAS, DocBrain, Pretenzia и др.)
+- Документация синхронизирована с v4 (2026-06-14)
 
 ## Next — Phase 1: Trust & Polish
 

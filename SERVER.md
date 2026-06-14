@@ -1,11 +1,11 @@
 # My Agent — развёртывание на VDS
 
 > Сервер: `159.195.31.95` | Путь: `/opt/projects/my-agent/`  
-> Статус: **v3.4.0** (Production readiness — systemd, PostgreSQL, Redis queue, Grafana)
+> Статус: **v4.0.0** (Agent OS pivot — OpenRouter, public agent preview, systemd + PG + Redis)
 
 ---
 
-## Prod runtime (v3.4)
+## Prod runtime
 
 **Stack:** `systemd` → bare uvicorn `:8020` + Docker `db` + `redis` + optional `monitoring` profile.
 
@@ -102,7 +102,7 @@ curl -s http://127.0.0.1:8020/api/health | python3 -m json.tool
 docker compose --profile demo up -d --build
 docker compose exec agent python scripts/seed_workflow_templates.py
 docker compose exec agent python scripts/generate_demo_artifact.py
-# http://127.0.0.1:8020/app → "Try 90s demo"
+# http://127.0.0.1:8020/ — agent preview на лендинге
 # n8n UI: http://127.0.0.1:5678 (admin / demo)
 ```
 
@@ -116,13 +116,12 @@ docker compose exec agent python scripts/generate_demo_artifact.py
 
 | URL | Назначение |
 |-----|------------|
+| `/` | Лендинг: hero + agent preview (без login) |
+| `/showcase` | 7 vertical cases + agent preview widget |
+| `/demo` | Shortcut на agent preview |
 | `/login` | JWT login + Google |
-| `/welcome` | Маркетинговый лендинг |
-| `/showcase` | **Demo-MVP showcase** — 7 vertical cases + playground + CTA |
-| `/demo` | Public Competitor Intelligence demo (90 сек) |
-| `/app` | Панель (dashboard) |
-| `/app/showcase` | Authenticated mirror of `/showcase` |
-| `/app/chat` | Чат (markdown, SSE, `/run workflow`) |
+| `/app` | Dashboard (chat-first) |
+| `/app/chat` | Multi-thread SSE чат |
 | `/app/workflows` | Workflow list + builder |
 | `/app/marketplace` | Templates |
 | `/app/agents` | Управление агентами |
@@ -131,21 +130,22 @@ docker compose exec agent python scripts/generate_demo_artifact.py
 | `/app/analytics` | Usage dashboard |
 | `/app/admin` | Team members + system health (owner/admin) |
 | `/app/settings` | Интеграции, API keys, billing, модели, workspace |
-| `/app/onboarding` | Team → integrations → template → 90s demo |
+| `/app/onboarding` | 4-step wizard |
 | `/app/builder` | Agent Builder wizard |
 | `/metrics` | Prometheus scrape |
 
-Legacy paths (`/chat`, `/agents`, `/knowledge`, `/mcp`, `/onboarding`, …) → **301** на `/app/*` для авторизованных пользователей. Новый пользователь без onboarding → `/app/onboarding`.
+Legacy paths (`/chat`, `/agents`, `/welcome`, …) → **301** на `/app/*` или `/` для авторизованных пользователей.
 
 ### Demo API
 
 | Method | Endpoint | Описание |
 |--------|----------|----------|
-| POST | `/api/demo/run` | Запуск Competitor Intelligence (auth, mock fallback) |
-| POST | `/api/demo/public/run` | Public demo для `/showcase` и `/demo` (без auth) |
+| POST | `/api/demo/public/agent-preview` | Public agent preview (без auth, rate limit) |
+| POST | `/api/demo/public/agent-chat` | Follow-up chat с preview-агентом |
+| POST | `/api/demo/run` | Investor demo presets (auth) |
+| POST | `/api/demo/public/run` | Legacy Competitor Intelligence workflow demo |
 | GET | `/api/demo/public/runs/{id}` | Polling статуса public demo run |
 | GET | `/api/demo/artifact/{filename}` | Скачать DOCX-артефакт |
-| GET | `/api/demo/sample` | Метрики demo run (ROI, tokens, duration) |
 | POST | `/api/leads/showcase` | Lead form → `data/showcase_leads.jsonl` |
 
 ---
