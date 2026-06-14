@@ -1,5 +1,15 @@
 # Changelog — My Agent
 
+## [Unreleased]
+
+### Added
+- Vibe-first документация: обновлён README, созданы AGENTS.md, LICENSE (MIT), CONTRIBUTING.md, расширен CHANGELOG.
+- README теперь явно отражает вайб продукта: professional, calm B2B, outcome-first.
+- AGENTS.md — контракт для AI-агентов: стек, DoD, git workflow, эскалация.
+
+### Changed
+- Структура README: hero, быстрый старт, архитектура, маршруты, env-переменные, связанные документы.
+
 ## 4.0.0 — 2026-05-28 (Agent OS pivot + landing redesign)
 
 ### Product narrative

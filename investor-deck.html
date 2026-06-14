@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>My Agent — Предложение инвестору</title>
+<style>
+  :root {
+    --bg: #FDFCF8;
+    --text: #1a1a1a;
+    --muted: #555;
+    --accent: #FF4D00;
+    --border: #e0ddd5;
+    --card: #fff;
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: Manrope, Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    margin: 0;
+    padding: 0;
+  }
+  .container {
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 40px 24px;
+  }
+  h1 {
+    font-size: 2.2rem;
+    margin-bottom: 0.2em;
+    letter-spacing: -0.02em;
+  }
+  .subtitle {
+    color: var(--muted);
+    font-size: 1.05rem;
+    margin-bottom: 2em;
+  }
+  .meta {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    font-size: 0.9rem;
+    color: var(--muted);
+    margin-bottom: 2em;
+  }
+  .meta span { background: #fff; padding: 4px 10px; border-radius: 6px; border: 1px solid var(--border); }
+  h2 {
+    font-size: 1.4rem;
+    margin-top: 2em;
+    margin-bottom: 0.6em;
+    border-bottom: 2px solid var(--accent);
+    display: inline-block;
+    padding-bottom: 4px;
+  }
+  h3 {
+    font-size: 1.1rem;
+    margin-top: 1.6em;
+    margin-bottom: 0.4em;
+    color: var(--accent);
+  }
+  p { margin: 0.6em 0; }
+  ul, ol { margin: 0.6em 0; padding-left: 1.4em; }
+  li { margin: 0.3em 0; }
+  blockquote {
+    border-left: 4px solid var(--accent);
+    margin: 1.2em 0;
+    padding: 0.6em 1em;
+    background: #fff;
+    border-radius: 0 8px 8px 0;
+    font-style: italic;
+    color: var(--muted);
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1em 0;
+    background: var(--card);
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  }
+  th, td {
+    padding: 10px 12px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+  th {
+    background: #f5f3ef;
+    font-weight: 600;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--muted);
+  }
+  tr:last-child td { border-bottom: none; }
+  .slide {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 28px;
+    margin: 1.2em 0;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  }
+  .slide-number {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--accent);
+    font-weight: 700;
+    margin-bottom: 0.4em;
+  }
+  .slide h3 { margin-top: 0; color: var(--text); }
+  .highlight {
+    background: #fff7f3;
+    border-left: 4px solid var(--accent);
+    padding: 12px 16px;
+    border-radius: 0 8px 8px 0;
+    margin: 1em 0;
+  }
+  .two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+  @media (max-width: 640px) {
+    .two-col { grid-template-columns: 1fr; }
+    h1 { font-size: 1.6rem; }
+  }
+  .faq-q {
+    font-weight: 700;
+    margin-top: 1.4em;
+    color: var(--text);
+  }
+  .faq-a { color: var(--muted); }
+  code {
+    background: #f0eeea;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.9em;
+  }
+  .placeholder {
+    color: var(--accent);
+    font-weight: 600;
+    border-bottom: 1px dashed var(--accent);
+  }
+  .checklist {
+    list-style: none;
+    padding-left: 0;
+  }
+  .checklist li::before {
+    content: "☐ ";
+    color: var(--accent);
+    font-weight: 700;
+  }
+  footer {
+    margin-top: 3em;
+    padding-top: 1.5em;
+    border-top: 1px solid var(--border);
+    color: var(--muted);
+    font-size: 0.85rem;
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+<h1>My Agent — AI Agent OS</h1>
+<div class="subtitle">Предложение о долевом участии для владельца локального интернет-провайдера</div>
+<div class="meta">
+  <span>Сумма: ₽1.5M</span>
+  <span>Форма: доля в ООО</span>
+  <span>Тон: по делу, без понтов</span>
+  <span>Дата: 30 мая 2026</span>
+</div>
+
+<blockquote>
+Франшиза = вы покупаете право работать под чужим брендом.<br>
+Здесь вы владеете долей платформы, кодом, клиентской базой и командой.
+</blockquote>
+
+<h2>Продукт за 30 секунд</h2>
+<p><strong>Что это:</strong> Платформа, где владелец бизнеса описывает задачу текстом и получает работающего AI-оператора — без кода и без интегратора.</p>
+<ul>
+  <li>Лендинг с live-демо — работает без регистрации</li>
+  <li>Мульти-агентный чат с 10 агентами</li>
+  <li>Визуальный конструктор workflow (21+ типов узлов)</li>
+  <li>Marketplace: 50+ шаблонов</li>
+  <li>7 live-кейсов в production (ювелирка, travel, legal SaaS, health)</li>
+</ul>
+<div class="highlight">
+<strong>Почему это важно для вашего бизнеса:</strong> Провайдер обрабатывает сотни однотипных запросов ежедневно — тарифы, аварии, заявки на подключение, платежи. AI-оператор сокращает время ответа с часов до секунд и работает 24/7 без ФОТ. Эту же технологию можно продавать другим локальным провайдерам.
+</div>
+
+<h2>Слайды презентации</h2>
+
+<div class="slide">
+  <div class="slide-number">Слайд 1 — Титул</div>
+  <h3>My Agent — AI Agent OS<br><small style="color:var(--muted);font-weight:400;">Предложение о долевом участии</small></h3>
+  <ul>
+    <li>Проект: AI-операционная система для бизнес-автоматизации</li>
+    <li>Статус: 7 live-развёртываний, приносит выручку</li>
+    <li>Запрос: <span class="placeholder">₽1.5M за [ДОЛЯ]%</span></li>
+    <li>Включает: выделенного разработчика + % от прибыли на ваших вертикалях</li>
+  </ul>
+</div>
+
+<div class="slide">
+  <div class="slide-number">Слайд 2 — Продукт</div>
+  <h3>Опишите задачу — получите AI-оператора</h3>
+  <p>Платформа генерирует оператора с персоной, навыками и примером ответа за 10 секунд. Без программистов, без интеграторов.</p>
+  <p><strong>Уже работает:</strong> лендинг с live-demo, чат-first дашборд, визуальный DAG-конструктор, marketplace, интеграции с Telegram, n8n, Google.</p>
+  <div class="highlight">
+    Для провайдера: типовые запросы (тарифы, аварии, оплата) закрываются автоматически. Экономия 2 ФОТ поддержки = <strong>~₽100K/мес</strong> уже на вашем собственном бизнесе.
+  </div>
+</div>
+
+<div class="slide">
+  <div class="slide-number">Слайд 3 — Актив vs Франшиза</div>
+  <table>
+    <tr><th></th><th>Франшиза</th><th>Доля в My Agent</th></tr>
+    <tr><td>За что платите</td><td>Право работать под чужим брендом</td><td>Доля в компании + код + данные</td></tr>
+    <tr><td>Что владеете</td><td>Ничего — лицензию могут отозвать</td><td>Процент бизнес-актива</td></tr>
+    <tr><td>Потолок дохода</td><td>Фиксирован договором</td><td>Неограничен — пропорционален росту</td></tr>
+    <tr><td>Ежемесячные платежи</td><td>Роялти / маркетинговый фонд</td><td>Нет — вы владелец</td></tr>
+    <tr><td>Поддержка</td><td>Мануалы + колл-центр</td><td>Выделенный разработчик в штате + %</td></tr>
+    <tr><td>Выход</td><td>Перепродать права (ограничено)</td><td>Продать долю следующему инвестору</td></tr>
+  </table>
+  <p><strong>Итог:</strong> Франшиза — покупка работы. Доля — покупка актива.</p>
+</div>
+
+<div class="slide">
+  <div class="slide-number">Слайд 4 — Что конкретно получает инвестор за ₽1.5M</div>
+  <ol>
+    <li><strong>Доля:</strong> <span class="placeholder">[ДОЛЯ]%</span> в <span class="placeholder">[НАЗВАНИЕ ООО]</span>. Каптейбл: <span class="placeholder">[Основатель А]% / [Основатель Б]% / Инвестор [ДОЛЯ]%</span>. Полная прозрачность: доступ к бухгалтерии, метрикам, выпискам.</li>
+    <li><strong>Технологический актив:</strong> исходный код (Python/FastAPI + React), клиентская база, marketplace с 50+ шаблонами, все интеграции.</li>
+    <li><strong>Ваш немедленный рынок:</strong> ваша абонентская база = первые пилотные пользователи с нулевым CAC. AI-бот под брендом вашего провайдера уже в Месяц 1.</li>
+    <li><strong>Выделенный разработчик:</strong> зарплата <span class="placeholder">₽[ЗП]/мес</span> (из бюджета компании, не из вашего кармана). Бонус: <span class="placeholder">[БОНУС]%</span> от чистой прибыли по ISP-вертикали и сделкам от вас. Обслуживает: кастомных агентов, новые интеграции, деплой.</li>
+    <li><strong>Операционная поддержка:</strong> <span class="placeholder">[ЧАСЫ]</span> часов/мес прямой техподдержки, приоритетная очередь фичей, white-label под ваш бренд.</li>
+    <li><strong>Revenue share:</strong> <span class="placeholder">[ДОЛЯ_СДЕЛКИ]%</span> от выручки по каждому клиенту, приведённому вами — лично вам, сверх дивидендов по доле.</li>
+  </ol>
+</div>
+
+<div class="slide">
+  <div class="slide-number">Слайд 5 — Куда уйдут ₽1.5M (бюджет на 12 месяцев)</div>
+  <table>
+    <tr><th>Статья</th><th>Сумма</th><th>Назначение</th></tr>
+    <tr><td>Маркетинг и лидоген</td><td class="placeholder">₽[МАРКЕТИНГ]</td><td>Привлечение B2B-клиентов: Telegram, Яндекс, нишевые форумы, партнёрства с провайдерами</td></tr>
+    <tr><td>Продажи / аккаунт-менеджер</td><td class="placeholder">₽[ПРОДАЖИ]</td><td>Человек, который закрывает сделки и проводит онбординг</td></tr>
+    <tr><td>Зарплата разработчика (12 мес)</td><td class="placeholder">₽[ДЕВ]</td><td>Выделенный разработчик: оклад + налоги</td></tr>
+    <tr><td>Инфраструктура и API</td><td class="placeholder">₽[ИНФРА]</td><td>Серверы, OpenRouter, PostgreSQL-хостинг</td></tr>
+    <tr><td>Юридические услуги и бухгалтерия</td><td class="placeholder">₽[ЮР]</td><td>Содержание ООО, договоры, отчётность</td></tr>
+    <tr><td>Резерв</td><td class="placeholder">₽[РЕЗЕРВ]</td><td>Буфер на 2 месяца</td></tr>
+    <tr><td><strong>Итого</strong></td><td><strong>₽1,500,000</strong></td><td></td></tr>
+  </table>
+  <p style="font-size:0.9rem;color:var(--muted);">Пример раскладки: 450K маркетинг / 360K продажи / 480K разработчик / 120K инфра / 60K юр / 30K резерв</p>
+</div>
+
+<div class="slide">
+  <div class="slide-number">Слайд 6 — Как развиваем (12 месяцев)</div>
+  <p><strong>Фаза 1 (Месяцы 1–3): Пилот на вашем провайдере</strong></p>
+  <ul>
+    <li>Деплой AI-бота поддержки для ваших абонентов (тарифы, аварии, платежи)</li>
+    <li>Метрики: время ответа, закрытые тикеты, сэкономленные часы поддержки</li>
+    <li>Цель: бот закрывает 60%+ L1-поддержки, ваша команда занимается сложными кейсами</li>
+  </ul>
+  <p><strong>Фаза 2 (Месяцы 4–6): Вертикальная экспансия</strong></p>
+  <ul>
+    <li>Упаковываем «AI-поддержку для провайдеров» как продукт для других локальных ISP</li>
+    <li>Ваш провайдер = live case study с цифрами и отзывами</li>
+    <li>Цель: 3–5 внешних ISP-клиентов, <span class="placeholder">₽[ВЫРУЧКА_M6]/мес</span></li>
+  </ul>
+  <p><strong>Фаза 3 (Месяцы 7–12): Масштаб и повторяемость</strong></p>
+  <ul>
+    <li>Самообслуживание для новых ISP-клиентов</li>
+    <li>Расширение на смежные вертикали: ЖКХ, управление недвижимостью, доставка</li>
+    <li>Цель: 15–20 клиентов, <span class="placeholder">₽[ВЫРУЧКА_M12]/мес</span>, выход на break-even или прибыль</li>
+  </ul>
+</div>
+
+<div class="slide">
+  <div class="slide-number">Слайд 7 — Как обслуживаем</div>
+  <div class="two-col">
+    <div>
+      <p><strong>Ваш разработчик делает:</strong></p>
+      <ul>
+        <li>Кастомных агентов под ваш провайдер (и ваших клиентов)</li>
+        <li>Интеграцию с вашей биллинговой системой / CRM / Telegram / WhatsApp</li>
+        <li>White-label под бренд вашего провайдера</li>
+        <li>Мониторинг аптайма и обновления</li>
+      </ul>
+    </div>
+    <div>
+      <p><strong>Вам не нужно:</strong></p>
+      <ul>
+        <li>Учить Python или Docker</li>
+        <li>Искать и проверять фрилансеров</li>
+        <li>Дебажить API-интеграции</li>
+      </ul>
+    </div>
+  </div>
+  <p><strong>Вы занимаетесь:</strong> знакомите продукт с другими владельцами провайдеров в регионе, закрываете сделки, собираете обратную связь от своих абонентов.</p>
+  <p><strong>Связь:</strong> Telegram-чат + еженедельный созвон 30 минут.</p>
+</div>
+
+<div class="slide">
+  <div class="slide-number">Слайд 8 — Команда и каптейбл</div>
+  <table>
+    <tr><th>Роль</th><th>Кто</th><th>Бэкграунд</th><th>Занятость</th></tr>
+    <tr><td>CEO / Продукт</td><td class="placeholder">[Основатель А]</td><td class="placeholder">[Бэкграунд]</td><td>Full-time</td></tr>
+    <tr><td>CTO / Инженеринг</td><td class="placeholder">[Основатель Б]</td><td class="placeholder">[Бэкграунд]</td><td>Full-time</td></tr>
+    <tr><td>Инвестор</td><td class="placeholder">[Инвестор]</td><td>Владелец ISP, региональная сеть</td><td>Advisor + deal flow</td></tr>
+    <tr><td>Разработчик</td><td class="placeholder">[Имя] или подбор</td><td>Full-stack Python/React</td><td>Full-time, оклад</td></tr>
+  </table>
+  <p><strong>Каптейбл после инвестиции:</strong></p>
+  <ul>
+    <li><span class="placeholder">[Основатель А]</span>: <span class="placeholder">[ДОЛЯ_A]%</span></li>
+    <li><span class="placeholder">[Основатель Б]</span>: <span class="placeholder">[ДОЛЯ_B]%</span></li>
+    <li>Инвестор: <span class="placeholder">[ДОЛЯ]%</span></li>
+    <li>Опционный пул (будущая команда): <span class="placeholder">[ОПЦИОН]%</span></li>
+  </ul>
+  <p style="font-size:0.9rem;color:var(--muted);">Вестинг основателей: 3 года, 1-year cliff. Защита инвестора: tag-along, право аудита раз в квартал.</p>
+</div>
+
+<div class="slide">
+  <div class="slide-number">Слайд 9 — Финансовый снапшот</div>
+  <p><strong>Сейчас (в месяц):</strong></p>
+  <ul>
+    <li>Выручка: <span class="placeholder">₽[ТЕКУЩАЯ_ВЫРУЧКА]/мес</span></li>
+    <li>Клиенты: <span class="placeholder">[ТЕКУЩИЕ_КЛИЕНТЫ]</span> платящих</li>
+    <li>Рост MRR: <span class="placeholder">[РОСТ_MRR]%</span> м/м</li>
+  </ul>
+  <p><strong>Цель на 12 месяцев:</strong></p>
+  <ul>
+    <li>Выручка: <span class="placeholder">₽[ВЫРУЧКА_M12]/мес</span></li>
+    <li>Клиенты: <span class="placeholder">[КЛИЕНТЫ_M12]</span></li>
+    <li>Команда: 4 человека (2 основателя + 1 разработчик + 1 продажи)</li>
+  </ul>
+  <p><strong>Экономика пилота на вашем ISP (пример):</strong></p>
+  <ul>
+    <li>Бот обрабатывает 500 обращений/мес</li>
+    <li>Экономит 2 ФОТ поддержки по ₽50K = <strong>₽100K/мес</strong></li>
+    <li>Стоимость работы бота: <span class="placeholder">₽[СТОИМОСТЬ_БОТА]/мес</span></li>
+    <li>Чистая выгода на вашем бизнесе: <span class="placeholder">₽[ЭКОНОМИЯ]/мес</span></li>
+  </ul>
+  <p><strong>Юнит-экономика (цель):</strong> CAC <span class="placeholder">₽[CAC]</span>, ACV <span class="placeholder">₽[ACV]/год</span>, окупаемость <span class="placeholder">[МЕСЯЦЕВ]</span> мес.</p>
+  <div class="highlight">
+    ₽1.5M покупают 12–14 месяцев runway до прибыльности без дополнительных раундов.
+  </div>
+</div>
+
+<div class="slide">
+  <div class="slide-number">Слайд 10 — Почему сейчас</div>
+  <ol>
+    <li><strong>Тайминг рынка:</strong> рынок AI-агентов переходит от хайпа к реальным внедрениям. SMB в СНГ только начинают принимать.</li>
+    <li><strong>Продукт готов:</strong> не прототип. 7 кейсов, marketplace, биллинг, Docker-деплой за 10 минут.</li>
+    <li><strong>Преимущество дистрибуции:</strong> ваш провайдер = live-пилот + мгновенная репутация среди других провайдеров.</li>
+    <li><strong>Регуляторное окно:</strong> подход через Telegram/VK минует зависимость от западных SaaS и санкционных рисков.</li>
+  </ol>
+</div>
+
+<div class="slide">
+  <div class="slide-number">Слайд 11 — Риски и как закрываем</div>
+  <table>
+    <tr><th>Риск</th><th>Митигация</th></tr>
+    <tr><td>Рост цен на LLM API</td><td>Мультипровайдер (OpenRouter + бесплатные fallback-модели)</td></tr>
+    <tr><td>Отток клиентов</td><td>Годовые контракты + липкие интеграции (Telegram-боты, связанные с биллингом)</td></tr>
+    <tr><td>Конфликт основателей</td><td>Чёткие роли, вестинг, квартальные alignment-созвоны</td></tr>
+    <tr><td>Конкурент с большим фондом</td><td>Фокус на нишу (ISP) + white-label — сложно копировать личные связи</td></tr>
+    <tr><td>Абоненты не примут бота</td><td>Постепенный rollout: сначала FAQ, всегда доступна эскалация на человека</td></tr>
+  </table>
+</div>
+
+<div class="slide">
+  <div class="slide-number">Слайд 12 — Следующие шаги</div>
+  <ol>
+    <li><strong>Эта неделя:</strong> инвестор изучает deck + задаёт вопросы</li>
+    <li><strong>Неделя 2:</strong> live-демо (20 мин) — строим ISP-бота под ваши тарифы в реальном времени</li>
+    <li><strong>Неделя 3:</strong> term sheet (простой, 2 страницы) — оценка, права, условия выхода</li>
+    <li><strong>Неделя 4:</strong> юридическое закрытие, перевод средств, обновление каптейбла, назначение разработчика</li>
+  </ol>
+  <div class="highlight">
+    <strong>Что нужно от вас:</strong> доступ к вашему FAQ / списку тарифов, чтобы подготовить персонализированное демо.
+  </div>
+</div>
+
+<h2>Ответы на вопросы (FAQ)</h2>
+
+<p class="faq-q">Почему не франшиза? Она дешевле.</p>
+<p class="faq-a">Франшиза даёт методичку и бренд. Вы продолжаете платить роялти каждый месяц и ничего не владеете. Здесь вы владеете долей кода, клиентской базы и будущей выручки. Если компанию продадим через 3 года — вы получите <span class="placeholder">[ДОЛЯ]%</span> от сделки. С франшизой вы ничего не получите.</p>
+
+<p class="faq-q">А если бизнес не вырастет?</p>
+<p class="faq-a">Продукт уже генерирует выручку. В худшем случае актив (код + клиенты) сохраняет ценность и может быть продан или развёрнут в другую вертикаль. У нас 2-месячный резерв. У вас полная видимость burn rate и право голоса по стратегии. Плюс ваш собственный провайдер экономит деньги с Месяца 1 за счёт бота.</p>
+
+<p class="faq-q">Сколько времени это отнимет?</p>
+<p class="faq-a">Первые 3 месяца — 5–10 часов в неделю: знакомства с другими владельцами провайдеров, обратная связь по боту. Выделенный разработчик закрывает всю техническую работу. После Месяца 6, если вертикали работают, может быть пассивно.</p>
+
+<p class="faq-q">Как вернуть деньги?</p>
+<p class="faq-a">Три пути: (1) ежегодные дивиденды после выхода в прибыль, (2) продажа доли новому инвестору по более высокой оценке, (3) выкуп доли компанией после 24 месяцев. Всё прописываем в shareholder agreement.</p>
+
+<p class="faq-q">Почему не кредит?</p>
+<p class="faq-a">Кредит = фиксированные платежи вне зависимости от результата. Доля = мы выигрываем или проигрываем вместе. Плюс даёт права совладельца и upside — кредитор этого не получит.</p>
+
+<p class="faq-q">Кому принадлежит код?</p>
+<p class="faq-a">Всё IP принадлежит ООО. Как совладелец, вы владеете долей этого IP. Основатели не могут продать код без одобрения акционеров.</p>
+
+<p class="faq-q">А если основатели уйдут?</p>
+<p class="faq-a">3-летний вестинг: невестированные акции возвращаются компании. Код и клиентская база остаются в ООО. Замену нанимаем из резервного бюджета.</p>
+
+<p class="faq-q">Могу ли я использовать для своего провайдера?</p>
+<p class="faq-a">Да. White-label для вашего ISP — включено и является приоритетом Месяца 1. Ваши абоненты не узнают про My Agent — отвечает бот под вашим брендом.</p>
+
+<p class="faq-q">Это реально будет работать для поддержки провайдера?</p>
+<p class="faq-a">Да. Платформа уже умеет структурированные Q&A, workflow по расписанию, Telegram-интеграцию. Поддержка провайдера на 80% типовая (тарифы, статус аварии, подтверждение платежа) — идеально под AI. Мы запускаем пилот на ваших реальных данных до того, как продавать кому-либо ещё.</p>
+
+<h2>Что нужно заполнить</h2>
+<table>
+  <tr><th>Плейсхолдер</th><th>Пример</th><th>Ваше значение</th></tr>
+  <tr><td>Доля за ₽1.5M</td><td>20%</td><td class="placeholder">?</td></tr>
+  <tr><td>Сплит основателей</td><td>40% / 40%</td><td class="placeholder">?</td></tr>
+  <tr><td>Текущая выручка</td><td>₽200K/мес</td><td class="placeholder">?</td></tr>
+  <tr><td>Текущие клиенты</td><td>7</td><td class="placeholder">?</td></tr>
+  <tr><td>ЗП разработчика</td><td>₽100K/мес</td><td class="placeholder">?</td></tr>
+  <tr><td>% разработчику</td><td>5% от прибыли</td><td class="placeholder">?</td></tr>
+  <tr><td>Часы поддержки</td><td>10 ч/мес</td><td class="placeholder">?</td></tr>
+  <tr><td>Revenue share сделки</td><td>20%</td><td class="placeholder">?</td></tr>
+  <tr><td>Выручка на М12</td><td>₽600K/мес</td><td class="placeholder">?</td></tr>
+  <tr><td>Стоимость бота/мес</td><td>₽15K</td><td class="placeholder">?</td></tr>
+  <tr><td>Экономия на ISP</td><td>₽85K/мес</td><td class="placeholder">?</td></tr>
+</table>
+
+<h2>Демо-скрипт (5 минут)</h2>
+<ol>
+  <li>Открываем <code>localhost:8020/</code> (или продакшен-URL)</li>
+  <li>Вводим: <em>«AI-консультант поддержки для локального интернет-провайдера»</em></li>
+  <li>Показываем сгенерированного агента: имя, роль, навыки (тарифы, аварии, оплата)</li>
+  <li>Вопрос: <em>«Интернет стал медленным, что делать?»</em> → live-ответ с шагами диагностики</li>
+  <li>Вопрос: <em>«Сколько стоит тариф 100 Мбит?»</em> → ответ с ценой и опцией апгрейда</li>
+  <li>Переходим в <code>/showcase</code> — показываем другие вертикали</li>
+  <li>Открываем <code>/app/chat</code> — мульти-поточный чат с реальным агентом</li>
+  <li>Закрываем: <em>«Это не макет. Это то, что мы деплоим для ваших абонентов в следующем месяце.»</em></li>
+</ol>
+
+<footer>
+  My Agent — Investor Deck · 30 мая 2026 · <span class="placeholder">[Заполнить плейсхолдеры и конвертировать в PDF/Google Slides]</span>
+</footer>
+
+</div>
+</body>
+</html>

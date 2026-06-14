@@ -1,23 +1,56 @@
 # My Agent
 
-**AI Agent OS** — опишите задачу, получите AI-оператора для бизнеса. Без кода, без интегратора.
+> **AI Agent OS** — опишите задачу текстом, получите работающего AI-оператора для бизнеса. Без кода, без интегратора, без ожидания.
+>
+> _Тихо берёт задачу и возвращает результат._
 
-| | |
-|---|---|
-| **Версия** | 4.0.0 |
-| **Стек** | Python 3.11 · FastAPI · React 18 · PostgreSQL · Redis |
-| **LLM** | OpenRouter (deepseek, owl-alpha, claude и др.) |
-| **Документация** | [docs/README.md](docs/README.md) — полный индекс |
+<!-- badge-линия -->
+[![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](./pyproject.toml)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-00a2a2.svg)](./pyproject.toml)
+[![React 18](https://img.shields.io/badge/React-18-61dafb.svg)](./web/frontend)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
+
+---
+
+## Что это
+
+My Agent — это операционная система для бизнес-агентов: вы описываете рутинную задачу своими словами, а платформа собирает из неё готового оператора — с ролью, навыками, памятью и интеграциями. Это не очередной чат-бот. Это промежуток между no-code автоматизацией вроде n8n и дорогими AI-студиями: быстрый time-to-wow, живой demo прямо на лендинге и полноценный продукт после входа.
+
+Для кого:
+- **Малый и средний бизнес**, который хочет автоматизировать research, отчёты, lead-qualification и коммуникации.
+- **Команды аналитиков и маркетологов**, уставшие собирать briefы вручную.
+- **Продуктовые команды**, которым нужен настраиваемый AI-оператор под собственные процессы.
+
+---
+
+## Возможности
+
+- **Agent Preview** — опишите задачу текстом, и LLM сгенерирует персону оператора без регистрации.
+- **10 готовых агентов** — universal, researcher, developer, marketer, data_analyst, slides, docs, media, data_engineer, news.
+- **30+ навыков** — research, browser, RAG, документы, презентации, планировщик, выполнение кода, OCR, vision, email, RSS и другие.
+- **AutoAgentFactory** — LLM анализирует задачу, создаёт sub-агентов и запускает их параллельно.
+- **Workflow engine** — визуальный DAG-редактор (React Flow), 21+ типов узлов, async-запуски, Redis-очередь.
+- **Marketplace** — 50+ шаблонов, установка в один клик, публичный share.
+- **Live deployments** — Mary Jewelry, PEGAS Touristik, DocBrain, Pretenzia и другие кейсы.
+- **Интеграции** — Telegram, Slack, n8n webhook, Google OAuth, Gmail, Sheets.
+
+Подробнее об архитектуре: [ARCHITECTURE.md](./ARCHITECTURE.md).
 
 ---
 
 ## Быстрый старт (Docker)
 
 ```bash
+# 1. Клонировать репозиторий
+git clone git@github.com:Shugar86/my-agent.git
+cd my-agent
+
+# 2. Подготовить окружение
 cp .env.example .env
 # Минимум: OPENROUTER_API_KEY (public demo работает и без ключей — mock fallback)
 # AGENT_PASSWORD — в production >= 12 символов
 
+# 3. Запустить стек
 docker compose up -d --build
 ```
 
@@ -29,38 +62,42 @@ docker compose up -d --build
 | http://localhost:8020/app/ | Продукт (после login) |
 | http://localhost:8020/login | JWT + Google OAuth |
 
-Логин по умолчанию: `admin` / значение `AGENT_PASSWORD` из `.env`. В **production** (`ENV=production`) пароль должен быть >= 12 символов.
+Логин по умолчанию: `admin` / значение `AGENT_PASSWORD` из `.env`. В **production** (`ENV=production`) пароль должен быть ≥ 12 символов.
+
+Проверка здоровья:
+
+```bash
+curl -s http://localhost:8020/api/health
+```
 
 ---
 
-## Что умеет My Agent
+## Архитектура / стек
 
-- **Agent Preview** — опишите задачу текстом → AI генерирует оператора (live LLM, без регистрации)
-- **10 агентов** — universal, researcher, developer, marketer, data_analyst, slides, docs, media, data_engineer, news
-- **30+ skills** — research, browser, RAG, docs/slides, messaging, scheduler, code execution, OCR, vision и др.
-- **AutoAgentFactory** — LLM анализирует задачу, создаёт sub-агентов, запускает параллельно
-- **Workflow engine** — visual DAG builder (React Flow), 21+ типов узлов, async runs, Redis queue
-- **Marketplace** — 50+ шаблонов, install в один клик, публичный share
-- **7 live deployments** — Mary Jewelry, PEGAS Touristik, DocBrain, Pretenzia и др.
-- **Интеграции** — Telegram, Slack, n8n webhook, Google OAuth, Gmail, Sheets
-
-Подробнее: [ARCHITECTURE.md](ARCHITECTURE.md).
+| Слой | Технологии |
+|------|------------|
+| Backend | Python 3.11+, FastAPI, Pydantic 2, SQLAlchemy, asyncpg, Alembic |
+| Frontend | React 18, Vite, bun → `web/static/app/` |
+| LLM | OpenRouter (litellm), fallback по free-моделям |
+| Data | PostgreSQL 16, Redis 7, ChromaDB (RAG) |
+| Infra | Docker, docker-compose, Caddyfile |
+| Тесты | pytest, Playwright e2e, `scripts/check-secrets.sh` |
 
 ---
 
 ## Структура репозитория
 
-```
+```text
 my-agent/
 ├── agent.py              # CLI
 ├── web/
-│   ├── server.py         # FastAPI
+│   ├── server.py         # FastAPI-приложение
 │   ├── demo_router.py    # Public agent preview + demo endpoints
 │   └── frontend/         # React SPA (Vite, bun)
 ├── core/                 # runtime, orchestrator, workflow, auth
 ├── skills/               # доменные навыки (SKILL.md + skill.py)
 ├── tools/                # регистрация инструментов
-├── agents/registry.json  # профили агентов (model: "balanced" → OpenRouter)
+├── agents/registry.json  # профили агентов
 ├── config/               # agent.json, models.yaml
 ├── tests/                # pytest (+ Playwright e2e)
 ├── deploy/               # prod compose, monitoring
@@ -119,7 +156,7 @@ python -m pytest tests/test_demo_flow.py tests/test_marketplace.py -q
 | `/app/workflows`, `/app/workflows/:id` | Список и visual builder |
 | `/app/marketplace` | Шаблоны |
 | `/app/settings` | API keys, agents, integrations, MCP |
-| `/app/onboarding` | 4-step wizard (agent preview → usecase → workspace → integrations) |
+| `/app/onboarding` | 4-step wizard |
 | `/app/demo` | In-app competitor demo (PlaygroundDemo, behind login) |
 
 ---
@@ -133,11 +170,17 @@ python -m pytest tests/test_demo_flow.py tests/test_marketplace.py -q
 | `TAVILY_API_KEY` | Веб-поиск для research workflows |
 | `DATABASE_URL` | PostgreSQL (обязателен в production) |
 | `REDIS_URL` | Кэш, rate limits, workflow queue |
-| `AGENT_PASSWORD` | Пароль admin (prod: >= 12 символов) |
-| `AGENT_SECRET_KEY` | JWT secret (>= 32 символа) |
+| `AGENT_PASSWORD` | Пароль admin (prod: ≥ 12 символов) |
+| `AGENT_SECRET_KEY` | JWT secret (≥ 32 символа) |
 | `CORS_ORIGINS` | Доп. origins через запятую |
 
-Полный список: [.env.example](.env.example).
+Полный список: [.env.example](./.env.example).
+
+---
+
+## Участие
+
+PR и идеи приветствуются. Сначала загляните в [CONTRIBUTING.md](./CONTRIBUTING.md) и [AGENTS.md](./AGENTS.md) — там правила игры для людей и для AI-агентов.
 
 ---
 
@@ -145,10 +188,14 @@ python -m pytest tests/test_demo_flow.py tests/test_marketplace.py -q
 
 | Тема | Файл |
 |------|------|
-| Демо инвесторам | [DEMO.md](DEMO.md) |
-| Деплой | [DEPLOYMENT.md](DEPLOYMENT.md) |
-| Безопасность | [SECURITY.md](SECURITY.md) |
-| Изменения | [CHANGELOG.md](CHANGELOG.md) |
-| Аудит / проблемы | [TROUBLES.md](TROUBLES.md) |
+| Полный индекс документации | [docs/README.md](./docs/README.md) |
+| Демо инвесторам | [DEMO.md](./DEMO.md) |
+| Деплой | [DEPLOYMENT.md](./DEPLOYMENT.md) |
+| Безопасность | [SECURITY.md](./SECURITY.md) |
+| Изменения | [CHANGELOG.md](./CHANGELOG.md) |
+| Аудит / проблемы | [TROUBLES.md](./TROUBLES.md) |
+| Контракт для агентов | [AGENTS.md](./AGENTS.md) |
 
-**Лицензия:** MIT
+---
+
+**Лицензия:** [MIT](./LICENSE) © Shugar86
