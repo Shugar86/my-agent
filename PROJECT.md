@@ -40,7 +40,7 @@ Anchor (immutable core). Изменение смысла = новый проек
 | Тесты | pytest, Playwright e2e, `scripts/check-secrets.sh` |
 | Ключевые Python-libs | litellm, slowapi, python-jose, docker SDK, MCP, APScheduler |
 
-Версия продукта в README: **4.0.0**. В `pyproject.toml` указано `2.0.0` — [расхождение, ориентир README].
+Версия продукта: **4.0.0** (README, CHANGELOG). `pyproject.toml` — package version `2.0.0` (semver пакета, не product release).
 
 ## Key files / entry points
 
@@ -65,8 +65,9 @@ Anchor (immutable core). Изменение смысла = новый проек
 | Документ | Содержание |
 |----------|------------|
 | [README.md](README.md) | Обзор, quick start, маршруты |
+| [AGENTS.md](AGENTS.md) | Контракт для AI-агентов |
 | [docs/README.md](docs/README.md) | Полный индекс |
-| [ARCHITECTURE.md](ARCHITECTURE.md) | Слои, workflow, security (часть текста на v3.5 — сверять с README v4) |
+| [ARCHITECTURE.md](ARCHITECTURE.md) | Слои, workflow, security |
 | [DEPLOYMENT.md](DEPLOYMENT.md) | Деплой |
 | [SERVER.md](SERVER.md) | VDS, порты, nginx |
 | [SECURITY.md](SECURITY.md) | JWT, checklist |

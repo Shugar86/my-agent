@@ -1,7 +1,7 @@
 # Architecture
 
 > My Agent — System Architecture  
-> Version: **3.5.0**
+> Version: **4.0.0**
 
 ---
 
@@ -28,13 +28,13 @@
        │          └──────┬───────┘
        ▼                 │
 ┌─────────────────────────────────────────────────────────────┐
-│  AgentBuilder → AgentRuntime → LLMGateway (Kimi + litellm)   │
+│  AgentBuilder → AgentRuntime → LLMGateway (litellm)          │
 │  SkillLoader · ToolRegistry · MemoryManager                  │
 └──────────────────────────┬──────────────────────────────────┘
                            │
                            ▼
 ┌─────────────────────────────────────────────────────────────┐
-│  skills/* · tools/* · agents/registry.json                   │
+│  skills/* · tools/* · agents/registry.json (10 agents)       │
 └─────────────────────────────────────────────────────────────┘
                            │
                            ▼
@@ -78,6 +78,17 @@ LLM планирует sub-agents → временные профили → para
 
 ---
 
+## Public demo (`web/demo_router.py`)
+
+| Endpoint | Назначение |
+|----------|------------|
+| `POST /api/demo/public/agent-preview` | LLM генерирует persona оператора из описания задачи |
+| `POST /api/demo/public/agent-chat` | Follow-up chat с preview-агентом |
+
+Без `OPENROUTER_API_KEY` — mock fallback (UI не падает). Rate limit: 5 preview + 10 chat req/IP/hour.
+
+---
+
 ## Workflow engine
 
 ```
@@ -94,11 +105,20 @@ Runs async по умолчанию; sync с `{"wait": true}`.
 
 ---
 
+## LLM layer
+
+- **Primary:** OpenRouter через `core/llm_gateway.py` + `core/configurator.py`
+- **Профили моделей:** `config/models.yaml` (`fast`, `balanced`, `smart`, `local`)
+- **Агенты:** все 10 профилей в `agents/registry.json` используют `model: "balanced"`
+- **Fallback:** free-модели в `demo_router` при 429 / отсутствии ключа
+
+---
+
 ## Data stores
 
 | Store | Usage |
 |-------|--------|
-| PostgreSQL | Users, workflows, templates, billing |
+| PostgreSQL | Users, workflows, templates, billing, chat sessions |
 | Redis | Sessions blacklist, rate limits, run queue |
 | JSON files | Dev memory sessions (`memory/sessions/`) |
 | ChromaDB | RAG knowledge base |
@@ -126,9 +146,9 @@ Runs async по умолчанию; sync с `{"wait": true}`.
 ```
 web/server.py
 ├── core/orchestrator.py → core/builder.py → core/runtime.py
-├── core/workflow/* 
+├── core/workflow/*
 ├── core/auth.py, core/billing/*
-├── core/kimi_provider.py
+├── core/llm_gateway.py, core/configurator.py
 └── core/agent_store.py
 
 skills/*/skill.py → tools/*.py
@@ -154,7 +174,7 @@ skills/*/skill.py → tools/*.py
 | Builder | `core/builder.py` |
 | Factory | `core/auto_agent_factory.py` |
 | Strategy | `core/orchestrator.py` |
-| Adapter | `core/llm_gateway.py`, `core/kimi_provider.py` |
+| Adapter | `core/llm_gateway.py` |
 | Plugin | `core/skill_loader.py` |
 | Repository | `core/memory_manager.py`, workflow store |
 

@@ -4,35 +4,36 @@
 
 ## Positioning
 
-**Tagline:** Autonomous Workflow OS — n8n + AI-агенты + marketplace
+**Tagline:** AI Agent OS для бизнеса — n8n + AI-агенты + marketplace
 
-**One-liner:** Конкурентный brief за 90 секунд вместо 4 часов работы аналитика.
+**One-liner:** Опишите задачу текстом — получите работающего AI-оператора за 2 минуты. Без кода, без интегратора.
 
 ## Hero stats (social proof)
 
 | Metric | Value |
 |--------|-------|
 | Шаблонов в marketplace | 50+ |
-| Time-to-wow | 90 сек |
-| Стоимость demo-run | $0.42 |
-| Артефакт | DOCX brief |
+| Time-to-wow | ~2 мин (agent preview) |
+| Live deployments | 7 vertical cases |
+| Навыков / агентов | 33+ skills · 10 agents |
 
 ## Primary CTAs
 
-1. **Live demo** — `/demo` (landing primary CTA; mock без keys)
+1. **Live agent preview** — `/` hero widget или `/demo` (без login)
 2. **7 vertical cases** — `/showcase` (investor meetings)
-3. **Live playground** — `/showcase#playground` or `/app/showcase#playground`
-4. **Начать бесплатно** — `/login?next=/app/onboarding` → dashboard
+3. **Начать бесплатно** — `/login?next=/app/onboarding` → dashboard
+4. **Чат с оператором** — `/app/chat` (после login)
 
 ## Glue narrative (везде в UI)
 
-**Шаблон → Workflow → Результат** — полоска в PublicLayout и AppShell; блок в onboarding и landing `#product`.
+**Задача → Оператор → Результат** — пользователь описывает бизнес-задачу, платформа собирает persona + skills + workflow.
 
 ## Tone
 
 - Professional, calm B2B
-- Outcome-first (часы сэкономлены, документ на выходе)
-- Без JWT, pip install, skills catalog на главной
+- Outcome-first (готовый оператор, артефакт, экономия часов)
+- Честные статусы (Live / Beta / Preview / Скоро)
+- Без технического жаргона на лендинге (JWT, pip install, skills catalog)
 
 ## Visual bridge
 
@@ -56,11 +57,12 @@ Registry: `web/frontend/src/config/featureRegistry.ts`
 |------|-------|
 | `web/frontend/src/layout/landing.css` | React landing sections |
 | `web/frontend/src/layout/theme.css` | Product SPA (dark/light) |
-| `website/style.css`, `marketing.css` | Legacy static (deprecated — assets only via `/welcome-assets`) |
-| `website/login.css` | Login split layout |
+| `website/style.css`, `marketing.css` | Legacy static assets only |
 
-Static HTML pages deprecated — see [`README-DEPRECATED.md`](README-DEPRECATED.md).
+Статические HTML-страницы в `website/` deprecated — основной UI в React SPA.
 
 ## Investor demo theme
 
 Перед screen share рекомендуется **светлая тема** в `/app`: переключатель в sidebar или `localStorage.setItem('my-agent.theme', 'light')`.
+
+Сценарий: [INVESTOR.md](../INVESTOR.md) · [DEMO.md](../DEMO.md).
