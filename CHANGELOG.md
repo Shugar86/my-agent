@@ -9,11 +9,20 @@
 ## [Unreleased]
 
 ### Added
+- Синхронизация документации с v4.0.0: обновлены [docs/README.md](./docs/README.md), [ARCHITECTURE.md](./ARCHITECTURE.md), [DEPLOYMENT.md](./DEPLOYMENT.md), [PROJECT_GUIDE.md](./PROJECT_GUIDE.md), [SERVER.md](./SERVER.md), [website/BRAND.md](./website/BRAND.md), [STATE.md](./STATE.md).
+- В индекс добавлены AGENTS.md, CONTRIBUTING.md; убраны битые ссылки на несуществующие AUDIT/HANDOFF файлы.
+
+### Changed
+- Удалены устаревшие ссылки на Kimi API из operational docs; primary LLM — OpenRouter.
+- Narrative «90 сек Competitor Intelligence» заменён на «AI-оператор за 2 минуты» в BRAND и SERVER.
+- PROJECT_GUIDE: 10 агентов, 33 навыка, public agent-preview endpoints.
+
+### Added (earlier unreleased)
 - Vibe-first документация: обновлён [README.md](./README.md), созданы [AGENTS.md](./AGENTS.md), [LICENSE](./LICENSE) (MIT), [CONTRIBUTING.md](./CONTRIBUTING.md), расширен [CHANGELOG.md](./CHANGELOG.md).
 - README теперь явно отражает вайб продукта: professional, calm B2B, outcome-first.
 - AGENTS.md — контракт для AI-агентов: стек, DoD, git workflow, эскалация.
 
-### Changed
+### Changed (earlier unreleased)
 - Структура README: hero, быстрый старт, архитектура, маршруты, env-переменные, связанные документы.
 
 ---
