@@ -15,6 +15,11 @@
 
 ### Changed
 - Структура README: hero, быстрый старт, архитектура, маршруты, env-переменные, связанные документы.
+- **Док-синхронизация v4 (2026-06-16):** обновлены [docs/README.md](./docs/README.md), [ARCHITECTURE.md](./ARCHITECTURE.md), [PROJECT_GUIDE.md](./PROJECT_GUIDE.md), [DEPLOYMENT.md](./DEPLOYMENT.md), [website/BRAND.md](./website/BRAND.md), [SERVER.md](./SERVER.md), [TROUBLESHOOTING.md](./TROUBLESHOOTING.md), [SECURITY.md](./SECURITY.md).
+- Удалены внутренние meta-доки: `STATE.md`, `SPOTLIGHT.md`, `COCKPIT.md` (дублировали AGENTS.md / PROJECT.md).
+- Создан [website/README-DEPRECATED.md](./website/README-DEPRECATED.md) — пометка legacy static лендинга.
+- Убраны мёртвые ссылки на несуществующие `HANDOFF.md`, `AUDIT_*.md`, `.planning/`.
+- OpenRouter зафиксирован как primary LLM во всех руководствах; Kimi убран из DEPLOYMENT/PROJECT_GUIDE.
 
 ---
 

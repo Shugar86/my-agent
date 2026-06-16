@@ -1,6 +1,6 @@
 # Документация My Agent
 
-> Индекс актуальной документации. Версия продукта: **3.5.0** (2026-05-27).
+> Индекс актуальной документации. Версия продукта: **4.0.0** (2026-05-28).
 
 ---
 
@@ -9,10 +9,11 @@
 | Документ | Для кого | Содержание |
 |----------|----------|------------|
 | [README.md](../README.md) | Все | Обзор, быстрый старт Docker, маршруты UI |
+| [AGENTS.md](../AGENTS.md) | AI-агенты, контрибьюторы | Контракт: стек, DoD, git workflow |
 | [PROJECT_GUIDE.md](../PROJECT_GUIDE.md) | RU | Установка, CLI, навыки, troubleshooting |
-| [DEMO.md](../DEMO.md) | Демо / инвесторы | Сценарий 90 сек, Competitor Intelligence |
+| [DEMO.md](../DEMO.md) | Демо / инвесторы | Сценарий live demo, agent preview |
 | [INVESTOR.md](../INVESTOR.md) | Питч | URL, env, 3-минутный скрипт |
-| [website/BRAND.md](../website/BRAND.md) | Маркетинг | Positioning, CTAs, FeatureTag |
+| [website/BRAND.md](../website/BRAND.md) | Маркетинг | Positioning, CTAs, tone |
 
 ---
 
@@ -21,12 +22,12 @@
 | Документ | Содержание |
 |----------|------------|
 | [ARCHITECTURE.md](../ARCHITECTURE.md) | Слои системы, workflow engine, паттерны |
+| [PROJECT.md](../PROJECT.md) | Immutable core: mission, принципы, entry points |
 | [DEPLOYMENT.md](../DEPLOYMENT.md) | Локальный и production деплой |
 | [SERVER.md](../SERVER.md) | VDS, порты, nginx, бэкапы |
-| [deploy/README.md](../deploy/README.md) | Docker Compose prod, systemd, мониторинг |
+| [deploy/README.md](../deploy/README.md) | Docker Compose prod, Render, Railway, Fly.io |
 | [SECURITY.md](../SECURITY.md) | JWT, rate limits, production checklist |
-| [TROUBLESHOOTING.md](../TROUBLESHOOTING.md) | Типичные ошибки |
-| [HANDOFF.md](../HANDOFF.md) | Состояние продукта для новой сессии |
+| [TROUBLESHOOTING.md](../TROUBLESHOOTING.md) | Типичные ошибки и решения |
 | [web/frontend/DESIGN.md](../web/frontend/DESIGN.md) | UI design system (React) |
 
 ---
@@ -36,23 +37,19 @@
 | Документ | Содержание |
 |----------|------------|
 | [CHANGELOG.md](../CHANGELOG.md) | История релизов |
+| [ROADMAP_90_DAYS.md](../ROADMAP_90_DAYS.md) | Текущий roadmap (Phase 1–4) |
 | [skills/*/SKILL.md](../skills/) | Документация каждого skill |
 | [.env.example](../.env.example) | Переменные окружения |
 
 ---
 
-## Исторические аудиты (архив)
+## Инженерный аудит (архив)
 
-Не обновляются при каждом релизе — снимок на дату аудита.
+Снимок на дату аудита; не обновляется при каждом релизе.
 
 | Файл | Тема |
 |------|------|
-| [AUDIT_PRODUCTION_2026.md](../AUDIT_PRODUCTION_2026.md) | Production readiness (3.4) |
-| [AUDIT_PRODUCT_2026.md](../AUDIT_PRODUCT_2026.md) | Product depth |
-| [AUDIT_2026.md](../AUDIT_2026.md) | Общий аудит 2026 |
-| [AUDIT_REPORT.md](../AUDIT_REPORT.md) | UX/metrics snapshot (3.5.0) |
-| [ROADMAP_90_DAYS.md](../ROADMAP_90_DAYS.md) | Дорожная карта |
-| [.planning/](../.planning/) | Внутреннее планирование |
+| [TROUBLES.md](../TROUBLES.md) | Re-audit gate 60/60, OPEN backlog |
 
 ---
 
@@ -61,6 +58,6 @@
 | Путь | Причина |
 |------|---------|
 | `website/*.html` | Статический лендинг заменён React SPA — см. [website/README-DEPRECATED.md](../website/README-DEPRECATED.md) |
-| `AI_SKILLS.md` (удалён) | Сводка перенесена в `skills/*/SKILL.md` и [PROJECT_GUIDE.md](../PROJECT_GUIDE.md) |
 | `web/static/*.html` (кроме login) | Legacy HTML; продукт в `/app/*` |
 | Порт **8000** в старых заметках | Актуальный порт Docker/VDS: **8020** |
+| `KIMI_API_KEY` как primary LLM | С v4.0.0 primary — `OPENROUTER_API_KEY` |
