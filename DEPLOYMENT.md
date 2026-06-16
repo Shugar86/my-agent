@@ -1,7 +1,7 @@
 # Deployment Guide
 
 > My Agent — Production Deployment  
-> Version: **3.5.0**
+> Version: **4.0.0**
 
 **VDS:** см. [SERVER.md](./SERVER.md) — порт **8020**.  
 **Investor demo:** [DEMO.md](./DEMO.md).
@@ -12,13 +12,13 @@
 
 ```bash
 cp .env.example .env
-# KIMI_API_KEY=sk-kimi-...  (или OPENROUTER_API_KEY для fallback)
+# OPENROUTER_API_KEY=sk-or-v1-...  (live LLM; demo работает без ключей — mock)
 
 docker compose up -d --build
 curl -s http://127.0.0.1:8020/api/health
 ```
 
-Открыть: http://localhost:8020/app
+Открыть: http://localhost:8020/
 
 С n8n для демо: `docker compose --profile demo up -d --build`
 
@@ -28,7 +28,7 @@ curl -s http://127.0.0.1:8020/api/health
 
 - Docker + Docker Compose
 - 2 GB RAM minimum
-- `KIMI_API_KEY` и/или `OPENROUTER_API_KEY` (demo работает без ключей — mock)
+- `OPENROUTER_API_KEY` для live LLM (demo работает без ключей — mock fallback)
 
 Production additionally:
 
@@ -49,9 +49,9 @@ cp .env.example .env
 | `ENV` | `production` |
 | `DATABASE_URL` | PostgreSQL (required) |
 | `REDIS_URL` | Redis (required) |
-| `KIMI_API_KEY` | Primary LLM |
+| `OPENROUTER_API_KEY` | Primary LLM |
 | `AGENT_SECRET_KEY` | Random 32+ chars |
-| `AGENT_PASSWORD` | Change from default |
+| `AGENT_PASSWORD` | ≥ 12 символов (не default) |
 
 `docker-compose.yml` выставляет `ENV=production` и подключает db/redis автоматически.
 
@@ -61,7 +61,7 @@ cp .env.example .env
 
 ```bash
 python -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt
+pip install -e ".[dev]"
 
 export DATABASE_URL=postgresql://agent:agentpass@127.0.0.1:5437/agent_db
 export REDIS_URL=redis://127.0.0.1:6380/0
@@ -80,9 +80,17 @@ cd web/frontend && bun run build
 ## Tests before deploy
 
 ```bash
-python -m pytest tests/ -q
+pytest tests/test_code_tools.py tests/test_file_tools.py \
+       tests/test_security_improvements.py tests/test_async_utils.py \
+       tests/test_db_manager.py tests/test_production_hardening.py \
+       tests/test_all.py::test_memory_manager -q
 
-# Smoke (in container):
+bash scripts/check-secrets.sh
+```
+
+Smoke (in container):
+
+```bash
 docker compose exec -T agent python -m pytest \
   tests/test_production_v34.py tests/test_marketplace.py -q
 ```
@@ -98,13 +106,13 @@ docker compose exec -T agent python -m pytest \
 | Monitoring | `docker compose --profile monitoring up -d` |
 | Backup | `deploy/scripts/backup-db.sh` |
 
-Подробный runbook: [deploy/README.md](./deploy/README.md), [AUDIT_PRODUCTION_2026.md](./AUDIT_PRODUCTION_2026.md).
+Подробный runbook: [deploy/README.md](./deploy/README.md).
 
 ---
 
 ## Checklist
 
-- [ ] `.env` с уникальными `AGENT_PASSWORD`, `AGENT_SECRET_KEY`
+- [ ] `.env` с уникальными `AGENT_PASSWORD` (≥ 12), `AGENT_SECRET_KEY`
 - [ ] `DATABASE_URL` + `REDIS_URL` заданы
 - [ ] `curl http://127.0.0.1:8020/api/health` → `redis: true`
 - [ ] TLS перед публичным доступом
@@ -121,5 +129,6 @@ docker compose exec -T agent python -m pytest \
 | PG connection refused | `docker compose up db -d`, port 5437 on host |
 | 502 behind nginx | Agent listens on **8020**, not 8000 |
 | Templates empty | `docker compose exec agent python scripts/seed_workflow_templates.py` |
+| Agent-preview 503 | Set `OPENROUTER_API_KEY` or expect mock on public demo |
 
 См. [TROUBLESHOOTING.md](./TROUBLESHOOTING.md).

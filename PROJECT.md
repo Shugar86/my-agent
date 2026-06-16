@@ -66,7 +66,7 @@ Anchor (immutable core). Изменение смысла = новый проек
 |----------|------------|
 | [README.md](README.md) | Обзор, quick start, маршруты |
 | [docs/README.md](docs/README.md) | Полный индекс |
-| [ARCHITECTURE.md](ARCHITECTURE.md) | Слои, workflow, security (часть текста на v3.5 — сверять с README v4) |
+| [ARCHITECTURE.md](ARCHITECTURE.md) | Слои, workflow, security |
 | [DEPLOYMENT.md](DEPLOYMENT.md) | Деплой |
 | [SERVER.md](SERVER.md) | VDS, порты, nginx |
 | [SECURITY.md](SECURITY.md) | JWT, checklist |
@@ -74,7 +74,10 @@ Anchor (immutable core). Изменение смысла = новый проек
 | [ROADMAP_90_DAYS.md](ROADMAP_90_DAYS.md) | Фазы 1–4 |
 | [TROUBLES.md](TROUBLES.md) | Аудит, gate, OPEN backlog |
 | [CHANGELOG.md](CHANGELOG.md) | История релизов |
+| [AGENTS.md](AGENTS.md) | Контракт для AI-агентов |
 | [website/BRAND.md](website/BRAND.md) | Positioning, tone, CTAs |
+
+*Обновлено: 2026-06-16. Версия продукта: 4.0.0.*
 
 ## Health (как проверить, что работает)
 

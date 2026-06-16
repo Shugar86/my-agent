@@ -39,7 +39,7 @@
 
 - ✨ **Agent Preview** — опишите задачу текстом, и LLM сгенерирует персону оператора без регистрации.
 - 🤖 **10 готовых агентов** — universal, researcher, developer, marketer, data_analyst, slides, docs, media, data_engineer, news.
-- 🧰 **30+ навыков** — research, browser, RAG, документы, презентации, планировщик, выполнение кода, OCR, vision, email, RSS и другие.
+- 🧰 **33 навыка** — research, browser, RAG, документы, презентации, планировщик, выполнение кода, OCR, vision, email, RSS и другие.
 - ⚡ **AutoAgentFactory** — LLM анализирует задачу, создаёт sub-агентов и запускает их параллельно.
 - 🕸️ **Workflow engine** — визуальный DAG-редактор (React Flow), 21+ типов узлов, async-запуски, Redis-очередь.
 - 🛒 **Marketplace** — 50+ шаблонов, установка в один клик, публичный share.
