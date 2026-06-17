@@ -79,4 +79,4 @@ pytest tests/test_code_tools.py tests/test_file_tools.py \
 2. `SERVER.md` — порты, Docker, тесты
 3. Запуск: `.venv/bin/pytest tests/ -v`
 4. Frontend: `cd web/frontend && bun run build`
-5. Документация: [docs/README.md](docs/README.md) · roadmap: `ROADMAP_90_DAYS.md`, `.planning/STATE.md`
+5. Документация: [docs/README.md](docs/README.md) · roadmap: [ROADMAP_90_DAYS.md](ROADMAP_90_DAYS.md)

@@ -1,7 +1,7 @@
 # Architecture
 
 > My Agent — System Architecture  
-> Version: **3.5.0**
+> Version: **4.0.0**
 
 ---
 
@@ -28,13 +28,13 @@
        │          └──────┬───────┘
        ▼                 │
 ┌─────────────────────────────────────────────────────────────┐
-│  AgentBuilder → AgentRuntime → LLMGateway (Kimi + litellm)   │
+│  AgentBuilder → AgentRuntime → LLMGateway (OpenRouter/litellm)│
 │  SkillLoader · ToolRegistry · MemoryManager                  │
 └──────────────────────────┬──────────────────────────────────┘
                            │
                            ▼
 ┌─────────────────────────────────────────────────────────────┐
-│  skills/* · tools/* · agents/registry.json                   │
+│  skills/* · tools/* · agents/registry.json (10 agents)       │
 └─────────────────────────────────────────────────────────────┘
                            │
                            ▼
@@ -54,6 +54,8 @@ React 18 SPA (`web/frontend/`), собирается в `web/static/app/`.
 | Auth | `/login` | — |
 
 Legacy static HTML в `website/` и `web/static/*.html` не используются для основного UI (кроме `login.html` при необходимости).
+
+Agents, Knowledge и MCP перенесены в Settings (`/app/settings?tab=agents|knowledge|mcp`).
 
 ---
 
@@ -78,6 +80,18 @@ LLM планирует sub-agents → временные профили → para
 
 ---
 
+## Public demo (`web/demo_router.py`)
+
+| Endpoint | Назначение |
+|----------|------------|
+| `POST /api/demo/public/agent-preview` | Live LLM генерация AI-оператора из описания задачи |
+| `POST /api/demo/public/agent-chat` | Follow-up chat с preview-агентом |
+| `POST /api/demo/public/run` | Workflow demo для showcase (mock fallback) |
+
+Rate limit: 5 preview + 10 chat req/IP/hour. При отсутствии `OPENROUTER_API_KEY` — mock fallback, не 500.
+
+---
+
 ## Workflow engine
 
 ```
@@ -98,12 +112,22 @@ Runs async по умолчанию; sync с `{"wait": true}`.
 
 | Store | Usage |
 |-------|--------|
-| PostgreSQL | Users, workflows, templates, billing |
+| PostgreSQL | Users, workflows, templates, billing, chat sessions |
 | Redis | Sessions blacklist, rate limits, run queue |
 | JSON files | Dev memory sessions (`memory/sessions/`) |
 | ChromaDB | RAG knowledge base |
 
 При `ENV=production` SQLite для основных данных не используется.
+
+---
+
+## LLM
+
+Primary provider: **OpenRouter** через `litellm` и профили в `config/models.yaml` (`balanced`, `fast`, `smart`).
+
+- Все 10 агентов в `agents/registry.json` используют `model: "balanced"`.
+- `core/configurator.py` — подстановка env-ключей и fallback по free-моделям.
+- `core/kimi_provider.py` — legacy adapter; Kimi выведен из registry в v4.
 
 ---
 
@@ -126,9 +150,9 @@ Runs async по умолчанию; sync с `{"wait": true}`.
 ```
 web/server.py
 ├── core/orchestrator.py → core/builder.py → core/runtime.py
-├── core/workflow/* 
+├── core/workflow/*
 ├── core/auth.py, core/billing/*
-├── core/kimi_provider.py
+├── core/llm_gateway.py, core/configurator.py
 └── core/agent_store.py
 
 skills/*/skill.py → tools/*.py
@@ -154,7 +178,7 @@ skills/*/skill.py → tools/*.py
 | Builder | `core/builder.py` |
 | Factory | `core/auto_agent_factory.py` |
 | Strategy | `core/orchestrator.py` |
-| Adapter | `core/llm_gateway.py`, `core/kimi_provider.py` |
+| Adapter | `core/llm_gateway.py` |
 | Plugin | `core/skill_loader.py` |
 | Repository | `core/memory_manager.py`, workflow store |
 

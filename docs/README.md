@@ -1,6 +1,6 @@
 # Документация My Agent
 
-> Индекс актуальной документации. Версия продукта: **3.5.0** (2026-05-27).
+> Индекс актуальной документации. Версия продукта: **4.0.0** (2026-06).
 
 ---
 
@@ -9,9 +9,10 @@
 | Документ | Для кого | Содержание |
 |----------|----------|------------|
 | [README.md](../README.md) | Все | Обзор, быстрый старт Docker, маршруты UI |
+| [AGENTS.md](../AGENTS.md) | AI-агенты, разработчики | Контракт: стек, DoD, git workflow, эскалация |
 | [PROJECT_GUIDE.md](../PROJECT_GUIDE.md) | RU | Установка, CLI, навыки, troubleshooting |
-| [DEMO.md](../DEMO.md) | Демо / инвесторы | Сценарий 90 сек, Competitor Intelligence |
-| [INVESTOR.md](../INVESTOR.md) | Питч | URL, env, 3-минутный скрипт |
+| [DEMO.md](../DEMO.md) | Демо / инвесторы | Agent preview, 3-минутный скрипт |
+| [INVESTOR.md](../INVESTOR.md) | Питч | URL, env, showcase verticals |
 | [website/BRAND.md](../website/BRAND.md) | Маркетинг | Positioning, CTAs, FeatureTag |
 
 ---
@@ -25,8 +26,7 @@
 | [SERVER.md](../SERVER.md) | VDS, порты, nginx, бэкапы |
 | [deploy/README.md](../deploy/README.md) | Docker Compose prod, systemd, мониторинг |
 | [SECURITY.md](../SECURITY.md) | JWT, rate limits, production checklist |
-| [TROUBLESHOOTING.md](../TROUBLESHOOTING.md) | Типичные ошибки |
-| [HANDOFF.md](../HANDOFF.md) | Состояние продукта для новой сессии |
+| [TROUBLESHOOTING.md](../TROUBLESHOOTING.md) | Типичные ошибки и решения |
 | [web/frontend/DESIGN.md](../web/frontend/DESIGN.md) | UI design system (React) |
 
 ---
@@ -36,23 +36,17 @@
 | Документ | Содержание |
 |----------|------------|
 | [CHANGELOG.md](../CHANGELOG.md) | История релизов |
-| [skills/*/SKILL.md](../skills/) | Документация каждого skill |
+| [ROADMAP_90_DAYS.md](../ROADMAP_90_DAYS.md) | Дорожная карта (фазы 1–4) |
+| [skills/*/SKILL.md](../skills/) | Документация каждого skill (33 навыка) |
 | [.env.example](../.env.example) | Переменные окружения |
 
 ---
 
-## Исторические аудиты (архив)
+## Аудит и backlog
 
-Не обновляются при каждом релизе — снимок на дату аудита.
-
-| Файл | Тема |
-|------|------|
-| [AUDIT_PRODUCTION_2026.md](../AUDIT_PRODUCTION_2026.md) | Production readiness (3.4) |
-| [AUDIT_PRODUCT_2026.md](../AUDIT_PRODUCT_2026.md) | Product depth |
-| [AUDIT_2026.md](../AUDIT_2026.md) | Общий аудит 2026 |
-| [AUDIT_REPORT.md](../AUDIT_REPORT.md) | UX/metrics snapshot (3.5.0) |
-| [ROADMAP_90_DAYS.md](../ROADMAP_90_DAYS.md) | Дорожная карта |
-| [.planning/](../.planning/) | Внутреннее планирование |
+| Документ | Содержание |
+|----------|------------|
+| [TROUBLES.md](../TROUBLES.md) | Аудит багов, gate-результаты, OPEN backlog |
 
 ---
 
@@ -61,6 +55,6 @@
 | Путь | Причина |
 |------|---------|
 | `website/*.html` | Статический лендинг заменён React SPA — см. [website/README-DEPRECATED.md](../website/README-DEPRECATED.md) |
-| `AI_SKILLS.md` (удалён) | Сводка перенесена в `skills/*/SKILL.md` и [PROJECT_GUIDE.md](../PROJECT_GUIDE.md) |
 | `web/static/*.html` (кроме login) | Legacy HTML; продукт в `/app/*` |
 | Порт **8000** в старых заметках | Актуальный порт Docker/VDS: **8020** |
+| `KIMI_API_KEY` | Удалён в v4; primary LLM — `OPENROUTER_API_KEY` |

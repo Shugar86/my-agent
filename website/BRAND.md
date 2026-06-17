@@ -4,34 +4,36 @@
 
 ## Positioning
 
-**Tagline:** Autonomous Workflow OS — n8n + AI-агенты + marketplace
+**Tagline:** AI Agent OS — AI-оператор для бизнеса за 2 минуты
 
-**One-liner:** Конкурентный brief за 90 секунд вместо 4 часов работы аналитика.
+**One-liner:** Опишите задачу текстом — получите работающего AI-оператора без кода и без интегратора.
 
 ## Hero stats (social proof)
 
 | Metric | Value |
 |--------|-------|
 | Шаблонов в marketplace | 50+ |
-| Time-to-wow | 90 сек |
-| Стоимость demo-run | $0.42 |
-| Артефакт | DOCX brief |
+| Time-to-wow | ~10 сек (agent preview) |
+| Агентов | 10 |
+| Навыков | 33+ |
+| Live deployments | 7 vertical cases |
 
 ## Primary CTAs
 
-1. **Live demo** — `/demo` (landing primary CTA; mock без keys)
+1. **Live agent preview** — `/` hero widget или `/demo` (mock без keys, live с `OPENROUTER_API_KEY`)
 2. **7 vertical cases** — `/showcase` (investor meetings)
-3. **Live playground** — `/showcase#playground` or `/app/showcase#playground`
-4. **Начать бесплатно** — `/login?next=/app/onboarding` → dashboard
+3. **Начать бесплатно** — `/login?next=/app/onboarding` → dashboard
+4. **Открыть чат** — `/app/chat` (после login)
 
 ## Glue narrative (везде в UI)
 
-**Шаблон → Workflow → Результат** — полоска в PublicLayout и AppShell; блок в onboarding и landing `#product`.
+**Задача → Оператор → Результат** — пользователь описывает бизнес-задачу, платформа собирает AI-оператора с persona, навыками и workflow.
 
 ## Tone
 
 - Professional, calm B2B
-- Outcome-first (часы сэкономлены, документ на выходе)
+- Outcome-first (готовый оператор, экономия часов)
+- Честные статусы: Live / Beta / Preview / Скоро
 - Без JWT, pip install, skills catalog на главной
 
 ## Visual bridge
@@ -64,3 +66,5 @@ Static HTML pages deprecated — see [`README-DEPRECATED.md`](README-DEPRECATED.
 ## Investor demo theme
 
 Перед screen share рекомендуется **светлая тема** в `/app`: переключатель в sidebar или `localStorage.setItem('my-agent.theme', 'light')`.
+
+Скрипт: [DEMO.md](../DEMO.md), [INVESTOR.md](../INVESTOR.md).
