@@ -40,7 +40,7 @@ Anchor (immutable core). Изменение смысла = новый проек
 | Тесты | pytest, Playwright e2e, `scripts/check-secrets.sh` |
 | Ключевые Python-libs | litellm, slowapi, python-jose, docker SDK, MCP, APScheduler |
 
-Версия продукта в README: **4.0.0**. В `pyproject.toml` указано `2.0.0` — [расхождение, ориентир README].
+Версия продукта: **4.0.0** (см. [CHANGELOG.md](CHANGELOG.md)).
 
 ## Key files / entry points
 
@@ -55,18 +55,19 @@ Anchor (immutable core). Изменение смысла = новый проек
 | `core/workflow/*` | DAG store, executor, Redis queue |
 | `agents/registry.json` | 10 профилей агентов |
 | `config/agent.json`, `config/models.yaml` | Конфиг моделей |
-| `skills/*/skill.py` | Доменные навыки |
+| `skills/*/skill.py` | 33 доменных навыка |
 | `docker-compose.yml` | Локальный/prod stack |
 | `Dockerfile` | Образ agent |
 | `.env.example` | Обязательные env-переменные |
 
-## Documentation (существующие ссылки)
+## Documentation
 
 | Документ | Содержание |
 |----------|------------|
 | [README.md](README.md) | Обзор, quick start, маршруты |
 | [docs/README.md](docs/README.md) | Полный индекс |
-| [ARCHITECTURE.md](ARCHITECTURE.md) | Слои, workflow, security (часть текста на v3.5 — сверять с README v4) |
+| [AGENTS.md](AGENTS.md) | Контракт для AI-агентов |
+| [ARCHITECTURE.md](ARCHITECTURE.md) | Слои, workflow, security |
 | [DEPLOYMENT.md](DEPLOYMENT.md) | Деплой |
 | [SERVER.md](SERVER.md) | VDS, порты, nginx |
 | [SECURITY.md](SECURITY.md) | JWT, checklist |
@@ -95,7 +96,7 @@ pytest tests/test_code_tools.py tests/test_file_tools.py \
 # Smoke UI
 # http://localhost:8020/ — agent preview widget
 # http://localhost:8020/login — admin + AGENT_PASSWORD
-# POST /api/demo/public/agent-preview — live LLM (или 503/mock без ключа)
+# POST /api/demo/public/agent-preview — live LLM (или mock без ключа)
 ```
 
-Ожидаемо: health 200, pytest gate green, лендинг открывается на **8020**, import `web.server` без ошибок (~136 routes).
+Ожидаемо: health 200, pytest gate green, лендинг открывается на **8020**, import `web.server` без ошибок.

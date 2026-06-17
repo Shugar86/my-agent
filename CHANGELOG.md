@@ -15,6 +15,10 @@
 
 ### Changed
 - Структура README: hero, быстрый старт, архитектура, маршруты, env-переменные, связанные документы.
+- **Док-синхронизация v4.0.0:** обновлены [ARCHITECTURE.md](./ARCHITECTURE.md), [PROJECT_GUIDE.md](./PROJECT_GUIDE.md), [DEPLOYMENT.md](./DEPLOYMENT.md), [SERVER.md](./SERVER.md), [website/BRAND.md](./website/BRAND.md), [docs/README.md](./docs/README.md), [PROJECT.md](./PROJECT.md).
+- Удалены внутренние мета-доки: `COCKPIT.md`, `SPOTLIGHT.md`, `STATE.md`.
+- Убраны битые ссылки на несуществующие `HANDOFF.md`, `AUDIT_*.md`.
+- Kimi → OpenRouter отражён во всех ops-гайдах; narrative «90 сек brief» заменён на «AI-оператор за 2 минуты».
 
 ---
 
