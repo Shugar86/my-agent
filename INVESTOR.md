@@ -48,6 +48,6 @@ Public demo работает без ключей — mock fallback.
 ## Key metrics
 
 - 50+ marketplace шаблонов
-- 10 агентов, 30+ skills, 80+ tools
+- 10 агентов, 33 skills, 80+ tools
 - 7 live deployments
 - AutoAgentFactory: LLM → sub-agents → parallel execution → synthesis

@@ -16,6 +16,13 @@
 ### Changed
 - Структура README: hero, быстрый старт, архитектура, маршруты, env-переменные, связанные документы.
 
+### Documentation (2026-06-18)
+- Синхронизация всей документации с **v4.0.0**: OpenRouter как primary LLM, public agent preview.
+- Переписан [docs/README.md](./docs/README.md) — убраны мёртвые ссылки (HANDOFF, AUDIT_*), добавлены AGENTS.md и CONTRIBUTING.md.
+- Обновлены [ARCHITECTURE.md](./ARCHITECTURE.md), [PROJECT_GUIDE.md](./PROJECT_GUIDE.md), [DEPLOYMENT.md](./DEPLOYMENT.md), [SERVER.md](./SERVER.md), [website/BRAND.md](./website/BRAND.md), [STATE.md](./STATE.md).
+- Удалены внутренние дубликаты `COCKPIT.md`, `SPOTLIGHT.md` (контент покрыт AGENTS.md + ARCHITECTURE.md).
+- `pyproject.toml` version → 4.0.0 (выровнено с продуктовой версией).
+
 ---
 
 ## [4.0.0] — 2026-05-28 (Agent OS pivot + landing redesign)

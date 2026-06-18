@@ -1,7 +1,7 @@
 # Architecture
 
 > My Agent — System Architecture  
-> Version: **3.5.0**
+> Version: **4.0.0**
 
 ---
 
@@ -28,13 +28,13 @@
        │          └──────┬───────┘
        ▼                 │
 ┌─────────────────────────────────────────────────────────────┐
-│  AgentBuilder → AgentRuntime → LLMGateway (Kimi + litellm)   │
+│  AgentBuilder → AgentRuntime → LLMGateway (OpenRouter/litellm)│
 │  SkillLoader · ToolRegistry · MemoryManager                  │
 └──────────────────────────┬──────────────────────────────────┘
                            │
                            ▼
 ┌─────────────────────────────────────────────────────────────┐
-│  skills/* · tools/* · agents/registry.json                   │
+│  skills/* · tools/* · agents/registry.json (10 agents)       │
 └─────────────────────────────────────────────────────────────┘
                            │
                            ▼
@@ -76,6 +76,12 @@ Fluent configuration → `AgentRuntime`. Загружает skills, создаё
 
 LLM планирует sub-agents → временные профили → parallel run → cleanup.
 
+### Public demo (`web/demo_router.py`)
+
+- `POST /api/demo/public/agent-preview` — генерация persona из описания задачи
+- `POST /api/demo/public/agent-chat` — follow-up в persona preview-агента
+- Mock fallback без `OPENROUTER_API_KEY`; rate limit 5 preview + 10 chat req/IP/hour
+
 ---
 
 ## Workflow engine
@@ -98,7 +104,7 @@ Runs async по умолчанию; sync с `{"wait": true}`.
 
 | Store | Usage |
 |-------|--------|
-| PostgreSQL | Users, workflows, templates, billing |
+| PostgreSQL | Users, workflows, templates, billing, chat sessions (prod) |
 | Redis | Sessions blacklist, rate limits, run queue |
 | JSON files | Dev memory sessions (`memory/sessions/`) |
 | ChromaDB | RAG knowledge base |
@@ -126,9 +132,9 @@ Runs async по умолчанию; sync с `{"wait": true}`.
 ```
 web/server.py
 ├── core/orchestrator.py → core/builder.py → core/runtime.py
-├── core/workflow/* 
+├── core/workflow/*
 ├── core/auth.py, core/billing/*
-├── core/kimi_provider.py
+├── core/llm_gateway.py, core/configurator.py
 └── core/agent_store.py
 
 skills/*/skill.py → tools/*.py
@@ -154,7 +160,7 @@ skills/*/skill.py → tools/*.py
 | Builder | `core/builder.py` |
 | Factory | `core/auto_agent_factory.py` |
 | Strategy | `core/orchestrator.py` |
-| Adapter | `core/llm_gateway.py`, `core/kimi_provider.py` |
+| Adapter | `core/llm_gateway.py` |
 | Plugin | `core/skill_loader.py` |
 | Repository | `core/memory_manager.py`, workflow store |
 
