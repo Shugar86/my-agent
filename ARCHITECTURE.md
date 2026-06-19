@@ -1,7 +1,7 @@
 # Architecture
 
 > My Agent — System Architecture  
-> Version: **3.5.0**
+> Version: **4.0.0**
 
 ---
 
@@ -28,13 +28,13 @@
        │          └──────┬───────┘
        ▼                 │
 ┌─────────────────────────────────────────────────────────────┐
-│  AgentBuilder → AgentRuntime → LLMGateway (Kimi + litellm)   │
+│  AgentBuilder → AgentRuntime → LLMGateway (OpenRouter)      │
 │  SkillLoader · ToolRegistry · MemoryManager                  │
 └──────────────────────────┬──────────────────────────────────┘
                            │
                            ▼
 ┌─────────────────────────────────────────────────────────────┐
-│  skills/* · tools/* · agents/registry.json                   │
+│  skills/* · tools/* · agents/registry.json (10 agents)       │
 └─────────────────────────────────────────────────────────────┘
                            │
                            ▼
@@ -53,7 +53,7 @@ React 18 SPA (`web/frontend/`), собирается в `web/static/app/`.
 | Product | `/app/*` | JWT cookie |
 | Auth | `/login` | — |
 
-Legacy static HTML в `website/` и `web/static/*.html` не используются для основного UI (кроме `login.html` при необходимости).
+Legacy static HTML в `website/` и `web/static/*.html` не используются для основного UI.
 
 ---
 
@@ -78,6 +78,18 @@ LLM планирует sub-agents → временные профили → para
 
 ---
 
+## LLM layer
+
+| Компонент | Роль |
+|-----------|------|
+| `core/llm_gateway.py` | Единый интерфейс к моделям через litellm |
+| `core/configurator.py` | Профили `fast`, `balanced`, `smart` из `config/models.yaml` |
+| `web/demo_router.py` | Public agent-preview с fallback по free-моделям |
+
+Primary provider: **OpenRouter** (`OPENROUTER_API_KEY`). Все 10 агентов в `agents/registry.json` используют `model: "balanced"`.
+
+---
+
 ## Workflow engine
 
 ```
@@ -98,7 +110,7 @@ Runs async по умолчанию; sync с `{"wait": true}`.
 
 | Store | Usage |
 |-------|--------|
-| PostgreSQL | Users, workflows, templates, billing |
+| PostgreSQL | Users, workflows, templates, billing, chat sessions (prod) |
 | Redis | Sessions blacklist, rate limits, run queue |
 | JSON files | Dev memory sessions (`memory/sessions/`) |
 | ChromaDB | RAG knowledge base |
@@ -125,10 +137,11 @@ Runs async по умолчанию; sync с `{"wait": true}`.
 
 ```
 web/server.py
+├── web/demo_router.py          (public agent-preview)
 ├── core/orchestrator.py → core/builder.py → core/runtime.py
-├── core/workflow/* 
+├── core/workflow/*
 ├── core/auth.py, core/billing/*
-├── core/kimi_provider.py
+├── core/llm_gateway.py, core/configurator.py
 └── core/agent_store.py
 
 skills/*/skill.py → tools/*.py
@@ -154,7 +167,7 @@ skills/*/skill.py → tools/*.py
 | Builder | `core/builder.py` |
 | Factory | `core/auto_agent_factory.py` |
 | Strategy | `core/orchestrator.py` |
-| Adapter | `core/llm_gateway.py`, `core/kimi_provider.py` |
+| Adapter | `core/llm_gateway.py` |
 | Plugin | `core/skill_loader.py` |
 | Repository | `core/memory_manager.py`, workflow store |
 

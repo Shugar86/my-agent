@@ -4,34 +4,34 @@
 
 ## Positioning
 
-**Tagline:** Autonomous Workflow OS — n8n + AI-агенты + marketplace
+**Tagline:** AI Agent OS для бизнеса — n8n + AI-агенты + marketplace
 
-**One-liner:** Конкурентный brief за 90 секунд вместо 4 часов работы аналитика.
+**One-liner:** Опишите задачу текстом — получите работающего AI-оператора за 2 минуты. Без кода, без интегратора.
 
 ## Hero stats (social proof)
 
 | Metric | Value |
 |--------|-------|
 | Шаблонов в marketplace | 50+ |
-| Time-to-wow | 90 сек |
-| Стоимость demo-run | $0.42 |
-| Артефакт | DOCX brief |
+| Готовых агентов | 10 |
+| Навыков (skills) | 33+ |
+| Live deployments | 7 vertical кейсов |
 
 ## Primary CTAs
 
-1. **Live demo** — `/demo` (landing primary CTA; mock без keys)
+1. **Live agent preview** — `/` hero widget или `/demo` (mock без keys, live с `OPENROUTER_API_KEY`)
 2. **7 vertical cases** — `/showcase` (investor meetings)
-3. **Live playground** — `/showcase#playground` or `/app/showcase#playground`
-4. **Начать бесплатно** — `/login?next=/app/onboarding` → dashboard
+3. **Начать бесплатно** — `/login?next=/app/onboarding` → dashboard + chat
 
 ## Glue narrative (везде в UI)
 
-**Шаблон → Workflow → Результат** — полоска в PublicLayout и AppShell; блок в onboarding и landing `#product`.
+**Задача → Оператор → Результат** — от описания бизнес-задачи к персоне агента и артефакту (ответ, документ, workflow).
 
 ## Tone
 
 - Professional, calm B2B
-- Outcome-first (часы сэкономлены, документ на выходе)
+- Outcome-first (готовый оператор, экономия часов)
+- Честные статусы (Live / Beta / Preview / Скоро)
 - Без JWT, pip install, skills catalog на главной
 
 ## Visual bridge
@@ -56,7 +56,7 @@ Registry: `web/frontend/src/config/featureRegistry.ts`
 |------|-------|
 | `web/frontend/src/layout/landing.css` | React landing sections |
 | `web/frontend/src/layout/theme.css` | Product SPA (dark/light) |
-| `website/style.css`, `marketing.css` | Legacy static (deprecated — assets only via `/welcome-assets`) |
+| `website/style.css`, `marketing.css` | Legacy static (deprecated — assets only) |
 | `website/login.css` | Login split layout |
 
 Static HTML pages deprecated — see [`README-DEPRECATED.md`](README-DEPRECATED.md).
