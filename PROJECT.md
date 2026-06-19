@@ -66,12 +66,12 @@ Anchor (immutable core). Изменение смысла = новый проек
 |----------|------------|
 | [README.md](README.md) | Обзор, quick start, маршруты |
 | [docs/README.md](docs/README.md) | Полный индекс |
-| [ARCHITECTURE.md](ARCHITECTURE.md) | Слои, workflow, security (часть текста на v3.5 — сверять с README v4) |
+| [ARCHITECTURE.md](ARCHITECTURE.md) | Слои, workflow, security |
 | [DEPLOYMENT.md](DEPLOYMENT.md) | Деплой |
 | [SERVER.md](SERVER.md) | VDS, порты, nginx |
 | [SECURITY.md](SECURITY.md) | JWT, checklist |
 | [DEMO.md](DEMO.md), [INVESTOR.md](INVESTOR.md) | Демо и питч |
-| [ROADMAP_90_DAYS.md](ROADMAP_90_DAYS.md) | Фазы 1–4 |
+| [ROADMAP_90_DAYS.md](ROADMAP_90_DAYS.md) | Фазы 1–4 после v4 |
 | [TROUBLES.md](TROUBLES.md) | Аудит, gate, OPEN backlog |
 | [CHANGELOG.md](CHANGELOG.md) | История релизов |
 | [website/BRAND.md](website/BRAND.md) | Positioning, tone, CTAs |

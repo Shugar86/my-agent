@@ -12,9 +12,16 @@
 - Vibe-first документация: обновлён [README.md](./README.md), созданы [AGENTS.md](./AGENTS.md), [LICENSE](./LICENSE) (MIT), [CONTRIBUTING.md](./CONTRIBUTING.md), расширен [CHANGELOG.md](./CHANGELOG.md).
 - README теперь явно отражает вайб продукта: professional, calm B2B, outcome-first.
 - AGENTS.md — контракт для AI-агентов: стек, DoD, git workflow, эскалация.
+- `website/README-DEPRECATED.md` — пояснение по legacy static site.
 
 ### Changed
 - Структура README: hero, быстрый старт, архитектура, маршруты, env-переменные, связанные документы.
+- Синхронизация docs с v4.0.0: [docs/README.md](./docs/README.md), [PROJECT_GUIDE.md](./PROJECT_GUIDE.md), [ARCHITECTURE.md](./ARCHITECTURE.md), [DEPLOYMENT.md](./DEPLOYMENT.md), [SERVER.md](./SERVER.md), [website/BRAND.md](./website/BRAND.md).
+- Убраны мёртвые ссылки на удалённые `AUDIT_*.md` и `HANDOFF.md`.
+- OpenRouter как primary LLM во всех ops-гайдах (Kimi убран из primary).
+
+### Removed
+- Устаревший narrative «Competitor Intelligence за 90 сек» из ops/brand docs.
 
 ---
 
